@@ -1,9 +1,8 @@
-// ===== src/app/core/auth/auth.service.ts =====
+
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
-import { JwtHelperService } from '@auth0/angular-jwt';
 
 import { ApiService } from '../services/api.service';
 import { API_ENDPOINTS } from '../constants/api-endpoints';
@@ -12,7 +11,8 @@ import { UserRoles } from '../constants/roles';
 import { 
   User, 
   LoginRequest, 
-  LoginResponse, 
+  LoginResponse,
+  LoginApiResponse, 
   ChangePasswordRequest 
 } from '../../shared/models/auth.model';
 
@@ -22,7 +22,6 @@ import {
 export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
-  private jwtHelper = new JwtHelperService();
 
   public currentUser$ = this.currentUserSubject.asObservable();
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
@@ -36,11 +35,12 @@ export class AuthService {
   }
 
   /**
-   * Connexion de l'utilisateur
+   * Connexion de l'utilisateur avec gestion du format API spécifique
    */
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.apiService.post<LoginResponse>(API_ENDPOINTS.AUTH.LOGIN, credentials)
+    return this.apiService.post<LoginApiResponse>(API_ENDPOINTS.AUTH.LOGIN, credentials, { skipApiResponseWrapper: true })
       .pipe(
+        map(apiResponse => this.transformLoginResponse(apiResponse)),
         tap(response => {
           this.handleLoginSuccess(response);
         }),
@@ -49,6 +49,17 @@ export class AuthService {
           return throwError(() => error);
         })
       );
+  }
+
+  /**
+   * Transformer la réponse de l'API au format attendu
+   */
+  private transformLoginResponse(apiResponse: LoginApiResponse): LoginResponse {
+    return {
+      token: apiResponse.token,
+      user: apiResponse.utilisateur,
+      message: apiResponse.message
+    };
   }
 
   /**
@@ -88,7 +99,7 @@ export class AuthService {
   }
 
   /**
-   * Vérifier la validité du token
+   * Vérifier la validité du token via l'API
    */
   verifyToken(): Observable<any> {
     return this.apiService.get(API_ENDPOINTS.AUTH.VERIFY_TOKEN)
@@ -109,10 +120,14 @@ export class AuthService {
 
   /**
    * Vérifier si l'utilisateur est authentifié
+   * Pour Laravel Sanctum, on vérifie simplement la présence du token
    */
   isAuthenticated(): boolean {
     const token = this.getToken();
-    return token !== null && !this.isTokenExpired(token);
+    const user = this.getCurrentUser();
+    
+    // Pour Sanctum, on considère l'utilisateur authentifié s'il a un token et un utilisateur en mémoire
+    return !!(token && user);
   }
 
   /**
@@ -132,7 +147,7 @@ export class AuthService {
   }
 
   /**
-   * Obtenir le token JWT
+   * Obtenir le token Laravel Sanctum
    */
   getToken(): string | null {
     return localStorage.getItem(APP_CONSTANTS.JWT.TOKEN_KEY);
@@ -147,47 +162,48 @@ export class AuthService {
 
   /**
    * Vérifier si le token est expiré
+   * Pour Laravel Sanctum, on fait un appel API pour vérifier
    */
   isTokenExpired(token?: string): boolean {
     const tokenToCheck = token || this.getToken();
     if (!tokenToCheck) return true;
     
-    try {
-      return this.jwtHelper.isTokenExpired(tokenToCheck);
-    } catch (error) {
-      console.error('Erreur lors de la vérification du token:', error);
-      return true;
+    // Pour Laravel Sanctum, on ne peut pas décoder le token localement
+    // La vérification se fait via l'API
+    return false; // On assume que le token est valide, la vérification se fait via checkAuthenticationStatus
+  }
+
+  /**
+   * Valider le token Sanctum
+   * Les tokens Sanctum n'ont pas de format JWT standard
+   */
+  private isValidSanctumToken(token: string): boolean {
+    if (!token || typeof token !== 'string') {
+      return false;
     }
+    
+    // Format typique de Laravel Sanctum: nombre|chaîne_aléatoire
+    const sanctumPattern = /^\d+\|[a-zA-Z0-9]+$/;
+    return sanctumPattern.test(token);
   }
 
   /**
    * Obtenir la date d'expiration du token
+   * Non applicable pour Laravel Sanctum - retourne null
    */
   getTokenExpirationDate(): Date | null {
-    const token = this.getToken();
-    if (!token) return null;
-    
-    try {
-      return this.jwtHelper.getTokenExpirationDate(token);
-    } catch (error) {
-      console.error('Erreur lors de la récupération de la date d\'expiration:', error);
-      return null;
-    }
+    // Les tokens Sanctum n'ont pas d'expiration côté client
+    // L'expiration est gérée côté serveur
+    return null;
   }
 
   /**
-   * Décoder le token JWT
+   * Décoder le token
+   * Non applicable pour Laravel Sanctum - retourne les infos utilisateur
    */
   decodeToken(): any {
-    const token = this.getToken();
-    if (!token) return null;
-    
-    try {
-      return this.jwtHelper.decodeToken(token);
-    } catch (error) {
-      console.error('Erreur lors du décodage du token:', error);
-      return null;
-    }
+    // Pour Sanctum, on retourne les informations utilisateur stockées
+    return this.getCurrentUser();
   }
 
   /**
@@ -219,6 +235,12 @@ export class AuthService {
    * Gérer le succès de la connexion
    */
   private handleLoginSuccess(response: LoginResponse): void {
+    // Vérifier que le token est valide
+    if (!this.isValidSanctumToken(response.token)) {
+      console.error('Token Sanctum invalide:', response.token);
+      throw new Error('Token d\'authentification invalide');
+    }
+
     // Stocker le token
     localStorage.setItem(APP_CONSTANTS.JWT.TOKEN_KEY, response.token);
     
@@ -226,10 +248,8 @@ export class AuthService {
     this.currentUserSubject.next(response.user);
     this.isAuthenticatedSubject.next(true);
     
-    // Optionnel: stocker la date d'expiration
-    if (response.expires_at) {
-      localStorage.setItem('token_expires_at', response.expires_at);
-    }
+    console.log('Connexion réussie, token Sanctum stocké:', response.token);
+    console.log('Utilisateur connecté:', response.user);
   }
 
   /**
@@ -245,6 +265,8 @@ export class AuthService {
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
     
+    console.log('Déconnexion effectuée');
+    
     // Rediriger vers la page de connexion
     this.router.navigate(['/auth/login']);
   }
@@ -255,11 +277,12 @@ export class AuthService {
   private checkAuthenticationStatus(): void {
     const token = this.getToken();
     
-    if (token && !this.isTokenExpired(token)) {
-      // Token valide, récupérer le profil utilisateur
+    if (token && this.isValidSanctumToken(token)) {
+      // Token présent et valide, récupérer le profil utilisateur
       this.getProfile().subscribe({
         next: (user) => {
           this.isAuthenticatedSubject.next(true);
+          console.log('Utilisateur reconnecté automatiquement:', user);
         },
         error: (error) => {
           console.error('Erreur lors de la récupération du profil:', error);
@@ -267,8 +290,9 @@ export class AuthService {
         }
       });
     } else {
-      // Token invalide ou expiré
+      // Token invalide ou absent
       if (token) {
+        console.log('Token invalide détecté, déconnexion...');
         this.handleLogout();
       }
     }
@@ -278,6 +302,7 @@ export class AuthService {
    * Forcer la déconnexion (utilisé par l'intercepteur en cas d'erreur 401)
    */
   forceLogout(): void {
+    console.log('Déconnexion forcée (token expiré ou invalide)');
     this.handleLogout();
   }
 

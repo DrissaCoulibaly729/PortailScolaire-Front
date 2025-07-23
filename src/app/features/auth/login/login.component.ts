@@ -49,10 +49,12 @@ export class LoginComponent implements OnInit {
       this.errorMessage = '';
 
       const credentials = this.loginForm.value;
+      console.log('Tentative de connexion avec:', credentials);
 
       this.authService.login(credentials).subscribe({
         next: (response) => {
           console.log('Connexion réussie:', response);
+          this.isLoading = false;
           
           // Rediriger vers le dashboard approprié selon le rôle
           this.authService.redirectToUserDashboard();
@@ -129,11 +131,12 @@ export class LoginComponent implements OnInit {
 
   /**
    * Démonstration - remplir avec des données de test
+   * ⚠️ Utilisez les vraies données de votre API
    */
   fillTestData(): void {
     this.loginForm.patchValue({
-      login: 'admin@test.com',
-      mot_de_passe: 'password123'
+      login: 'admin@ecole.com',
+      mot_de_passe: 'password123' // ⚠️ Remplacez par le vrai mot de passe de votre API
     });
   }
 }

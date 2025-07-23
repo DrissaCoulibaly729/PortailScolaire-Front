@@ -1,12 +1,24 @@
+// ===== src/app/shared/models/auth.model.ts (MISE À JOUR) =====
 export interface LoginRequest {
   login: string;
   mot_de_passe: string;
 }
 
+// Nouvelle interface qui correspond à votre API
+export interface LoginApiResponse {
+  message: string;
+  statut: 'succes' | 'erreur';
+  utilisateur: User;
+  token: string;
+  type_token: string;
+}
+
+// Interface pour usage interne (après transformation)
 export interface LoginResponse {
   token: string;
   user: User;
-  expires_at: string;
+  expires_at?: string;
+  message?: string;
 }
 
 export interface ChangePasswordRequest {
@@ -25,6 +37,7 @@ export interface User {
   adresse?: string;
   role: 'administrateur' | 'enseignant' | 'eleve';
   actif: boolean;
-  created_at: string;
-  updated_at: string;
+  identifiant_genere?: string;
+  created_at?: string;
+  updated_at?: string;
 }

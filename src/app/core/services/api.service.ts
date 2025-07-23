@@ -1,10 +1,15 @@
-// ===== src/app/core/services/api.service.ts (VERSION COMPATIBLE ANGULAR 17) =====
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { APP_CONSTANTS } from '../constants/app-constants';
 import { ApiResponse } from '../../shared/models/api-response.model';
+
+interface RequestOptions {
+  headers?: HttpHeaders | { [header: string]: string | string[] };
+  params?: HttpParams | { [param: string]: string | string[] };
+  skipApiResponseWrapper?: boolean; // Nouvelle option pour skiper le wrapper ApiResponse
+}
 
 @Injectable({
   providedIn: 'root'
@@ -17,10 +22,15 @@ export class ApiService {
   /**
    * Effectue une requête GET
    */
-  get<T>(endpoint: string, options?: {
-    headers?: HttpHeaders | { [header: string]: string | string[] };
-    params?: HttpParams | { [param: string]: string | string[] };
-  }): Observable<T> {
+  get<T>(endpoint: string, options?: RequestOptions): Observable<T> {
+    if (options?.skipApiResponseWrapper) {
+      // Retourner directement la réponse sans wrapper
+      return this.http.get<T>(`${this.baseUrl}${endpoint}`, options)
+        .pipe(
+          catchError(error => this.handleError(error))
+        );
+    }
+
     return this.http.get<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, options)
       .pipe(
         map((response: ApiResponse<T>) => this.extractData<T>(response)),
@@ -31,10 +41,15 @@ export class ApiService {
   /**
    * Effectue une requête POST
    */
-  post<T>(endpoint: string, body: any, options?: {
-    headers?: HttpHeaders | { [header: string]: string | string[] };
-    params?: HttpParams | { [param: string]: string | string[] };
-  }): Observable<T> {
+  post<T>(endpoint: string, body: any, options?: RequestOptions): Observable<T> {
+    if (options?.skipApiResponseWrapper) {
+      // Retourner directement la réponse sans wrapper
+      return this.http.post<T>(`${this.baseUrl}${endpoint}`, body, options)
+        .pipe(
+          catchError(error => this.handleError(error))
+        );
+    }
+
     return this.http.post<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, options)
       .pipe(
         map((response: ApiResponse<T>) => this.extractData<T>(response)),
@@ -45,10 +60,14 @@ export class ApiService {
   /**
    * Effectue une requête PUT
    */
-  put<T>(endpoint: string, body: any, options?: {
-    headers?: HttpHeaders | { [header: string]: string | string[] };
-    params?: HttpParams | { [param: string]: string | string[] };
-  }): Observable<T> {
+  put<T>(endpoint: string, body: any, options?: RequestOptions): Observable<T> {
+    if (options?.skipApiResponseWrapper) {
+      return this.http.put<T>(`${this.baseUrl}${endpoint}`, body, options)
+        .pipe(
+          catchError(error => this.handleError(error))
+        );
+    }
+
     return this.http.put<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, options)
       .pipe(
         map((response: ApiResponse<T>) => this.extractData<T>(response)),
@@ -59,10 +78,14 @@ export class ApiService {
   /**
    * Effectue une requête PATCH
    */
-  patch<T>(endpoint: string, body: any, options?: {
-    headers?: HttpHeaders | { [header: string]: string | string[] };
-    params?: HttpParams | { [param: string]: string | string[] };
-  }): Observable<T> {
+  patch<T>(endpoint: string, body: any, options?: RequestOptions): Observable<T> {
+    if (options?.skipApiResponseWrapper) {
+      return this.http.patch<T>(`${this.baseUrl}${endpoint}`, body, options)
+        .pipe(
+          catchError(error => this.handleError(error))
+        );
+    }
+
     return this.http.patch<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, options)
       .pipe(
         map((response: ApiResponse<T>) => this.extractData<T>(response)),
@@ -73,10 +96,14 @@ export class ApiService {
   /**
    * Effectue une requête DELETE
    */
-  delete<T>(endpoint: string, options?: {
-    headers?: HttpHeaders | { [header: string]: string | string[] };
-    params?: HttpParams | { [param: string]: string | string[] };
-  }): Observable<T> {
+  delete<T>(endpoint: string, options?: RequestOptions): Observable<T> {
+    if (options?.skipApiResponseWrapper) {
+      return this.http.delete<T>(`${this.baseUrl}${endpoint}`, options)
+        .pipe(
+          catchError(error => this.handleError(error))
+        );
+    }
+
     return this.http.delete<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, options)
       .pipe(
         map((response: ApiResponse<T>) => this.extractData<T>(response)),
@@ -87,7 +114,7 @@ export class ApiService {
   /**
    * Upload de fichier
    */
-  upload<T>(endpoint: string, file: File, additionalData?: any): Observable<T> {
+  upload<T>(endpoint: string, file: File, additionalData?: any, options?: RequestOptions): Observable<T> {
     const formData = new FormData();
     formData.append('file', file);
     
@@ -97,7 +124,14 @@ export class ApiService {
       });
     }
 
-    return this.http.post<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, formData)
+    if (options?.skipApiResponseWrapper) {
+      return this.http.post<T>(`${this.baseUrl}${endpoint}`, formData, options)
+        .pipe(
+          catchError(error => this.handleError(error))
+        );
+    }
+
+    return this.http.post<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, formData, options)
       .pipe(
         map((response: ApiResponse<T>) => this.extractData<T>(response)),
         catchError(error => this.handleError(error))
@@ -138,7 +172,7 @@ export class ApiService {
   }
 
   /**
-   * Extraire les données de la réponse API
+   * Extraire les données de la réponse API (pour le format ApiResponse)
    */
   private extractData<T>(response: ApiResponse<T>): T {
     if (response.statut === 'erreur') {

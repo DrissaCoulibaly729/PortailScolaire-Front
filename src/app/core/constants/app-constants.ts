@@ -1,3 +1,5 @@
+import { environment } from '../../../environments/environment';
+
 export const APP_CONSTANTS = {
   APP_NAME: 'Portail Administratif Scolaire',
   VERSION: '1.0.0',
@@ -73,10 +75,10 @@ export const APP_CONSTANTS = {
     EXPIRATION_TIME: 3600000 // 1 heure en millisecondes
   },
 
-  // API Configuration
+  // API Configuration - Utiliser l'URL de l'environnement
   API: {
+    BASE_URL: environment.apiUrl, // Prend l'URL de l'environnement
     TIMEOUT: 30000, // 30 secondes
-    RETRY_ATTEMPTS: 3,
-    BASE_URL: 'http://localhost:8000/api' // À modifier selon votre config
+    RETRY_ATTEMPTS: 3
   }
 } as const;
