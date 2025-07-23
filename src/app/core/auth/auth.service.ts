@@ -268,7 +268,9 @@ export class AuthService {
       });
     } else {
       // Token invalide ou expiré
-      this.handleLogout();
+      if (token) {
+        this.handleLogout();
+      }
     }
   }
 

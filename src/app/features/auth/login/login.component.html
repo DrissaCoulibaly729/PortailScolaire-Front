@@ -1,1 +1,157 @@
-<p>login works!</p>
+<!-- ===== src/app/features/auth/login/login.component.html ===== -->
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    
+    <!-- Header -->
+    <div class="text-center">
+      <div class="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+        <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+        </svg>
+      </div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">
+        🏫 Portail Scolaire
+      </h1>
+      <p class="text-gray-600">
+        Connectez-vous à votre espace personnel
+      </p>
+    </div>
+
+    <!-- Formulaire de connexion -->
+    <div class="bg-white rounded-xl shadow-lg p-8 space-y-6">
+      
+      <!-- Messages d'erreur -->
+      <div *ngIf="errorMessage" 
+           class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
+        <svg class="h-5 w-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+        </svg>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        
+        <!-- Champ Email/Identifiant -->
+        <div class="space-y-2">
+          <label for="login" class="block text-sm font-medium text-gray-700">
+            Email ou Identifiant
+          </label>
+          <div class="relative">
+            <input
+              id="login"
+              type="email"
+              formControlName="login"
+              placeholder="admin@example.com"
+              class="input-field"
+              [class.border-red-500]="hasError('login')"
+              [class.border-green-500]="loginForm.get('login')?.valid && loginForm.get('login')?.touched">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
+              </svg>
+            </div>
+          </div>
+          <div *ngIf="hasError('login')" class="text-red-600 text-sm mt-1">
+            {{ getErrorMessage('login') }}
+          </div>
+        </div>
+
+        <!-- Champ Mot de passe -->
+        <div class="space-y-2">
+          <label for="mot_de_passe" class="block text-sm font-medium text-gray-700">
+            Mot de passe
+          </label>
+          <div class="relative">
+            <input
+              id="mot_de_passe"
+              type="password"
+              formControlName="mot_de_passe"
+              placeholder="••••••••"
+              class="input-field"
+              [class.border-red-500]="hasError('mot_de_passe')"
+              [class.border-green-500]="loginForm.get('mot_de_passe')?.valid && loginForm.get('mot_de_passe')?.touched">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              </svg>
+            </div>
+          </div>
+          <div *ngIf="hasError('mot_de_passe')" class="text-red-600 text-sm mt-1">
+            {{ getErrorMessage('mot_de_passe') }}
+          </div>
+        </div>
+
+        <!-- Bouton de connexion -->
+        <div class="pt-4">
+          <button
+            type="submit"
+            [disabled]="isLoading"
+            class="w-full btn-primary relative"
+            [class.opacity-50]="isLoading"
+            [class.cursor-not-allowed]="isLoading">
+            
+            <!-- Spinner de chargement -->
+            <svg *ngIf="isLoading" 
+                 class="animate-spin -ml-1 mr-3 h-5 w-5 text-white absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2" 
+                 fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            
+            <span [class.invisible]="isLoading">
+              Se connecter
+            </span>
+          </button>
+        </div>
+
+      </form>
+
+      <!-- Liens utiles -->
+      <div class="text-center space-y-2">
+        <a href="#" class="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+          Mot de passe oublié ?
+        </a>
+      </div>
+
+      <!-- Bouton de test (à supprimer en production) -->
+      <div class="border-t pt-4" *ngIf="true"> <!-- Changez à false en production -->
+        <button 
+          type="button"
+          (click)="fillTestData()"
+          class="w-full text-sm text-gray-600 hover:text-gray-800 py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition duration-200">
+          🧪 Remplir avec des données de test
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Informations de connexion par rôle -->
+    <div class="bg-white rounded-xl shadow-sm p-6 space-y-4">
+      <h3 class="text-lg font-semibold text-gray-800 text-center">
+        Types de comptes disponibles
+      </h3>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+        <div class="p-3 bg-blue-50 rounded-lg">
+          <div class="text-blue-600 font-semibold">👨‍💼 Administrateur</div>
+          <div class="text-xs text-gray-600">Gestion complète</div>
+        </div>
+        <div class="p-3 bg-green-50 rounded-lg">
+          <div class="text-green-600 font-semibold">👨‍🏫 Enseignant</div>
+          <div class="text-xs text-gray-600">Saisie des notes</div>
+        </div>
+        <div class="p-3 bg-purple-50 rounded-lg">
+          <div class="text-purple-600 font-semibold">👨‍🎓 Élève/Parent</div>
+          <div class="text-xs text-gray-600">Consultation</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center text-sm text-gray-500">
+      <p>© 2024 Portail Administratif Scolaire</p>
+      <p>Version 1.0.0 - Développé avec Angular 17</p>
+    </div>
+
+  </div>
+</div>

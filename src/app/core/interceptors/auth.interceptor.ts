@@ -2,7 +2,6 @@ import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
-import { APP_CONSTANTS } from '../constants/app-constants';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
@@ -31,10 +30,17 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  // Ajouter des headers par défaut
+  // Ajouter des headers par défaut pour les requêtes JSON
+  if (!authReq.headers.has('Content-Type') && 
+      !(authReq.body instanceof FormData)) {
+    authReq = authReq.clone({
+      headers: authReq.headers.set('Content-Type', 'application/json')
+    });
+  }
+
+  // Ajouter headers standards
   authReq = authReq.clone({
     headers: authReq.headers
-      .set('Content-Type', 'application/json')
       .set('Accept', 'application/json')
       .set('X-Requested-With', 'XMLHttpRequest')
   });
