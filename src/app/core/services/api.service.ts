@@ -1,17 +1,10 @@
-// ===== src/app/core/services/api.service.ts (VERSION CORRIGÉE) =====
+// ===== src/app/core/services/api.service.ts (VERSION COMPATIBLE ANGULAR 17) =====
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { APP_CONSTANTS } from '../constants/app-constants';
 import { ApiResponse } from '../../shared/models/api-response.model';
-
-export interface RequestOptions {
-  headers?: HttpHeaders | { [header: string]: string | string[] };
-  params?: HttpParams | { [param: string]: string | string[] };
-  observe?: 'body' | 'response';
-  responseType?: 'json' | 'blob' | 'text';
-}
 
 @Injectable({
   providedIn: 'root'
@@ -24,7 +17,10 @@ export class ApiService {
   /**
    * Effectue une requête GET
    */
-  get<T>(endpoint: string, options?: RequestOptions): Observable<T> {
+  get<T>(endpoint: string, options?: {
+    headers?: HttpHeaders | { [header: string]: string | string[] };
+    params?: HttpParams | { [param: string]: string | string[] };
+  }): Observable<T> {
     return this.http.get<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, options)
       .pipe(
         map((response: ApiResponse<T>) => this.extractData<T>(response)),
@@ -35,7 +31,10 @@ export class ApiService {
   /**
    * Effectue une requête POST
    */
-  post<T>(endpoint: string, body: any, options?: RequestOptions): Observable<T> {
+  post<T>(endpoint: string, body: any, options?: {
+    headers?: HttpHeaders | { [header: string]: string | string[] };
+    params?: HttpParams | { [param: string]: string | string[] };
+  }): Observable<T> {
     return this.http.post<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, options)
       .pipe(
         map((response: ApiResponse<T>) => this.extractData<T>(response)),
@@ -46,7 +45,10 @@ export class ApiService {
   /**
    * Effectue une requête PUT
    */
-  put<T>(endpoint: string, body: any, options?: RequestOptions): Observable<T> {
+  put<T>(endpoint: string, body: any, options?: {
+    headers?: HttpHeaders | { [header: string]: string | string[] };
+    params?: HttpParams | { [param: string]: string | string[] };
+  }): Observable<T> {
     return this.http.put<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, options)
       .pipe(
         map((response: ApiResponse<T>) => this.extractData<T>(response)),
@@ -57,7 +59,10 @@ export class ApiService {
   /**
    * Effectue une requête PATCH
    */
-  patch<T>(endpoint: string, body: any, options?: RequestOptions): Observable<T> {
+  patch<T>(endpoint: string, body: any, options?: {
+    headers?: HttpHeaders | { [header: string]: string | string[] };
+    params?: HttpParams | { [param: string]: string | string[] };
+  }): Observable<T> {
     return this.http.patch<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, options)
       .pipe(
         map((response: ApiResponse<T>) => this.extractData<T>(response)),
@@ -68,7 +73,10 @@ export class ApiService {
   /**
    * Effectue une requête DELETE
    */
-  delete<T>(endpoint: string, options?: RequestOptions): Observable<T> {
+  delete<T>(endpoint: string, options?: {
+    headers?: HttpHeaders | { [header: string]: string | string[] };
+    params?: HttpParams | { [param: string]: string | string[] };
+  }): Observable<T> {
     return this.http.delete<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, options)
       .pipe(
         map((response: ApiResponse<T>) => this.extractData<T>(response)),
@@ -99,7 +107,7 @@ export class ApiService {
   /**
    * Download de fichier
    */
-  download(endpoint: string, filename?: string): Observable<Blob> {
+  download(endpoint: string): Observable<Blob> {
     return this.http.get(`${this.baseUrl}${endpoint}`, {
       responseType: 'blob'
     }).pipe(
@@ -130,7 +138,7 @@ export class ApiService {
   }
 
   /**
-   * Extraire les données de la réponse API (VERSION TYPÉE)
+   * Extraire les données de la réponse API
    */
   private extractData<T>(response: ApiResponse<T>): T {
     if (response.statut === 'erreur') {
