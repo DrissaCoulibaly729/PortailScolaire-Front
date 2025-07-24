@@ -9,6 +9,7 @@ interface RequestOptions {
   headers?: HttpHeaders | { [header: string]: string | string[] };
   params?: HttpParams | { [param: string]: string | string[] };
   skipApiResponseWrapper?: boolean; // Nouvelle option pour skiper le wrapper ApiResponse
+  skipErrorHandling?: boolean; // Nouvelle option pour skiper la gestion des erreurs
 }
 
 @Injectable({

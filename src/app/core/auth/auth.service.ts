@@ -1,4 +1,4 @@
-
+// ===== src/app/core/auth/auth.service.ts (CORRECTION PERSISTANCE) =====
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
@@ -22,6 +22,7 @@ import {
 export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private isInitialized = false;
 
   public currentUser$ = this.currentUserSubject.asObservable();
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
@@ -30,8 +31,64 @@ export class AuthService {
     private apiService: ApiService,
     private router: Router
   ) {
-    // Vérifier si l'utilisateur est déjà connecté au démarrage
-    this.checkAuthenticationStatus();
+    // 🔧 CORRECTION: Initialisation asynchrone pour éviter les problèmes
+    this.initializeAuth();
+  }
+
+  /**
+   * 🔧 NOUVELLE MÉTHODE: Initialisation asynchrone de l'authentification
+   */
+  private async initializeAuth(): Promise<void> {
+    console.log('🔐 Initialisation de l\'authentification...');
+    
+    try {
+      const token = this.getToken();
+      
+      if (!token || !this.isValidSanctumToken(token)) {
+        console.log('❌ Aucun token valide trouvé');
+        this.setNotAuthenticated();
+        this.isInitialized = true;
+        return;
+      }
+
+      console.log('🔑 Token trouvé, vérification du profil...');
+      
+      // Récupérer le profil utilisateur depuis l'API
+      this.getProfile().subscribe({
+        next: (user) => {
+          console.log('✅ Utilisateur reconnecté automatiquement:', user);
+          this.setAuthenticated(user);
+          this.isInitialized = true;
+        },
+        error: (error) => {
+          console.error('❌ Erreur lors de la récupération du profil:', error);
+          this.setNotAuthenticated();
+          this.isInitialized = true;
+        }
+      });
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'initialisation:', error);
+      this.setNotAuthenticated();
+      this.isInitialized = true;
+    }
+  }
+
+  /**
+   * 🔧 NOUVELLE MÉTHODE: Attendre que l'initialisation soit terminée
+   */
+  async waitForInitialization(): Promise<void> {
+    if (this.isInitialized) return;
+    
+    return new Promise((resolve) => {
+      const checkInit = () => {
+        if (this.isInitialized) {
+          resolve();
+        } else {
+          setTimeout(checkInit, 50);
+        }
+      };
+      checkInit();
+    });
   }
 
   /**
@@ -80,15 +137,33 @@ export class AuthService {
   }
 
   /**
-   * Récupérer le profil utilisateur
+   * 🔧 CORRECTION: Récupérer le profil utilisateur avec gestion d'erreur
    */
   getProfile(): Observable<User> {
-    return this.apiService.get<User>(API_ENDPOINTS.AUTH.PROFILE)
-      .pipe(
-        tap(user => {
-          this.currentUserSubject.next(user);
-        })
-      );
+    return this.apiService.get<any>(API_ENDPOINTS.AUTH.PROFILE, { 
+      // Éviter l'intercepteur pour cette requête spécifique
+      skipErrorHandling: true 
+    }).pipe(
+      map((response: any) => {
+        // Adaptez selon le format de votre API pour le profil
+        if (response && response.utilisateur) {
+          return response.utilisateur as User;
+        }
+        if (response && response.data) {
+          return response.data as User;
+        }
+        return response as User;
+      }),
+      tap(user => {
+        console.log('👤 Profil utilisateur récupéré:', user);
+        this.currentUserSubject.next(user);
+      }),
+      catchError(error => {
+        console.error('❌ Erreur lors de la récupération du profil:', error);
+        // Ne pas appeler setNotAuthenticated ici pour éviter les boucles
+        return throwError(() => error);
+      })
+    );
   }
 
   /**
@@ -119,15 +194,14 @@ export class AuthService {
   }
 
   /**
-   * Vérifier si l'utilisateur est authentifié
-   * Pour Laravel Sanctum, on vérifie simplement la présence du token
+   * 🔧 CORRECTION: Vérifier si l'utilisateur est authentifié
    */
   isAuthenticated(): boolean {
     const token = this.getToken();
     const user = this.getCurrentUser();
     
-    // Pour Sanctum, on considère l'utilisateur authentifié s'il a un token et un utilisateur en mémoire
-    return !!(token && user);
+    // Pour Sanctum, on considère l'utilisateur authentifié s'il a un token valide et un utilisateur en mémoire
+    return !!(token && this.isValidSanctumToken(token) && user);
   }
 
   /**
@@ -162,20 +236,17 @@ export class AuthService {
 
   /**
    * Vérifier si le token est expiré
-   * Pour Laravel Sanctum, on fait un appel API pour vérifier
    */
   isTokenExpired(token?: string): boolean {
     const tokenToCheck = token || this.getToken();
     if (!tokenToCheck) return true;
     
     // Pour Laravel Sanctum, on ne peut pas décoder le token localement
-    // La vérification se fait via l'API
-    return false; // On assume que le token est valide, la vérification se fait via checkAuthenticationStatus
+    return false;
   }
 
   /**
-   * Valider le token Sanctum
-   * Les tokens Sanctum n'ont pas de format JWT standard
+   * 🔧 CORRECTION: Valider le token Sanctum
    */
   private isValidSanctumToken(token: string): boolean {
     if (!token || typeof token !== 'string') {
@@ -184,25 +255,27 @@ export class AuthService {
     
     // Format typique de Laravel Sanctum: nombre|chaîne_aléatoire
     const sanctumPattern = /^\d+\|[a-zA-Z0-9]+$/;
-    return sanctumPattern.test(token);
+    const isValid = sanctumPattern.test(token);
+    
+    console.log('🔍 Validation token:', { 
+      token: token.substring(0, 20) + '...', 
+      isValid 
+    });
+    
+    return isValid;
   }
 
   /**
    * Obtenir la date d'expiration du token
-   * Non applicable pour Laravel Sanctum - retourne null
    */
   getTokenExpirationDate(): Date | null {
-    // Les tokens Sanctum n'ont pas d'expiration côté client
-    // L'expiration est gérée côté serveur
     return null;
   }
 
   /**
    * Décoder le token
-   * Non applicable pour Laravel Sanctum - retourne les infos utilisateur
    */
   decodeToken(): any {
-    // Pour Sanctum, on retourne les informations utilisateur stockées
     return this.getCurrentUser();
   }
 
@@ -232,6 +305,34 @@ export class AuthService {
   }
 
   /**
+   * 🔧 NOUVELLE MÉTHODE: Définir l'état authentifié
+   */
+  private setAuthenticated(user: User): void {
+    this.currentUserSubject.next(user);
+    this.isAuthenticatedSubject.next(true);
+    console.log('✅ Utilisateur authentifié:', user.email);
+  }
+
+  /**
+   * 🔧 NOUVELLE MÉTHODE: Définir l'état non authentifié
+   */
+  private setNotAuthenticated(): void {
+    this.currentUserSubject.next(null);
+    this.isAuthenticatedSubject.next(false);
+    this.clearTokens();
+    console.log('❌ Utilisateur non authentifié');
+  }
+
+  /**
+   * 🔧 NOUVELLE MÉTHODE: Nettoyer les tokens
+   */
+  private clearTokens(): void {
+    localStorage.removeItem(APP_CONSTANTS.JWT.TOKEN_KEY);
+    localStorage.removeItem(APP_CONSTANTS.JWT.REFRESH_TOKEN_KEY);
+    localStorage.removeItem('token_expires_at');
+  }
+
+  /**
    * Gérer le succès de la connexion
    */
   private handleLoginSuccess(response: LoginResponse): void {
@@ -245,64 +346,27 @@ export class AuthService {
     localStorage.setItem(APP_CONSTANTS.JWT.TOKEN_KEY, response.token);
     
     // Stocker les informations utilisateur
-    this.currentUserSubject.next(response.user);
-    this.isAuthenticatedSubject.next(true);
+    this.setAuthenticated(response.user);
     
-    console.log('Connexion réussie, token Sanctum stocké:', response.token);
-    console.log('Utilisateur connecté:', response.user);
+    console.log('✅ Connexion réussie, token Sanctum stocké');
   }
 
   /**
    * Gérer la déconnexion
    */
   private handleLogout(): void {
-    // Supprimer les données locales
-    localStorage.removeItem(APP_CONSTANTS.JWT.TOKEN_KEY);
-    localStorage.removeItem(APP_CONSTANTS.JWT.REFRESH_TOKEN_KEY);
-    localStorage.removeItem('token_expires_at');
-    
-    // Réinitialiser les sujets
-    this.currentUserSubject.next(null);
-    this.isAuthenticatedSubject.next(false);
-    
-    console.log('Déconnexion effectuée');
+    this.setNotAuthenticated();
+    console.log('🚪 Déconnexion effectuée');
     
     // Rediriger vers la page de connexion
     this.router.navigate(['/auth/login']);
   }
 
   /**
-   * Vérifier le statut d'authentification au démarrage
-   */
-  private checkAuthenticationStatus(): void {
-    const token = this.getToken();
-    
-    if (token && this.isValidSanctumToken(token)) {
-      // Token présent et valide, récupérer le profil utilisateur
-      this.getProfile().subscribe({
-        next: (user) => {
-          this.isAuthenticatedSubject.next(true);
-          console.log('Utilisateur reconnecté automatiquement:', user);
-        },
-        error: (error) => {
-          console.error('Erreur lors de la récupération du profil:', error);
-          this.handleLogout();
-        }
-      });
-    } else {
-      // Token invalide ou absent
-      if (token) {
-        console.log('Token invalide détecté, déconnexion...');
-        this.handleLogout();
-      }
-    }
-  }
-
-  /**
    * Forcer la déconnexion (utilisé par l'intercepteur en cas d'erreur 401)
    */
   forceLogout(): void {
-    console.log('Déconnexion forcée (token expiré ou invalide)');
+    console.log('🚨 Déconnexion forcée (token expiré ou invalide)');
     this.handleLogout();
   }
 
@@ -339,5 +403,14 @@ export class AuthService {
     if (!user) return 'Utilisateur';
     
     return `${user.prenom} ${user.nom}`;
+  }
+
+  /**
+   * 🔧 NOUVELLE MÉTHODE: Forcer la réinitialisation (pour debug)
+   */
+  debugReinitialize(): void {
+    console.log('🔧 Réinitialisation forcée de l\'authentification');
+    this.isInitialized = false;
+    this.initializeAuth();
   }
 }
