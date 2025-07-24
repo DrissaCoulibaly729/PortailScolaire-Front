@@ -1,0 +1,924 @@
+- Building...
+
+Application bundle generation failed. [12.232 seconds]
+
+X [ERROR] TS2724: '"./users/user-form/user-form.component"' has no exported member named 'UserFormComponent'. Did you mean 'ClasseFormComponent'? [plugin angular-compiler]
+
+    src/app/features/admin/admin-routing.module.ts:6:9:
+      6 │ import { UserFormComponent } from './users/user-form/user-form.comp...
+        ╵          ~~~~~~~~~~~~~~~~~
+
+  'ClasseFormComponent' is declared here.
+
+    src/app/features/admin/users/user-form/user-form.component.ts:261:13:
+      261 │ export class ClasseFormComponent implements OnInit {
+          ╵              ~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG1: Property 'value' does not exist on type '"6ème" | "5ème" | "4ème" | "3ème" | "2nde" | "1ère" | "Terminale"'. Did you mean 'valueOf'?
+  Property 'value' does not exist on type '"6ème"'. [plugin angular-compiler]
+
+    src/app/features/admin/classes/classe-list/classe-list.component.ts:130:78:
+      130 │ ...eauxScolaires" [value]="niveau.value">{{ niveau.label }}</option>
+          ╵                                   ~~~~~
+
+
+X [ERROR] NG1: Property 'value' does not exist on type '"6ème" | "5ème" | "4ème" | "3ème" | "2nde" | "1ère" | "Terminale"'. Did you mean 'valueOf'?
+  Property 'value' does not exist on type '"6ème"'. [plugin angular-compiler]
+
+    src/app/features/admin/classes/classe-list/classe-list.component.ts:130:78:
+      130 │ ...eauxScolaires" [value]="niveau.value">{{ niveau.label }}</option>
+          ╵                                   ~~~~~
+
+
+X [ERROR] NG9: Property 'label' does not exist on type '"6ème" | "5ème" | "4ème" | "3ème" | "2nde" | "1ère" | "Terminale"'.
+  Property 'label' does not exist on type '"6ème"'. [plugin angular-compiler]
+
+    src/app/features/admin/classes/classe-list/classe-list.component.ts:130:95:
+      130 │ ...eauxScolaires" [value]="niveau.value">{{ niveau.label }}</option>
+          ╵                                                    ~~~~~
+
+
+X [ERROR] NG9: Property 'active' does not exist on type 'Classe'. [plugin angular-compiler]
+
+    src/app/features/admin/classes/classe-list/classe-list.component.ts:206:57:
+      206 │                       'bg-red-100 text-red-800': !classe.active
+          ╵                                                          ~~~~~~
+
+
+X [ERROR] NG9: Property 'active' does not exist on type 'Classe'. [plugin angular-compiler]
+
+    src/app/features/admin/classes/classe-list/classe-list.component.ts:211:46:
+      211 │                         'bg-red-400': !classe.active
+          ╵                                               ~~~~~~
+
+
+X [ERROR] TS2339: Property 'total_eleves' does not exist on type 'ClasseStatistiques'. [plugin angular-compiler]
+
+    src/app/features/admin/classes/classe-list/classe-list.component.ts:519:33:
+      519 │         this.totalEleves = stats.total_eleves || 0;
+          ╵                                  ~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'moyenne_generale' does not exist on type 'ClasseStatistiques'. [plugin angular-compiler]
+
+    src/app/features/admin/classes/classe-list/classe-list.component.ts:521:37:
+      521 │         this.moyenneGenerale = stats.moyenne_generale || 0;
+          ╵                                      ~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG1: Object is possibly 'null'. [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-form/matiere-form.component.ts:191:70:
+      191 │ ...seignants && currentMatiere.enseignants.length > 0" class="mb-6">
+          ╵                                ~~~~~~~~~~~
+
+
+X [ERROR] NG2: Object is possibly 'undefined'. [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-form/matiere-form.component.ts:191:82:
+      191 │ ...seignants && currentMatiere.enseignants.length > 0" class="mb-6">
+          ╵                                            ~~~~~~
+
+
+X [ERROR] NG1: Object is possibly 'null'. [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-form/matiere-form.component.ts:194:62:
+      194 │ ...       <div *ngFor="let enseignant of currentMatiere.enseignants"
+          ╵                                                         ~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'active' does not exist on type 'Matiere'. [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-form/matiere-form.component.ts:400:21:
+      400 │       actif: matiere.active
+          ╵                      ~~~~~~
+
+
+X [ERROR] TS2345: Argument of type '{ enseignant_id: any; }' is not assignable to parameter of type 'number'. [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-form/matiere-form.component.ts:431:59:
+      431 │ ...eignant(this.matiereId, { enseignant_id: teacherId }).subscribe({
+          ╵                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'active' does not exist on type 'Matiere'. [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-list/matiere-list.component.ts:208:58:
+      208 │                       'bg-red-100 text-red-800': !matiere.active
+          ╵                                                           ~~~~~~
+
+
+X [ERROR] NG9: Property 'active' does not exist on type 'Matiere'. [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-list/matiere-list.component.ts:213:47:
+      213 │                         'bg-red-400': !matiere.active
+          ╵                                                ~~~~~~
+
+
+X [ERROR] NG9: Property 'nombre_notes' does not exist on type 'Matiere'. [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-list/matiere-list.component.ts:245:76:
+      245 │ ...nter justify-between" *ngIf="matiere.nombre_notes !== undefined">
+          ╵                                         ~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'nombre_notes' does not exist on type 'Matiere'. [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-list/matiere-list.component.ts:248:29:
+      248 │                   {{ matiere.nombre_notes || 0 }}
+          ╵                              ~~~~~~~~~~~~
+
+
+X [ERROR] TS2739: Type '{ id: number; nom: string; prenom: string; email: string; }' is missing the following properties from type 'Enseignant': identifiant_connexion, role, actif, created_at, updated_at [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-list/matiere-list.component.ts:568:10:
+      568 │           { id: 1, nom: 'Dupont', prenom: 'Jean', email: 'jean.du...
+          ╵           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2739: Type '{ id: number; nom: string; prenom: string; email: string; }' is missing the following properties from type 'Enseignant': identifiant_connexion, role, actif, created_at, updated_at [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-list/matiere-list.component.ts:569:10:
+      569 │           { id: 2, nom: 'Martin', prenom: 'Marie', email: 'marie....
+          ╵           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2739: Type '{ id: number; nom: string; prenom: string; email: string; }' is missing the following properties from type 'Enseignant': identifiant_connexion, role, actif, created_at, updated_at [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-list/matiere-list.component.ts:584:10:
+      584 │           { id: 3, nom: 'Durand', prenom: 'Sophie', email: 'sophi...
+          ╵           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2739: Type '{ id: number; nom: string; prenom: string; email: string; }' is missing the following properties from type 'Enseignant': identifiant_connexion, role, actif, created_at, updated_at [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-list/matiere-list.component.ts:599:10:
+      599 │           { id: 4, nom: 'Moreau', prenom: 'Pierre', email: 'pierr...
+          ╵           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2353: Object literal may only specify known properties, and 'nombre_notes' does not exist in type 'Matiere'. [plugin angular-compiler]
+
+    src/app/features/admin/matieres/matiere-list/matiere-list.component.ts:611:8:
+      611 │         nombre_notes: 45,
+          ╵         ~~~~~~~~~~~~
+
+
+X [ERROR] TS-992003: No suitable injection token for parameter 'notificationService' of class 'ClasseFormComponent'.
+  Consider using the @Inject decorator to specify an injection token. [plugin angular-compiler]
+
+    src/app/features/admin/users/user-form/user-form.component.ts:278:12:
+      278 │     private notificationService: NotificationService
+          ╵             ~~~~~~~~~~~~~~~~~~~
+
+  This type does not have a value, so it cannot be used as injection token.
+
+    src/app/features/admin/users/user-form/user-form.component.ts:278:33:
+      278 │     private notificationService: NotificationService
+          ╵                                  ~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'NotificationService'. [plugin angular-compiler]
+
+    src/app/features/admin/users/user-form/user-form.component.ts:278:33:
+      278 │     private notificationService: NotificationService
+          ╵                                  ~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'active' does not exist on type 'Classe'. [plugin angular-compiler]
+
+    src/app/features/admin/users/user-form/user-form.component.ts:355:20:
+      355 │       actif: classe.active
+          ╵                     ~~~~~~
+
+
+X [ERROR] TS2345: Argument of type '{ enseignant_id: any; }' is not assignable to parameter of type 'number'. [plugin angular-compiler]
+
+    src/app/features/admin/users/user-form/user-form.component.ts:366:57:
+      366 │ ...seignant(this.classeId, { enseignant_id: teacherId }).subscribe({
+          ╵                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2741: Property 'updated_at' is missing in type '{ id: number; nom: string; prenom: string; email: string; telephone: string; role: UserRole; actif: true; created_at: string; identifiant_genere: string; }' but required in type 'User'. [plugin angular-compiler]
+
+    src/app/features/admin/users/user-list/user-list.component.ts:504:6:
+      504 │       {
+          ╵       ^
+
+  'updated_at' is declared here.
+
+    src/app/shared/models/user.model.ts:19:2:
+      19 │   updated_at: string;
+         ╵   ~~~~~~~~~~
+
+
+X [ERROR] TS2741: Property 'updated_at' is missing in type '{ id: number; nom: string; prenom: string; email: string; telephone: string; role: UserRole; actif: true; created_at: string; identifiant_genere: string; }' but required in type 'User'. [plugin angular-compiler]
+
+    src/app/features/admin/users/user-list/user-list.component.ts:515:6:
+      515 │       {
+          ╵       ^
+
+  'updated_at' is declared here.
+
+    src/app/shared/models/user.model.ts:19:2:
+      19 │   updated_at: string;
+         ╵   ~~~~~~~~~~
+
+
+X [ERROR] TS2741: Property 'updated_at' is missing in type '{ id: number; nom: string; prenom: string; email: string; role: UserRole; actif: false; created_at: string; identifiant_genere: string; }' but required in type 'User'. [plugin angular-compiler]
+
+    src/app/features/admin/users/user-list/user-list.component.ts:526:6:
+      526 │       {
+          ╵       ^
+
+  'updated_at' is declared here.
+
+    src/app/shared/models/user.model.ts:19:2:
+      19 │   updated_at: string;
+         ╵   ~~~~~~~~~~
+
+
+X [ERROR] NG1: Object is possibly 'null'. [plugin angular-compiler]
+
+    src/app/features/auth/profile/profile.component.ts:50:37:
+      50 │                   ID: {{ currentUser.identifiant_genere }}
+         ╵                                      ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG1: Object is possibly 'null'. [plugin angular-compiler]
+
+    src/app/features/auth/profile/profile.component.ts:89:70:
+      89 │ ...lass="text-sm text-gray-900 mt-1">{{ currentUser.telephone }}</dd>
+         ╵                                                     ~~~~~~~~~
+
+
+X [ERROR] NG1: Object is possibly 'null'. [plugin angular-compiler]
+
+    src/app/features/auth/profile/profile.component.ts:93:70:
+      93 │ ...900 mt-1">{{ currentUser.date_naissance | date:'dd/MM/yyyy' }}<...
+         ╵                             ~~~~~~~~~~~~~~
+
+
+X [ERROR] NG1: Object is possibly 'null'. [plugin angular-compiler]
+
+    src/app/features/auth/profile/profile.component.ts:97:70:
+      97 │ ... class="text-sm text-gray-900 mt-1">{{ currentUser.adresse }}</dd>
+         ╵                                                       ~~~~~~~
+
+
+X [ERROR] NG1: Object is possibly 'null'. [plugin angular-compiler]
+
+    src/app/features/auth/profile/profile.component.ts:101:70:
+      101 │ ...y-900 mt-1">{{ currentUser.created_at | date:'dd/MM/yyyy' }}</dd>
+          ╵                               ~~~~~~~~~~
+
+
+X [ERROR] NG1: Object is possibly 'null'. [plugin angular-compiler]
+
+    src/app/features/auth/profile/profile.component.ts:105:70:
+      105 │ ...-900 mt-1">{{ currentUser.updated_at | date:'dd/MM/yyyy à HH:...
+          ╵                              ~~~~~~~~~~
+
+
+X [ERROR] TS-992003: No suitable injection token for parameter 'noteService' of class 'EleveDashboardComponent'.
+  Consider using the @Inject decorator to specify an injection token. [plugin angular-compiler]
+
+    src/app/features/eleve-parent/dashboard/dashboard.component.ts:262:12:
+      262 │     private noteService: NoteService
+          ╵             ~~~~~~~~~~~
+
+  This type does not have a value, so it cannot be used as injection token.
+
+    src/app/features/eleve-parent/dashboard/dashboard.component.ts:262:25:
+      262 │     private noteService: NoteService
+          ╵                          ~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'NoteService'. [plugin angular-compiler]
+
+    src/app/features/eleve-parent/dashboard/dashboard.component.ts:262:25:
+      262 │     private noteService: NoteService
+          ╵                          ~~~~~~~~~~~
+
+
+X [ERROR] TS2724: '"./dashboard/dashboard.component"' has no exported member named 'DashboardComponent'. Did you mean 'EleveDashboardComponent'? [plugin angular-compiler]
+
+    src/app/features/eleve-parent/eleve-parent-routing.module.ts:4:9:
+      4 │ import { DashboardComponent } from './dashboard/dashboard.component';
+        ╵          ~~~~~~~~~~~~~~~~~~
+
+  'EleveDashboardComponent' is declared here.
+
+    src/app/features/eleve-parent/dashboard/dashboard.component.ts:249:13:
+      249 │ export class EleveDashboardComponent implements OnInit {
+          ╵              ~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2305: Module '"./dashboard/dashboard.component"' has no exported member 'DashboardComponent'. [plugin angular-compiler]
+
+    src/app/features/enseignant/enseignant-routing.module.ts:4:9:
+      4 │ import { DashboardComponent } from './dashboard/dashboard.component';
+        ╵          ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'createNotesEnLot' does not exist on type 'NoteService'. [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-form/note-form.component.ts:444:21:
+      444 │     this.noteService.createNotesEnLot(notes).subscribe({
+          ╵                      ~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS7006: Parameter 'error' implicitly has an 'any' type. [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-form/note-form.component.ts:451:14:
+      451 │       error: (error) => {
+          ╵               ~~~~~
+
+
+X [ERROR] NG2: Object is possibly 'undefined'. [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-list/note-list.component.ts:243:38:
+      243 │                         {{ note.eleve.numero_etudiant }}
+          ╵                                       ~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG1: Property 'type_evaluation' does not exist on type 'Note'. Did you mean 'date_evaluation'? [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-list/note-list.component.ts:258:71:
+      258 │ ...ypeEvaluationColor(note.type_evaluation) + '-100 text-' + getT...
+          ╵                            ~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG1: Property 'type_evaluation' does not exist on type 'Note'. Did you mean 'date_evaluation'? [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-list/note-list.component.ts:258:133:
+      258 │ ... text-' + getTypeEvaluationColor(note.type_evaluation) + '-800'">
+          ╵                                          ~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG1: Property 'type_evaluation' does not exist on type 'Note'. Did you mean 'date_evaluation'? [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-list/note-list.component.ts:259:51:
+      259 │ ...               {{ getTypeEvaluationLabel(note.type_evaluation) }}
+          ╵                                                  ~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'coefficient' does not exist on type 'Note'. [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-list/note-list.component.ts:285:26:
+      285 │                   {{ note.coefficient || 1 }}
+          ╵                           ~~~~~~~~~~~
+
+
+X [ERROR] TS2740: Type '{ id: number; nom: string; prenom: string; numero_etudiant: string; }' is missing the following properties from type 'Eleve': classe_id, nom_parent, prenom_parent, telephone_parent, and 6 more. [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-list/note-list.component.ts:492:10:
+      492 │           eleve: { id: 1, nom: 'Dupont', prenom: 'Pierre', numero...
+          ╵           ~~~~~
+
+  The expected type comes from property 'eleve' which is declared here on type 'Note'
+
+    src/app/shared/models/note.model.ts:16:2:
+      16 │   eleve?: Eleve;
+         ╵   ~~~~~
+
+
+X [ERROR] TS2739: Type '{ id: number; nom: string; code: string; coefficient: number; }' is missing the following properties from type 'Matiere': actif, created_at, updated_at [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-list/note-list.component.ts:493:10:
+      493 │           matiere: { id: 1, nom: 'Mathématiques', code: 'MATH', ...
+          ╵           ~~~~~~~
+
+  The expected type comes from property 'matiere' which is declared here on type 'Note'
+
+    src/app/shared/models/note.model.ts:17:2:
+      17 │   matiere?: Matiere;
+         ╵   ~~~~~~~
+
+
+X [ERROR] TS2740: Type '{ id: number; nom: string; prenom: string; numero_etudiant: string; }' is missing the following properties from type 'Eleve': classe_id, nom_parent, prenom_parent, telephone_parent, and 6 more. [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-list/note-list.component.ts:505:10:
+      505 │           eleve: { id: 2, nom: 'Martin', prenom: 'Sophie', numero...
+          ╵           ~~~~~
+
+  The expected type comes from property 'eleve' which is declared here on type 'Note'
+
+    src/app/shared/models/note.model.ts:16:2:
+      16 │   eleve?: Eleve;
+         ╵   ~~~~~
+
+
+X [ERROR] TS2739: Type '{ id: number; nom: string; code: string; coefficient: number; }' is missing the following properties from type 'Matiere': actif, created_at, updated_at [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-list/note-list.component.ts:506:10:
+      506 │           matiere: { id: 1, nom: 'Mathématiques', code: 'MATH', ...
+          ╵           ~~~~~~~
+
+  The expected type comes from property 'matiere' which is declared here on type 'Note'
+
+    src/app/shared/models/note.model.ts:17:2:
+      17 │   matiere?: Matiere;
+         ╵   ~~~~~~~
+
+
+X [ERROR] TS2740: Type '{ id: number; nom: string; prenom: string; numero_etudiant: string; }' is missing the following properties from type 'Eleve': classe_id, nom_parent, prenom_parent, telephone_parent, and 6 more. [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-list/note-list.component.ts:519:10:
+      519 │           eleve: { id: 3, nom: 'Durand', prenom: 'Lucas', numero_...
+          ╵           ~~~~~
+
+  The expected type comes from property 'eleve' which is declared here on type 'Note'
+
+    src/app/shared/models/note.model.ts:16:2:
+      16 │   eleve?: Eleve;
+         ╵   ~~~~~
+
+
+X [ERROR] TS2739: Type '{ id: number; nom: string; code: string; coefficient: number; }' is missing the following properties from type 'Matiere': actif, created_at, updated_at [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-list/note-list.component.ts:520:10:
+      520 │           matiere: { id: 2, nom: 'Français', code: 'FR', coeffic...
+          ╵           ~~~~~~~
+
+  The expected type comes from property 'matiere' which is declared here on type 'Note'
+
+    src/app/shared/models/note.model.ts:17:2:
+      17 │   matiere?: Matiere;
+         ╵   ~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'Enseignant'. [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-list/note-list.component.ts:621:16:
+      621 │   enseignants?: Enseignant[];
+          ╵                 ~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'Eleve'. [plugin angular-compiler]
+
+    src/app/features/enseignant/notes/note-list/note-list.component.ts:622:11:
+      622 │   eleves?: Eleve[];
+          ╵            ~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'Periode'. [plugin angular-compiler]
+
+    src/app/shared/models/bulletin.model.ts:30:12:
+      30 │   periode?: Periode;
+         ╵             ~~~~~~~
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'getMentionFromNote'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:126:16:
+      126 │ export function getMentionFromNote(note: number): Mention {
+          ╵                 ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2552: Cannot find name 'MENTIONS'. Did you mean 'mention'? [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:127:24:
+      127 │   for (const mention of MENTIONS) {
+          ╵                         ~~~~~~~~
+
+  'mention' is declared here.
+
+    src/app/shared/models/dashboard.model.ts:127:13:
+      127 │   for (const mention of MENTIONS) {
+          ╵              ~~~~~~~
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'getMentionLabel'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:135:16:
+      135 │ export function getMentionLabel(mention: Mention): string {
+          ╵                 ~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2552: Cannot find name 'MENTIONS'. Did you mean 'mention'? [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:136:21:
+      136 │   const mentionObj = MENTIONS.find(m => m.value === mention);
+          ╵                      ~~~~~~~~
+
+  'mention' is declared here.
+
+    src/app/shared/models/dashboard.model.ts:135:32:
+      135 │ export function getMentionLabel(mention: Mention): string {
+          ╵                                 ~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS7006: Parameter 'm' implicitly has an 'any' type. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:136:35:
+      136 │   const mentionObj = MENTIONS.find(m => m.value === mention);
+          ╵                                    ^
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'getMentionColor'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:140:16:
+      140 │ export function getMentionColor(mention: Mention): string {
+          ╵                 ~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2552: Cannot find name 'MENTIONS'. Did you mean 'mention'? [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:141:21:
+      141 │   const mentionObj = MENTIONS.find(m => m.value === mention);
+          ╵                      ~~~~~~~~
+
+  'mention' is declared here.
+
+    src/app/shared/models/dashboard.model.ts:140:32:
+      140 │ export function getMentionColor(mention: Mention): string {
+          ╵                                 ~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS7006: Parameter 'm' implicitly has an 'any' type. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:141:35:
+      141 │   const mentionObj = MENTIONS.find(m => m.value === mention);
+          ╵                                    ^
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'getTypeEvaluationLabel'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:145:16:
+      145 │ export function getTypeEvaluationLabel(type: TypeEvaluation): str...
+          ╵                 ~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'TypeEvaluation'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:145:45:
+      145 │ ...t function getTypeEvaluationLabel(type: TypeEvaluation): string {
+          ╵                                            ~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'TYPES_EVALUATION'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:146:18:
+      146 │   const typeObj = TYPES_EVALUATION.find(t => t.value === type);
+          ╵                   ~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS7006: Parameter 't' implicitly has an 'any' type. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:146:40:
+      146 │   const typeObj = TYPES_EVALUATION.find(t => t.value === type);
+          ╵                                         ^
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'getTypeEvaluationColor'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:150:16:
+      150 │ export function getTypeEvaluationColor(type: TypeEvaluation): str...
+          ╵                 ~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'TypeEvaluation'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:150:45:
+      150 │ ...t function getTypeEvaluationColor(type: TypeEvaluation): string {
+          ╵                                            ~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'TYPES_EVALUATION'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:151:18:
+      151 │   const typeObj = TYPES_EVALUATION.find(t => t.value === type);
+          ╵                   ~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS7006: Parameter 't' implicitly has an 'any' type. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:151:40:
+      151 │   const typeObj = TYPES_EVALUATION.find(t => t.value === type);
+          ╵                                         ^
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'calculateMoyenne'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:155:16:
+      155 │ export function calculateMoyenne(notes: Note[]): number {
+          ╵                 ~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'Note'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:155:40:
+      155 │ export function calculateMoyenne(notes: Note[]): number {
+          ╵                                         ~~~~
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'formatNote'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:170:16:
+      170 │ export function formatNote(note: number): string {
+          ╵                 ~~~~~~~~~~
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'isNoteValide'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:174:16:
+      174 │ export function isNoteValide(note: number): boolean {
+          ╵                 ~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'Note'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:206:2:
+      206 │   Note,
+          ╵   ~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'CreateNoteRequest'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:207:2:
+      207 │   CreateNoteRequest,
+          ╵   ~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'UpdateNoteRequest'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:208:2:
+      208 │   UpdateNoteRequest,
+          ╵   ~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'NoteFilters'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:209:2:
+      209 │   NoteFilters,
+          ╵   ~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'NoteStatistiques'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:210:2:
+      210 │   NoteStatistiques,
+          ╵   ~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'TypeEvaluation'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:211:2:
+      211 │   TypeEvaluation,
+          ╵   ~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'Periode'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:212:2:
+      212 │   Periode,
+          ╵   ~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'TypePeriode'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:213:2:
+      213 │   TypePeriode,
+          ╵   ~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'Bulletin'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:214:2:
+      214 │   Bulletin,
+          ╵   ~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'NoteBulletin'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:215:2:
+      215 │   NoteBulletin,
+          ╵   ~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'StatutBulletin'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:217:2:
+      217 │   StatutBulletin,
+          ╵   ~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'BulletinFilters'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:218:2:
+      218 │   BulletinFilters,
+          ╵   ~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'GenerateBulletinRequest'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:219:2:
+      219 │   GenerateBulletinRequest,
+          ╵   ~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'DashboardStats'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:220:2:
+      220 │   DashboardStats,
+          ╵   ~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'ActivityItem'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:221:2:
+      221 │   ActivityItem,
+          ╵   ~~~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'ElevePerformance'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:222:2:
+      222 │   ElevePerformance,
+          ╵   ~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'StatistiquesAvancees'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:223:2:
+      223 │   StatistiquesAvancees,
+          ╵   ~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'PaginatedResponse'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:224:2:
+      224 │   PaginatedResponse,
+          ╵   ~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'ApiResponse'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:225:2:
+      225 │   ApiResponse
+          ╵   ~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'TYPES_EVALUATION'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:230:2:
+      230 │   TYPES_EVALUATION,
+          ╵   ~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'PERIODES_TYPES'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:231:2:
+      231 │   PERIODES_TYPES,
+          ╵   ~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'MENTIONS'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:232:2:
+      232 │   MENTIONS,
+          ╵   ~~~~~~~~
+
+
+X [ERROR] TS2304: Cannot find name 'STATUTS_BULLETIN'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:233:2:
+      233 │   STATUTS_BULLETIN,
+          ╵   ~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'getMentionFromNote'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:234:2:
+      234 │   getMentionFromNote,
+          ╵   ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'getMentionFromNote'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:234:2:
+      234 │   getMentionFromNote,
+          ╵   ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'getMentionLabel'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:235:2:
+      235 │   getMentionLabel,
+          ╵   ~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'getMentionLabel'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:235:2:
+      235 │   getMentionLabel,
+          ╵   ~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'getMentionColor'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:236:2:
+      236 │   getMentionColor,
+          ╵   ~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'getMentionColor'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:236:2:
+      236 │   getMentionColor,
+          ╵   ~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'getTypeEvaluationLabel'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:237:2:
+      237 │   getTypeEvaluationLabel,
+          ╵   ~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'getTypeEvaluationLabel'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:237:2:
+      237 │   getTypeEvaluationLabel,
+          ╵   ~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'getTypeEvaluationColor'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:238:2:
+      238 │   getTypeEvaluationColor,
+          ╵   ~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'getTypeEvaluationColor'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:238:2:
+      238 │   getTypeEvaluationColor,
+          ╵   ~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'calculateMoyenne'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:239:2:
+      239 │   calculateMoyenne,
+          ╵   ~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'calculateMoyenne'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:239:2:
+      239 │   calculateMoyenne,
+          ╵   ~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'formatNote'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:240:2:
+      240 │   formatNote,
+          ╵   ~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'formatNote'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:240:2:
+      240 │   formatNote,
+          ╵   ~~~~~~~~~~
+
+
+X [ERROR] TS2323: Cannot redeclare exported variable 'isNoteValide'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:241:2:
+      241 │   isNoteValide
+          ╵   ~~~~~~~~~~~~
+
+
+X [ERROR] TS2484: Export declaration conflicts with exported declaration of 'isNoteValide'. [plugin angular-compiler]
+
+    src/app/shared/models/dashboard.model.ts:241:2:
+      241 │   isNoteValide
+          ╵   ~~~~~~~~~~~~
+
+
+X [ERROR] TS2308: Module './note.model' has already exported a member named 'PaginatedResponse'. Consider explicitly re-exporting to resolve the ambiguity. [plugin angular-compiler]
+
+    src/app/shared/models/notes-bulletins.model.ts:3:0:
+      3 │ export * from './user.model';
+        ╵ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2308: Module './note.model' has already exported a member named 'PaginatedResponse'. Consider explicitly re-exporting to resolve the ambiguity. [plugin angular-compiler]
+
+    src/app/shared/models/notes-bulletins.model.ts:4:0:
+      4 │ export * from './classe.model';
+        ╵ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2308: Module './note.model' has already exported a member named 'PaginatedResponse'. Consider explicitly re-exporting to resolve the ambiguity. [plugin angular-compiler]
+
+    src/app/shared/models/notes-bulletins.model.ts:5:0:
+      5 │ export * from './matiere.model';
+        ╵ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+

@@ -204,15 +204,15 @@ import {
               <!-- Status Badge -->
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                     [ngClass]="{
-                      'bg-green-100 text-green-800': matiere.active,
+                      'bg-green-100 text-green-800': matiere.actif,
                       'bg-red-100 text-red-800': !matiere.active
                     }">
                 <span class="w-1.5 h-1.5 mr-1.5 rounded-full"
                       [ngClass]="{
-                        'bg-green-400': matiere.active,
+                        'bg-green-400': matiere.actif,
                         'bg-red-400': !matiere.active
                       }"></span>
-                {{ matiere.active ? 'Active' : 'Inactive' }}
+                {{ matiere.actif ? 'Active' : 'Inactive' }}
               </span>
             </div>
 
@@ -320,11 +320,11 @@ import {
                 </button>
 
                 <button (click)="toggleMatiereStatus(matiere)" 
-                        [class]="matiere.active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'"
-                        [title]="matiere.active ? 'Désactiver' : 'Activer'">
+                        [class]="matiere.actif ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'"
+                        [title]="matiere.actif ? 'Désactiver' : 'Activer'">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path *ngIf="matiere.active" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    <path *ngIf="!matiere.active" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <path *ngIf="matiere.actif" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <path *ngIf="!matiere.actif" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
                 </button>
 
@@ -476,7 +476,7 @@ export class MatiereListComponent implements OnInit {
   ) {
     this.filterForm = this.fb.group({
       recherche: [''],
-      active: [''],
+      actif: [''],
       coefficient: [''],
       per_page: [25]
     });
@@ -561,12 +561,12 @@ export class MatiereListComponent implements OnInit {
         code: 'MATH',
         coefficient: 4.0,
         description: 'Mathématiques générales - Algèbre, géométrie et analyse',
-        active: true,
+        actif: true,
         nombre_notes: 156,
         moyenne_generale: 13.2,
         enseignants: [
-          { id: 1, nom: 'Dupont', prenom: 'Jean', email: 'jean.dupont@ecole.fr' },
-          { id: 2, nom: 'Martin', prenom: 'Marie', email: 'marie.martin@ecole.fr' }
+          { id: 1, nom: 'Dupont', prenom: 'Jean', email: 'jean.dupont&#64;ecole.fr' },
+          { id: 2, nom: 'Martin', prenom: 'Marie', email: 'marie.martin&#64;ecole.fr' }
         ],
         created_at: '2024-01-15T10:00:00Z',
         updated_at: '2024-01-20T14:30:00Z'
@@ -577,11 +577,11 @@ export class MatiereListComponent implements OnInit {
         code: 'FR',
         coefficient: 3.0,
         description: 'Langue française - Littérature et expression écrite',
-        active: true,
+        actif: true,
         nombre_notes: 124,
         moyenne_generale: 12.8,
         enseignants: [
-          { id: 3, nom: 'Durand', prenom: 'Sophie', email: 'sophie.durand@ecole.fr' }
+          { id: 3, nom: 'Durand', prenom: 'Sophie', email: 'sophie.durand&#64;ecole.fr' }
         ],
         created_at: '2024-01-16T11:00:00Z',
         updated_at: '2024-01-21T15:45:00Z'
@@ -592,11 +592,11 @@ export class MatiereListComponent implements OnInit {
         code: 'PHYS',
         coefficient: 3.5,
         description: 'Physique et chimie appliquées',
-        active: true,
+        actif: true,
         nombre_notes: 89,
         moyenne_generale: 11.5,
         enseignants: [
-          { id: 4, nom: 'Moreau', prenom: 'Pierre', email: 'pierre.moreau@ecole.fr' }
+          { id: 4, nom: 'Moreau', prenom: 'Pierre', email: 'pierre.moreau&#64;ecole.fr' }
         ],
         created_at: '2024-01-17T12:00:00Z',
         updated_at: '2024-01-22T16:00:00Z'
@@ -607,7 +607,7 @@ export class MatiereListComponent implements OnInit {
         code: 'ART',
         coefficient: 1.0,
         description: 'Arts visuels et créativité',
-        active: false,
+        actif: false,
         nombre_notes: 45,
         moyenne_generale: 15.2,
         enseignants: [],
@@ -642,7 +642,7 @@ export class MatiereListComponent implements OnInit {
   resetFilters(): void {
     this.filterForm.reset({
       recherche: '',
-      active: '',
+      actif: '',
       coefficient: '',
       per_page: 25
     });
@@ -681,12 +681,12 @@ export class MatiereListComponent implements OnInit {
   }
 
   toggleMatiereStatus(matiere: Matiere): void {
-    const action = matiere.active ? 'désactiver' : 'activer';
+    const action = matiere.actif ? 'désactiver' : 'activer';
     
     if (confirm(`Êtes-vous sûr de vouloir ${action} la matière "${matiere.nom}" ?`)) {
       this.matiereService.toggleMatiereStatus(matiere.id).subscribe({
         next: () => {
-          matiere.active = !matiere.active;
+          matiere.actif = !matiere.actif;
           console.log(`Matière ${action}e avec succès`);
         },
         error: (error) => {

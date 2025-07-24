@@ -191,7 +191,7 @@ export interface LaravelApiResponse<T> {
     links: Array<{
       url: string | null;
       label: string;
-      active: boolean;
+      actif: boolean;
     }>;
     next_page_url: string | null;
     path: string;

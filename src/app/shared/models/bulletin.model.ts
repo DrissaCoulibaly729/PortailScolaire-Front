@@ -1,3 +1,5 @@
+import { Periode } from "./notes-bulletins.model";
+
 export interface Bulletin {
   id: number;
   eleve_id: number;

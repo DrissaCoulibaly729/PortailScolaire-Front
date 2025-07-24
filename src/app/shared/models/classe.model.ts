@@ -9,7 +9,8 @@ export interface Classe {
   effectif_max: number;
   effectif_actuel: number;
   description?: string;
-  actif: boolean;
+  actif: boolean; // ✅ Utiliser 'actif' pas 'active'
+  moyenne?: number; // ✅ Ajouter cette propriété
   enseignants?: Enseignant[];
   eleves?: Eleve[];
   created_at: string;
@@ -54,6 +55,11 @@ export interface ClasseStatistiques {
   classes_inactives: number;
   effectif_moyen: number;
   classes_pleines: number;
+  
+  // ✅ Ajouter ces propriétés
+  total_eleves?: number;
+  moyenne_generale?: number;
+  effectif_total?: number;
 }
 
 // ===== INTERFACE POUR LA PAGINATION (PARTAGÉE) =====
@@ -89,7 +95,7 @@ export interface ClasseApiResponse {
     links: Array<{
       url: string | null;
       label: string;
-      active: boolean;
+      actif: boolean;
     }>;
     next_page_url: string | null;
     path: string;
@@ -116,9 +122,16 @@ export interface ClasseFormErrors {
 
 // ===== CONSTANTES =====
 export const NIVEAUX_DISPONIBLES = [
-  '6ème', '5ème', '4ème', '3ème', 
-  '2nde', '1ère', 'Terminale'
+  { value: '6ème', label: '6ème' },
+  { value: '5ème', label: '5ème' },
+  { value: '4ème', label: '4ème' },
+  { value: '3ème', label: '3ème' },
+  { value: '2nde', label: '2nde' },
+  { value: '1ère', label: '1ère' },
+  { value: 'Terminale', label: 'Terminale' }
 ] as const;
+
+export const NIVEAUX_SCOLAIRES = NIVEAUX_DISPONIBLES;
 
 export const SECTIONS_DISPONIBLES = [
   'A', 'B', 'C', 'D', 'E'

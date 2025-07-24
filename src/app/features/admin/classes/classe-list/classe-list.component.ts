@@ -9,7 +9,7 @@ import {
   Classe, 
   ClasseFilters, 
   PaginatedResponse,
-  NIVEAUX_SCOLAIRES,
+  NIVEAUX_DISPONIBLES as NIVEAUX_SCOLAIRES,
   NiveauScolaire 
 } from '../../../../shared/models/classe.model';
 
@@ -202,15 +202,15 @@ import {
               <!-- Status Badge -->
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                     [ngClass]="{
-                      'bg-green-100 text-green-800': classe.active,
+                      'bg-green-100 text-green-800': classe.actif,
                       'bg-red-100 text-red-800': !classe.active
                     }">
                 <span class="w-1.5 h-1.5 mr-1.5 rounded-full"
                       [ngClass]="{
-                        'bg-green-400': classe.active,
+                        'bg-green-400': classe.actif,
                         'bg-red-400': !classe.active
                       }"></span>
-                {{ classe.active ? 'Active' : 'Inactive' }}
+                {{ classe.actif ? 'Active' : 'Inactive' }}
               </span>
             </div>
 
@@ -289,11 +289,11 @@ import {
                 </button>
 
                 <button (click)="toggleClasseStatus(classe)" 
-                        [class]="classe.active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'"
-                        [title]="classe.active ? 'Désactiver' : 'Activer'">
+                        [class]="classe.actif ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'"
+                        [title]="classe.actif ? 'Désactiver' : 'Activer'">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path *ngIf="classe.active" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    <path *ngIf="!classe.active" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <path *ngIf="classe.actif" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <path *ngIf="!classe.actif" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
                 </button>
 
@@ -447,7 +447,7 @@ export class ClasseListComponent implements OnInit {
     this.filterForm = this.fb.group({
       recherche: [''],
       niveau: [''],
-      active: [''],
+      actif: [''],
       per_page: [25]
     });
   }
@@ -513,7 +513,7 @@ export class ClasseListComponent implements OnInit {
    * Load statistics
    */
   loadStats(): void {
-    this.classeService.getClasseStatistics().subscribe({
+    this.classeService.getClasseStatistiques().subscribe({
       next: (stats) => {
         this.totalClasses = stats.total_classes || 0;
         this.totalEleves = stats.total_eleves || 0;
@@ -544,7 +544,7 @@ export class ClasseListComponent implements OnInit {
         effectif_max: 30,
         effectif_actuel: 28,
         description: 'Classe de 6ème section A',
-        active: true,
+        actif: true,
         moyenne: 13.5,
         enseignants: [],
         created_at: '2024-01-15T10:00:00Z',
@@ -558,7 +558,7 @@ export class ClasseListComponent implements OnInit {
         effectif_max: 32,
         effectif_actuel: 30,
         description: 'Classe de 5ème section B',
-        active: true,
+        actif: true,
         moyenne: 12.8,
         enseignants: [],
         created_at: '2024-01-16T11:00:00Z',
@@ -572,7 +572,7 @@ export class ClasseListComponent implements OnInit {
         effectif_max: 25,
         effectif_actuel: 23,
         description: 'Classe de Terminale C - Sciences',
-        active: true,
+        actif: true,
         moyenne: 14.2,
         enseignants: [],
         created_at: '2024-01-17T12:00:00Z',
@@ -607,7 +607,7 @@ export class ClasseListComponent implements OnInit {
     this.filterForm.reset({
       recherche: '',
       niveau: '',
-      active: '',
+      actif: '',
       per_page: 25
     });
   }
@@ -648,12 +648,12 @@ export class ClasseListComponent implements OnInit {
   }
 
   toggleClasseStatus(classe: Classe): void {
-    const action = classe.active ? 'désactiver' : 'activer';
+    const action = classe.actif ? 'désactiver' : 'activer';
     
     if (confirm(`Êtes-vous sûr de vouloir ${action} la classe "${classe.nom}" ?`)) {
       this.classeService.toggleClasseStatus(classe.id).subscribe({
         next: () => {
-          classe.active = !classe.active;
+          classe.actif = !classe.actif;
           console.log(`Classe ${action}e avec succès`);
         },
         error: (error) => {

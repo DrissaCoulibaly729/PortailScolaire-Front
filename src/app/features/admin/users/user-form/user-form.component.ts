@@ -10,7 +10,7 @@ import {
   Classe, 
   CreateClasseRequest, 
   UpdateClasseRequest,
-  NIVEAUX_SCOLAIRES,
+  NIVEAUX_DISPONIBLES as NIVEAUX_SCOLAIRES,
   NiveauScolaire 
 } from '../../../../shared/models/classe.model';
 import { User } from '../../../../shared/models/user.model';
@@ -283,7 +283,7 @@ export class ClasseFormComponent implements OnInit {
       section: ['', Validators.maxLength(10)],
       effectif_max: ['', [Validators.required, Validators.min(1), Validators.max(50)]],
       description: [''],
-      active: [true],
+      actif: [true],
       selectedTeacher: ['']
     });
   }
@@ -330,7 +330,7 @@ export class ClasseFormComponent implements OnInit {
    * Load available teachers
    */
   private loadAvailableTeachers(): void {
-    this.userService.getUsers({ role: 'enseignant', actif: 'true' }).subscribe({
+    this.userService.getUsers({ role: 'enseignant', actif: true }).subscribe({
       next: (response) => {
         this.availableTeachers = response.data.filter(teacher => 
           !this.currentClasse?.enseignants?.some(assigned => assigned.id === teacher.id)
@@ -352,7 +352,7 @@ export class ClasseFormComponent implements OnInit {
       section: classe.section || '',
       effectif_max: classe.effectif_max,
       description: classe.description || '',
-      active: classe.active
+      actif: classe.active
     });
   }
 

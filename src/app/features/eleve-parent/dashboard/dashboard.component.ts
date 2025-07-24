@@ -312,7 +312,7 @@ export class EleveDashboardComponent implements OnInit {
             nom: '1er Trimestre 2024',
             date_debut: '2024-09-01',
             date_fin: '2024-12-20',
-            active: false,
+            actif: false,
             annee_scolaire: '2024-2025'
           },
           classe: {
@@ -339,7 +339,7 @@ export class EleveDashboardComponent implements OnInit {
             nom: '2ème Trimestre 2024',
             date_debut: '2024-01-01',
             date_fin: '2024-03-31',
-            active: true,
+            actif: true,
             annee_scolaire: '2024-2025'
           },
           classe: {

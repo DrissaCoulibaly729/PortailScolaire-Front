@@ -173,7 +173,7 @@ import { LoginRequest } from '../../../shared/models/auth.model';
               <div class="flex justify-between items-center">
                 <div>
                   <h4 class="text-sm font-medium text-gray-900">Administrateur</h4>
-                  <p class="text-sm text-gray-600">admin@ecole.fr / admin123</p>
+                  <p class="text-sm text-gray-600">admin&#64;ecole.fr / admin123</p>
                 </div>
                 <button (click)="fillDemoCredentials('admin')" 
                         class="text-sm bg-red-100 text-red-800 px-3 py-1 rounded-full hover:bg-red-200 transition-colors">
@@ -187,7 +187,7 @@ import { LoginRequest } from '../../../shared/models/auth.model';
               <div class="flex justify-between items-center">
                 <div>
                   <h4 class="text-sm font-medium text-gray-900">Enseignant</h4>
-                  <p class="text-sm text-gray-600">enseignant@ecole.fr / ens123</p>
+                  <p class="text-sm text-gray-600">enseignant&#64;ecole.fr / ens123</p>
                 </div>
                 <button (click)="fillDemoCredentials('enseignant')" 
                         class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full hover:bg-blue-200 transition-colors">
@@ -201,7 +201,7 @@ import { LoginRequest } from '../../../shared/models/auth.model';
               <div class="flex justify-between items-center">
                 <div>
                   <h4 class="text-sm font-medium text-gray-900">Élève/Parent</h4>
-                  <p class="text-sm text-gray-600">eleve@ecole.fr / eleve123</p>
+                  <p class="text-sm text-gray-600">eleve&#64;ecole.fr / eleve123</p>
                 </div>
                 <button (click)="fillDemoCredentials('eleve')" 
                         class="text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full hover:bg-green-200 transition-colors">
@@ -357,15 +357,15 @@ export class LoginComponent implements OnInit {
   fillDemoCredentials(role: 'admin' | 'enseignant' | 'eleve'): void {
     const credentials = {
       admin: {
-        login: 'admin@ecole.fr',
+        login: 'admin&#64;ecole.fr',
         mot_de_passe: 'admin123'
       },
       enseignant: {
-        login: 'enseignant@ecole.fr',
+        login: 'enseignant&#64;ecole.fr',
         mot_de_passe: 'ens123'
       },
       eleve: {
-        login: 'eleve@ecole.fr',
+        login: 'eleve&#64;ecole.fr',
         mot_de_passe: 'eleve123'
       }
     };

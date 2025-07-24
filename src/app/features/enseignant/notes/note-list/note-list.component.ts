@@ -612,7 +612,7 @@ export interface Classe {
   effectif_max: number;
   effectif_actuel?: number;
   description?: string;
-  active: boolean;
+  actif: boolean;
   moyenne?: number;
   created_at?: string;
   updated_at?: string;

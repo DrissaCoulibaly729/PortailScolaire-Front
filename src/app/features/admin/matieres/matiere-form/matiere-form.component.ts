@@ -322,7 +322,7 @@ export class MatiereFormComponent implements OnInit {
         Validators.max(5.0)
       ]],
       description: ['', Validators.maxLength(500)],
-      active: [true],
+      actif: [true],
       selectedTeacher: ['']
     });
 
@@ -376,7 +376,7 @@ export class MatiereFormComponent implements OnInit {
    * Load available teachers
    */
   private loadAvailableTeachers(): void {
-    this.userService.getUsers({ role: 'enseignant', actif: 'true' }).subscribe({
+    this.userService.getUsers({ role: 'enseignant', actif: true }).subscribe({
       next: (response) => {
         this.availableTeachers = response.data.filter(teacher => 
           !this.currentMatiere?.enseignants?.some(assigned => assigned.id === teacher.id)
@@ -397,7 +397,7 @@ export class MatiereFormComponent implements OnInit {
       code: matiere.code,
       coefficient: matiere.coefficient,
       description: matiere.description || '',
-      active: matiere.active
+      actif: matiere.active
     });
   }
 
