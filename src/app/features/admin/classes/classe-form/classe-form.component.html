@@ -1,1 +1,317 @@
-<p>classe-form works!</p>
+
+<div class="max-w-4xl mx-auto space-y-6">
+  
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="page-title">
+        {{ isEditing ? '✏️ Modifier' : '➕ Créer' }} une classe
+      </h1>
+      <p class="text-gray-600">
+        {{ isEditing ? 'Modifiez les informations de la classe' : 'Ajoutez une nouvelle classe à l\'établissement' }}
+      </p>
+    </div>
+    
+    <button (click)="cancel()" class="btn-secondary">
+      ← Retour à la liste
+    </button>
+  </div>
+
+  <!-- Messages d'état -->
+  <div *ngIf="success" class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center">
+    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+    </svg>
+    {{ success }}
+  </div>
+
+  <div *ngIf="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
+    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+    </svg>
+    {{ error }}
+  </div>
+
+  <!-- Loader -->
+  <div *ngIf="isLoading" class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg flex items-center">
+    <svg class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+    {{ isEditing ? 'Mise à jour en cours...' : 'Création en cours...' }}
+  </div>
+
+  <!-- Formulaire -->
+  <form [formGroup]="classeForm" (ngSubmit)="onSubmit()" class="space-y-8">
+    
+    <!-- Section 1: Informations de base -->
+    <div class="card">
+      <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2z"></path>
+        </svg>
+        Informations de la classe
+      </h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Niveau -->
+        <div>
+          <label for="niveau" class="block text-sm font-medium text-gray-700 mb-1">
+            Niveau scolaire <span class="text-red-500">*</span>
+          </label>
+          <select
+            id="niveau"
+            formControlName="niveau"
+            class="input-field"
+            [class.border-red-500]="hasError('niveau')"
+            [class.border-green-500]="classeForm.get('niveau')?.valid && classeForm.get('niveau')?.touched">
+            <option value="">Sélectionner un niveau</option>
+            <option *ngFor="let niveau of niveauxDisponibles" [value]="niveau">
+              {{ niveau }}
+            </option>
+          </select>
+          <div *ngIf="hasError('niveau')" class="text-red-600 text-sm mt-1">
+            {{ getErrorMessage('niveau') }}
+          </div>
+        </div>
+
+        <!-- Section -->
+        <div>
+          <label for="section" class="block text-sm font-medium text-gray-700 mb-1">
+            Section <span class="text-red-500">*</span>
+          </label>
+          <select
+            id="section"
+            formControlName="section"
+            class="input-field"
+            [class.border-red-500]="hasError('section')"
+            [class.border-green-500]="classeForm.get('section')?.valid && classeForm.get('section')?.touched">
+            <option value="">Sélectionner une section</option>
+            <option *ngFor="let section of sectionsDisponibles" [value]="section">
+              Section {{ section }}
+            </option>
+          </select>
+          <div *ngIf="hasError('section')" class="text-red-600 text-sm mt-1">
+            {{ getErrorMessage('section') }}
+          </div>
+        </div>
+
+        <!-- Génération automatique du nom -->
+        <div class="md:col-span-2">
+          <div class="flex items-center mb-4">
+            <input
+              type="checkbox"
+              id="auto_generate_name"
+              formControlName="auto_generate_name"
+              class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            <label for="auto_generate_name" class="ml-2 text-sm text-gray-700">
+              Générer automatiquement le nom de la classe
+            </label>
+          </div>
+        </div>
+
+        <!-- Nom de la classe -->
+        <div class="md:col-span-2">
+          <label for="nom" class="block text-sm font-medium text-gray-700 mb-1">
+            Nom de la classe <span class="text-red-500">*</span>
+          </label>
+          <div class="flex space-x-2">
+            <input
+              type="text"
+              id="nom"
+              formControlName="nom"
+              placeholder="Ex: 6ème A, Terminale S1..."
+              class="input-field flex-1"
+              [class.border-red-500]="hasError('nom')"
+              [class.border-green-500]="classeForm.get('nom')?.valid && classeForm.get('nom')?.touched"
+              [readonly]="classeForm.get('auto_generate_name')?.value">
+            <button 
+              type="button" 
+              (click)="checkNomDisponibilite()"
+              class="btn-secondary"
+              [disabled]="!classeForm.get('nom')?.value">
+              Vérifier
+            </button>
+          </div>
+          <div *ngIf="hasError('nom')" class="text-red-600 text-sm mt-1">
+            {{ getErrorMessage('nom') }}
+          </div>
+          <div *ngIf="getServerErrors('nom').length > 0" class="text-red-600 text-sm mt-1">
+            <div *ngFor="let error of getServerErrors('nom')">{{ error }}</div>
+          </div>
+        </div>
+
+        <!-- Effectif maximum -->
+        <div>
+          <label for="effectif_max" class="block text-sm font-medium text-gray-700 mb-1">
+            Effectif maximum <span class="text-red-500">*</span>
+          </label>
+          <div class="flex space-x-2">
+            <input
+              type="number"
+              id="effectif_max"
+              formControlName="effectif_max"
+              min="1"
+              max="100"
+              class="input-field flex-1"
+              [class.border-red-500]="hasError('effectif_max')"
+              [class.border-green-500]="classeForm.get('effectif_max')?.valid && classeForm.get('effectif_max')?.touched">
+            <button 
+              type="button" 
+              (click)="applyRecommendedEffectif()"
+              class="btn-secondary whitespace-nowrap"
+              [title]="'Appliquer l\'effectif recommandé: ' + getEffectifRecommande()">
+              {{ getEffectifRecommande() }} élèves
+            </button>
+          </div>
+          <div *ngIf="hasError('effectif_max')" class="text-red-600 text-sm mt-1">
+            {{ getErrorMessage('effectif_max') }}
+          </div>
+          <p class="text-xs text-gray-500 mt-1">
+            Effectif recommandé pour ce niveau : {{ getEffectifRecommande() }} élèves
+          </p>
+        </div>
+
+        <!-- Indicateur visuel effectif -->
+        <div class="flex items-center">
+          <div class="text-center p-4 bg-gray-50 rounded-lg flex-1">
+            <div class="text-2xl font-bold text-blue-600">
+              {{ classeForm.get('effectif_max')?.value || 0 }}
+            </div>
+            <div class="text-sm text-gray-600">Places disponibles</div>
+            <div class="text-xs text-gray-500 mt-1">
+              Actuel: {{ currentClasse?.effectif_actuel || 0 }} élèves
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Description -->
+      <div class="mt-6">
+        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+          Description (optionnelle)
+        </label>
+        <textarea
+          id="description"
+          formControlName="description"
+          rows="3"
+          placeholder="Description de la classe, spécialités, remarques..."
+          class="input-field"></textarea>
+      </div>
+    </div>
+
+    <!-- Section 2: Affectation des enseignants -->
+    <div class="card">
+      <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        </svg>
+        Enseignants affectés
+        <span class="text-sm font-normal text-gray-500 ml-2">({{ selectedEnseignants.length }} sélectionné(s))</span>
+      </h3>
+      
+      <div *ngIf="availableEnseignants.length > 0" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div *ngFor="let enseignant of availableEnseignants" 
+               class="flex items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+               [class.border-blue-500]="isEnseignantSelected(enseignant.id)"
+               [class.bg-blue-50]="isEnseignantSelected(enseignant.id)">
+            <input
+              type="checkbox"
+              [id]="'enseignant_' + enseignant.id"
+              [checked]="isEnseignantSelected(enseignant.id)"
+              (change)="toggleEnseignantSelection(enseignant.id)"
+              class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            <label [for]="'enseignant_' + enseignant.id" class="ml-3 flex-1 cursor-pointer">
+              <div class="text-sm font-medium text-gray-900">
+                {{ enseignant.prenom }} {{ enseignant.nom }}
+              </div>
+              <div class="text-xs text-gray-500">
+                {{ enseignant.email }}
+              </div>
+              <div *ngIf="enseignant.specialite" class="text-xs text-blue-600 mt-1">
+                📚 {{ enseignant.specialite }}
+              </div>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Résumé des sélections -->
+        <div *ngIf="selectedEnseignants.length > 0" class="bg-blue-50 p-4 rounded-lg">
+          <h4 class="text-sm font-medium text-blue-900 mb-2">Enseignants sélectionnés :</h4>
+          <div class="flex flex-wrap gap-2">
+            <span *ngFor="let enseignantId of selectedEnseignants" 
+                  class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+              {{ availableEnseignants.find(e => e.id === enseignantId)?.prenom }} 
+              {{ availableEnseignants.find(e => e.id === enseignantId)?.nom }}
+              <button type="button" 
+                      (click)="toggleEnseignantSelection(enseignantId)"
+                      class="ml-1 text-blue-600 hover:text-blue-800">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <div *ngIf="availableEnseignants.length === 0" class="text-center py-8 text-gray-500">
+        <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        </svg>
+        <p>Aucun enseignant disponible</p>
+        <p class="text-sm">Créez d'abord des comptes enseignants</p>
+      </div>
+    </div>
+
+    <!-- Actions du formulaire -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+      
+      <!-- Actions secondaires -->
+      <div class="flex space-x-3">
+        <button type="button" 
+                (click)="previewData()" 
+                class="btn-secondary">
+          👁️ Prévisualiser
+        </button>
+      </div>
+      
+      <!-- Actions principales -->
+      <div class="flex space-x-3">
+        <button type="button" 
+                (click)="cancel()" 
+                class="btn-secondary">
+          Annuler
+        </button>
+        
+        <button type="submit" 
+                [disabled]="classeForm.invalid || isLoading"
+                class="btn-primary flex items-center space-x-2"
+                [class.opacity-50]="classeForm.invalid || isLoading">
+          <svg *ngIf="isLoading" class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>{{ isEditing ? '💾 Mettre à jour' : '➕ Créer la classe' }}</span>
+        </button>
+      </div>
+    </div>
+
+  </form>
+
+  <!-- Informations d'aide -->
+  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <h4 class="text-sm font-medium text-blue-900 mb-2">💡 Informations utiles</h4>
+    <ul class="text-sm text-blue-700 space-y-1">
+      <li>• Les champs marqués d'un <span class="text-red-500">*</span> sont obligatoires</li>
+      <li>• Le nom peut être généré automatiquement à partir du niveau et de la section</li>
+      <li>• L'effectif maximum recommandé varie selon le niveau d'études</li>
+      <li>• Vous pouvez affecter plusieurs enseignants à une même classe</li>
+      <li>• Les enseignants pourront saisir les notes pour cette classe</li>
+    </ul>
+  </div>
+
+</div>
