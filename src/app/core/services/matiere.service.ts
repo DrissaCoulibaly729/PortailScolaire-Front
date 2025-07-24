@@ -268,7 +268,7 @@ export class MatiereService {
       errors.push('Le code de la matière doit contenir au moins 2 caractères');
     }
 
-    if ('coefficient' in data && (data.coefficient < 0.5 || data.coefficient > 5.0)) {
+    if ('coefficient' in data && data.coefficient !== undefined && (data.coefficient < 0.5 || data.coefficient > 5.0)) {
       errors.push('Le coefficient doit être entre 0.5 et 5.0');
     }
 

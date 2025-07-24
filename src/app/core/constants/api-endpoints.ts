@@ -23,7 +23,7 @@ export const API_ENDPOINTS = {
   },
   
   // Classes
-  CLASSES: {
+   CLASSES: {
     LIST: '/admin/classes',
     BY_ID: (id: number) => `/admin/classes/${id}`,
     CREATE: '/admin/classes',

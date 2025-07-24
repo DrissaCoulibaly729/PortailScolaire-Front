@@ -415,4 +415,20 @@ export class ClasseFormComponent implements OnInit {
       console.log('🔍 Vérification disponibilité:', nom);
     }
   }
+
+   /**
+   * Obtenir un enseignant par son ID
+   */
+  getEnseignantById(id: number): Enseignant | undefined {
+    return this.availableEnseignants.find(e => e.id === id);
+  }
+
+  /**
+   * TrackBy function pour optimiser la performance de *ngFor
+   */
+  trackByEnseignantId(index: number, enseignantId: number): number {
+    return enseignantId;
+  }
+
+
 }

@@ -239,13 +239,13 @@
         </div>
         
         <!-- Résumé des sélections -->
-        <div *ngIf="selectedEnseignants.length > 0" class="bg-blue-50 p-4 rounded-lg">
+         <div *ngIf="selectedEnseignants.length > 0" class="bg-blue-50 p-4 rounded-lg">
           <h4 class="text-sm font-medium text-blue-900 mb-2">Enseignants sélectionnés :</h4>
           <div class="flex flex-wrap gap-2">
-            <span *ngFor="let enseignantId of selectedEnseignants" 
+            <span *ngFor="let enseignantId of selectedEnseignants; trackBy: trackByEnseignantId" 
                   class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-              {{ availableEnseignants.find(e => e.id === enseignantId)?.prenom }} 
-              {{ availableEnseignants.find(e => e.id === enseignantId)?.nom }}
+              {{ getEnseignantById(enseignantId)?.prenom }} 
+              {{ getEnseignantById(enseignantId)?.nom }}
               <button type="button" 
                       (click)="toggleEnseignantSelection(enseignantId)"
                       class="ml-1 text-blue-600 hover:text-blue-800">
