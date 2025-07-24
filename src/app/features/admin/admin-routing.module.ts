@@ -14,32 +14,76 @@ const routes: Routes = [
     path: '',
     component: AdminLayoutComponent,
     children: [
-      { path: 'dashboard', component: DashboardComponent },
+      { 
+        path: 'dashboard', 
+        component: DashboardComponent,
+        data: { title: 'Tableau de bord' }
+      },
       { 
         path: 'users', 
         children: [
-          { path: '', component: UserListComponent },
-          { path: 'create', component: UserFormComponent },
-          { path: 'edit/:id', component: UserFormComponent }
+          { 
+            path: '', 
+            component: UserListComponent,
+            data: { title: 'Liste des utilisateurs' }
+          },
+          { 
+            path: 'create', 
+            component: UserFormComponent,
+            data: { title: 'Créer un utilisateur' }
+          },
+          { 
+            path: 'edit/:id', 
+            component: UserFormComponent,
+            data: { title: 'Modifier un utilisateur' }
+          }
         ]
       },
       { 
         path: 'classes', 
         children: [
-          { path: '', component: ClasseListComponent },
-          { path: 'create', component: ClasseFormComponent },
-          { path: 'edit/:id', component: ClasseFormComponent }
+          { 
+            path: '', 
+            component: ClasseListComponent,
+            data: { title: 'Liste des classes' }
+          },
+          { 
+            path: 'create', 
+            component: ClasseFormComponent,
+            data: { title: 'Créer une classe' }
+          },
+          { 
+            path: 'edit/:id', 
+            component: ClasseFormComponent,
+            data: { title: 'Modifier une classe' }
+          }
         ]
       },
       { 
         path: 'matieres', 
         children: [
-          { path: '', component: MatiereListComponent },
-          { path: 'create', component: MatiereFormComponent },
-          { path: 'edit/:id', component: MatiereFormComponent }
+          { 
+            path: '', 
+            component: MatiereListComponent,
+            data: { title: 'Liste des matières' }
+          },
+          { 
+            path: 'create', 
+            component: MatiereFormComponent,
+            data: { title: 'Créer une matière' }
+          },
+          { 
+            path: 'edit/:id', 
+            component: MatiereFormComponent,
+            data: { title: 'Modifier une matière' }
+          }
         ]
       },
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
+      { 
+        path: '', 
+        redirectTo: 'dashboard', 
+        pathMatch: 'full' 
+      }
     ]
   }
 ];

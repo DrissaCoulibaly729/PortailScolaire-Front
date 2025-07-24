@@ -1,11 +1,10 @@
-// ===== src/app/features/admin/dashboard/dashboard.component.ts =====
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
-import { ApiService } from '../../../core/services/api.service';
+import { DashboardService } from '../../../core/services/dashboard.service';
 import { DashboardStats, StatistiquesAvancees } from '../../../shared/models/dashboard.model';
-import { API_ENDPOINTS } from '../../../core/constants/api-endpoints';
+import { BaseChartComponent } from '../../../shared/components/charts/base-chart.component';
 
 interface QuickStatCard {
   title: string;
@@ -22,151 +21,109 @@ interface QuickStatCard {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, BaseChartComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
 export class DashboardComponent implements OnInit {
   isLoading = true;
   dashboardStats: DashboardStats | null = null;
+  advancedStats: StatistiquesAvancees | null = null;
   error: string | null = null;
 
-  // Données mockées pour le développement
+  // Graphiques
+  activityChartData: any = null;
+  distributionChartData: any = null;
+  isChartsLoading = true;
+
+  // Statistiques rapides
   quickStats: QuickStatCard[] = [
     {
       title: 'Total Élèves',
-      value: 284,
+      value: 0,
       icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z',
       color: 'blue',
-      route: '/admin/users?role=eleve',
-      change: { value: 12, type: 'increase' }
+      route: '/admin/users?role=eleve'
     },
     {
       title: 'Enseignants',
-      value: 18,
+      value: 0,
       icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
       color: 'green',
-      route: '/admin/users?role=enseignant',
-      change: { value: 2, type: 'increase' }
+      route: '/admin/users?role=enseignant'
     },
     {
       title: 'Classes',
-      value: 12,
+      value: 0,
       icon: 'M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2z',
       color: 'purple',
-      route: '/admin/classes',
-      change: { value: 0, type: 'increase' }
+      route: '/admin/classes'
     },
     {
       title: 'Matières',
-      value: 8,
+      value: 0,
       icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253',
       color: 'orange',
       route: '/admin/matieres'
     }
   ];
 
-  recentActivities = [
-    {
-      id: 1,
-      type: 'inscription',
-      description: 'Nouvel élève inscrit: Marie Dupont',
-      date: '2024-01-15T10:30:00Z',
-      icon: 'user-plus',
-      color: 'green'
-    },
-    {
-      id: 2,
-      type: 'note_saisie',
-      description: 'Notes de Mathématiques saisies pour la 3ème A',
-      date: '2024-01-15T09:15:00Z',
-      icon: 'academic-cap',
-      color: 'blue'
-    },
-    {
-      id: 3,
-      type: 'bulletin_genere',
-      description: 'Bulletins générés pour le 1er trimestre',
-      date: '2024-01-15T08:45:00Z',
-      icon: 'document-text',
-      color: 'purple'
-    }
-  ];
+  recentActivities: any[] = [];
 
   constructor(
     private authService: AuthService,
-    private apiService: ApiService
+    private dashboardService: DashboardService
   ) {}
 
   ngOnInit(): void {
     this.loadDashboardData();
+    this.loadChartData();
   }
 
   /**
-   * Charger les données du dashboard
+   * Charger les données principales du dashboard
    */
   private loadDashboardData(): void {
     this.isLoading = true;
     this.error = null;
 
-    // Simuler un appel API (remplacer par un vrai appel)
-    setTimeout(() => {
-      try {
-        // En développement, utiliser des données mockées
-        this.setupMockData();
-        this.isLoading = false;
-      } catch (error) {
-        this.error = 'Erreur lors du chargement des données';
-        this.isLoading = false;
-      }
-    }, 1000);
-
-    // TODO: Remplacer par un vrai appel API
-    /*
-    this.apiService.get<DashboardStats>(API_ENDPOINTS.ADMIN.DASHBOARD).subscribe({
+    this.dashboardService.getDashboardStats().subscribe({
       next: (stats) => {
         this.dashboardStats = stats;
         this.updateQuickStats(stats);
+        this.recentActivities = stats.activite_recente || [];
         this.isLoading = false;
+        console.log('📊 Statistiques dashboard chargées:', stats);
       },
       error: (error) => {
-        console.error('Erreur lors du chargement du dashboard:', error);
+        console.error('❌ Erreur lors du chargement du dashboard:', error);
         this.error = 'Erreur lors du chargement des données';
         this.isLoading = false;
+        this.setupFallbackData();
       }
     });
-    */
   }
 
   /**
-   * Configuration des données mockées
+   * Charger les données pour les graphiques
    */
-  private setupMockData(): void {
-    // Simule la réponse de l'API
-    this.dashboardStats = {
-      statistiques_utilisateurs: {
-        total: 320,
-        par_role: {
-          administrateur: 2,
-          enseignant: 18,
-          eleve: 284
-        },
-        actifs: 315,
-        inactifs: 5
+  private loadChartData(): void {
+    this.isChartsLoading = true;
+
+    // Charger les statistiques avancées
+    this.dashboardService.getAdvancedStats().subscribe({
+      next: (stats) => {
+        this.advancedStats = stats;
+        this.setupChartData(stats);
+        this.isChartsLoading = false;
+        console.log('📈 Statistiques avancées chargées:', stats);
       },
-      statistiques_classes: {
-        total: 12,
-        effectif_total: 284,
-        taux_occupation: 85.2
-      },
-      statistiques_matieres: {
-        total: 8,
-        notes_saisies: 1247
-      },
-      activite_recente: [],
-      eleves_en_difficulte: [],
-      excellents_eleves: []
-    };
+      error: (error) => {
+        console.error('❌ Erreur lors du chargement des graphiques:', error);
+        this.isChartsLoading = false;
+        this.setupFallbackChartData();
+      }
+    });
   }
 
   /**
@@ -186,6 +143,94 @@ export class DashboardComponent implements OnInit {
   }
 
   /**
+   * Configurer les données des graphiques
+   */
+  private setupChartData(stats: StatistiquesAvancees): void {
+    // Graphique d'évolution des inscriptions
+    if (stats.evolution_inscriptions) {
+      this.activityChartData = {
+        labels: stats.evolution_inscriptions.map(item => item.mois),
+        datasets: [{
+          label: 'Nouvelles inscriptions',
+          data: stats.evolution_inscriptions.map(item => item.nombre_inscriptions),
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.4,
+          fill: true
+        }]
+      };
+    }
+
+    // Graphique de distribution des notes
+    if (stats.distribution_notes) {
+      this.distributionChartData = {
+        labels: stats.distribution_notes.map(item => item.tranche),
+        datasets: [{
+          label: 'Nombre d\'élèves',
+          data: stats.distribution_notes.map(item => item.nombre_eleves),
+          backgroundColor: [
+            'rgba(239, 68, 68, 0.8)',   // Rouge pour les faibles notes
+            'rgba(245, 158, 11, 0.8)',  // Orange
+            'rgba(59, 130, 246, 0.8)',  // Bleu
+            'rgba(16, 185, 129, 0.8)',  // Vert pour les bonnes notes
+          ],
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      };
+    }
+  }
+
+  /**
+   * Données de fallback en cas d'erreur API
+   */
+  private setupFallbackData(): void {
+    // Utiliser des données par défaut si l'API n'est pas disponible
+    this.quickStats = [
+      { title: 'Total Élèves', value: '--', icon: this.quickStats[0].icon, color: 'blue', route: '/admin/users?role=eleve' },
+      { title: 'Enseignants', value: '--', icon: this.quickStats[1].icon, color: 'green', route: '/admin/users?role=enseignant' },
+      { title: 'Classes', value: '--', icon: this.quickStats[2].icon, color: 'purple', route: '/admin/classes' },
+      { title: 'Matières', value: '--', icon: this.quickStats[3].icon, color: 'orange', route: '/admin/matieres' }
+    ];
+
+    this.recentActivities = [
+      {
+        id: 1,
+        type: 'info',
+        description: 'Données en cours de chargement...',
+        date: new Date().toISOString(),
+        icon: 'info',
+        color: 'blue'
+      }
+    ];
+  }
+
+  /**
+   * Graphiques de fallback
+   */
+  private setupFallbackChartData(): void {
+    this.activityChartData = {
+      labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'],
+      datasets: [{
+        label: 'Données de démonstration',
+        data: [0, 0, 0, 0, 0, 0],
+        borderColor: 'rgb(156, 163, 175)',
+        backgroundColor: 'rgba(156, 163, 175, 0.1)',
+        tension: 0.4
+      }]
+    };
+
+    this.distributionChartData = {
+      labels: ['Aucune donnée'],
+      datasets: [{
+        label: 'En attente',
+        data: [1],
+        backgroundColor: ['rgba(156, 163, 175, 0.8)']
+      }]
+    };
+  }
+
+  /**
    * Obtenir la classe CSS pour la couleur
    */
   getColorClasses(color: string): { bg: string; text: string; icon: string } {
@@ -196,7 +241,7 @@ export class DashboardComponent implements OnInit {
       orange: { bg: 'bg-orange-50', text: 'text-orange-700', icon: 'text-orange-600' },
       red: { bg: 'bg-red-50', text: 'text-red-700', icon: 'text-red-600' }
     };
-    return colorMap[color] || colorMap[color];
+    return colorMap[color] || colorMap['blue'];
   }
 
   /**
@@ -206,9 +251,10 @@ export class DashboardComponent implements OnInit {
     const iconMap: Record<string, string> = {
       'user-plus': 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
       'academic-cap': 'M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z',
-      'document-text': 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+      'document-text': 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+      'info': 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
     };
-    return iconMap[type] || iconMap['document-text'];
+    return iconMap[type] || iconMap['info'];
   }
 
   /**
@@ -235,6 +281,7 @@ export class DashboardComponent implements OnInit {
    */
   refreshData(): void {
     this.loadDashboardData();
+    this.loadChartData();
   }
 
   /**
