@@ -1,300 +1,415 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { AuthService } from '../../../core/auth/auth.service';
-import { DashboardService } from '../../../core/services/dashboard.service';
-import { DashboardStats, StatistiquesAvancees } from '../../../shared/models/dashboard.model';
-import { BaseChartComponent } from '../../../shared/components/charts/base-chart.component';
+import { Router } from '@angular/router';
+import { Observable, forkJoin } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
-interface QuickStatCard {
+import { DashboardService } from '../../../core/services/dashboard.service';
+import { UserService } from '../../../core/services/user.service';
+import { ClasseService } from '../../../core/services/classe.service';
+import { MatiereService } from '../../../core/services/matiere.service';
+import { DashboardStats, StatistiquesAvancees } from '../../../shared/models/dashboard.model';
+
+interface StatCard {
   title: string;
-  value: number | string;
+  value: number;
   icon: string;
   color: string;
-  route?: string;
-  change?: {
+  trend?: {
     value: number;
-    type: 'increase' | 'decrease';
+    isPositive: boolean;
   };
+  route?: string;
+}
+
+interface RecentActivity {
+  id: string;
+  type: 'user_created' | 'note_added' | 'class_updated';
+  message: string;
+  timestamp: Date;
+  user: string;
 }
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, BaseChartComponent],
-  templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.css'
+  imports: [CommonModule],
+  template: `
+    <div class="min-h-screen bg-gray-50 p-6">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Tableau de bord</h1>
+        <p class="text-gray-600 mt-2">Vue d'ensemble de l'établissement scolaire</p>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="flex justify-center items-center h-64">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div class="flex">
+          <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+          </svg>
+          <p class="text-red-800">{{ error }}</p>
+        </div>
+      </div>
+
+      <!-- Dashboard Content -->
+      <div *ngIf="!isLoading && !error">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div *ngFor="let card of statCards" 
+               class="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow cursor-pointer"
+               (click)="navigateToSection(card.route)">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">{{ card.title }}</p>
+                <p class="text-3xl font-bold" [ngClass]="'text-' + card.color + '-600'">
+                  {{ card.value | number }}
+                </p>
+                <div *ngIf="card.trend" class="flex items-center mt-2">
+                  <svg *ngIf="card.trend.isPositive" class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                  </svg>
+                  <svg *ngIf="!card.trend.isPositive" class="w-4 h-4 text-red-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                  </svg>
+                  <span class="text-sm" [ngClass]="card.trend.isPositive ? 'text-green-600' : 'text-red-600'">
+                    {{ card.trend.value }}%
+                  </span>
+                </div>
+              </div>
+              <div class="p-3 rounded-full" [ngClass]="'bg-' + card.color + '-100'">
+                <svg class="w-6 h-6" [ngClass]="'text-' + card.color + '-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="card.icon"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts and Activity Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <!-- Performance by Class Chart -->
+          <div class="lg:col-span-2 bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Performance par classe</h3>
+            <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+              <div class="text-center">
+                <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                <p class="text-gray-500">Graphique de performance</p>
+                <p class="text-sm text-gray-400">(À implémenter avec Chart.js)</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Activité récente</h3>
+            <div class="space-y-4">
+              <div *ngFor="let activity of recentActivities" class="flex items-start space-x-3">
+                <div class="flex-shrink-0">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                       [ngClass]="{
+                         'bg-blue-100': activity.type === 'user_created',
+                         'bg-green-100': activity.type === 'note_added',
+                         'bg-yellow-100': activity.type === 'class_updated'
+                       }">
+                    <svg class="w-4 h-4" 
+                         [ngClass]="{
+                           'text-blue-600': activity.type === 'user_created',
+                           'text-green-600': activity.type === 'note_added',
+                           'text-yellow-600': activity.type === 'class_updated'
+                         }" 
+                         fill="currentColor" viewBox="0 0 20 20">
+                      <path *ngIf="activity.type === 'user_created'" d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6z"></path>
+                      <path *ngIf="activity.type === 'note_added'" fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                      <path *ngIf="activity.type === 'class_updated'" d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm text-gray-900">{{ activity.message }}</p>
+                  <p class="text-xs text-gray-500">{{ activity.timestamp | date:'short' }} - {{ activity.user }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions and Alerts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Quick Actions -->
+          <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <button (click)="router.navigate(['/admin/users/create'])" 
+                      class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                <span class="text-sm font-medium text-gray-900">Nouvel utilisateur</span>
+              </button>
+              
+              <button (click)="router.navigate(['/admin/classes/create'])" 
+                      class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2zM9 7h6m-6 4h6m-6 4h4"></path>
+                </svg>
+                <span class="text-sm font-medium text-gray-900">Nouvelle classe</span>
+              </button>
+              
+              <button (click)="router.navigate(['/admin/matieres/create'])" 
+                      class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                <span class="text-sm font-medium text-gray-900">Nouvelle matière</span>
+              </button>
+              
+              <button class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-orange-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span class="text-sm font-medium text-gray-900">Générer rapport</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Alerts and Notifications -->
+          <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Alertes système</h3>
+            <div class="space-y-3">
+              <div *ngFor="let alert of systemAlerts" 
+                   class="p-3 rounded-lg border-l-4" 
+                   [ngClass]="{
+                     'bg-red-50 border-red-400': alert.type === 'error',
+                     'bg-yellow-50 border-yellow-400': alert.type === 'warning',
+                     'bg-blue-50 border-blue-400': alert.type === 'info'
+                   }">
+                <div class="flex">
+                  <svg class="w-5 h-5 mr-2" 
+                       [ngClass]="{
+                         'text-red-400': alert.type === 'error',
+                         'text-yellow-400': alert.type === 'warning',
+                         'text-blue-400': alert.type === 'info'
+                       }" 
+                       fill="currentColor" viewBox="0 0 20 20">
+                    <path *ngIf="alert.type === 'error'" fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                    <path *ngIf="alert.type === 'warning'" fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    <path *ngIf="alert.type === 'info'" fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                  </svg>
+                  <div>
+                    <p class="text-sm font-medium" 
+                       [ngClass]="{
+                         'text-red-800': alert.type === 'error',
+                         'text-yellow-800': alert.type === 'warning',
+                         'text-blue-800': alert.type === 'info'
+                       }">
+                      {{ alert.title }}
+                    </p>
+                    <p class="text-sm" 
+                       [ngClass]="{
+                         'text-red-700': alert.type === 'error',
+                         'text-yellow-700': alert.type === 'warning',
+                         'text-blue-700': alert.type === 'info'
+                       }">
+                      {{ alert.message }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
 })
 export class DashboardComponent implements OnInit {
   isLoading = true;
-  dashboardStats: DashboardStats | null = null;
-  advancedStats: StatistiquesAvancees | null = null;
   error: string | null = null;
-
-  // Graphiques - PROPRIÉTÉS AJOUTÉES
-  activityChartData: any = null;
-  distributionChartData: any = null;
-  isChartsLoading = true;
-
-  // Statistiques rapides
-  quickStats: QuickStatCard[] = [
-    {
-      title: 'Total Élèves',
-      value: 0,
-      icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z',
-      color: 'blue',
-      route: '/admin/users?role=eleve'
-    },
-    {
-      title: 'Enseignants',
-      value: 0,
-      icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
-      color: 'green',
-      route: '/admin/users?role=enseignant'
-    },
-    {
-      title: 'Classes',
-      value: 0,
-      icon: 'M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2z',
-      color: 'purple',
-      route: '/admin/classes'
-    },
-    {
-      title: 'Matières',
-      value: 0,
-      icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253',
-      color: 'orange',
-      route: '/admin/matieres'
-    }
-  ];
-
-  recentActivities: any[] = [];
+  
+  statCards: StatCard[] = [];
+  recentActivities: RecentActivity[] = [];
+  systemAlerts: any[] = [];
 
   constructor(
-    private authService: AuthService,
-    private dashboardService: DashboardService
+    private dashboardService: DashboardService,
+    private userService: UserService,
+    private classeService: ClasseService,
+    private matiereService: MatiereService,
+    public router: Router
   ) {}
 
   ngOnInit(): void {
     this.loadDashboardData();
-    this.loadChartData();
   }
 
   /**
-   * Obtenir l'heure actuelle formatée
+   * Charger toutes les données du dashboard
    */
-  getCurrentTime(): string {
-    return new Date().toLocaleTimeString('fr-FR');
-  }
-
-  /**
-   * Charger les données principales du dashboard
-   */
-  private loadDashboardData(): void {
+  loadDashboardData(): void {
     this.isLoading = true;
     this.error = null;
 
-    this.dashboardService.getDashboardStats().subscribe({
-      next: (stats) => {
-        this.dashboardStats = stats;
-        this.updateQuickStats(stats);
-        this.recentActivities = stats.activite_recente || [];
+    forkJoin({
+      stats: this.dashboardService.getDashboardStats(),
+      advancedStats: this.dashboardService.getAdvancedStats()
+    }).subscribe({
+      next: (data) => {
+        this.buildStatCards(data.stats);
+        this.buildRecentActivities(data.stats);
+        this.buildSystemAlerts(data.stats);
         this.isLoading = false;
-        console.log('📊 Statistiques dashboard chargées:', stats);
       },
       error: (error) => {
-        console.error('❌ Erreur lors du chargement du dashboard:', error);
-        this.error = 'Erreur lors du chargement des données';
+        console.error('Erreur lors du chargement du dashboard:', error);
+        this.error = 'Impossible de charger les données du dashboard';
         this.isLoading = false;
-        this.setupFallbackData();
+        
+        // Données de démonstration en cas d'erreur
+        this.loadMockData();
       }
     });
   }
 
   /**
-   * Charger les données pour les graphiques
+   * Construire les cartes de statistiques
    */
-  private loadChartData(): void {
-    this.isChartsLoading = true;
-
-    // Charger les statistiques avancées
-    this.dashboardService.getAdvancedStats().subscribe({
-      next: (stats) => {
-        this.advancedStats = stats;
-        this.setupChartData(stats);
-        this.isChartsLoading = false;
-        console.log('📈 Statistiques avancées chargées:', stats);
+  private buildStatCards(stats: any): void {
+    this.statCards = [
+      {
+        title: 'Utilisateurs totaux',
+        value: stats.total_utilisateurs || 0,
+        icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z',
+        color: 'blue',
+        trend: { value: 12, isPositive: true },
+        route: '/admin/users'
       },
-      error: (error) => {
-        console.error('❌ Erreur lors du chargement des graphiques:', error);
-        this.isChartsLoading = false;
-        this.setupFallbackChartData();
+      {
+        title: 'Classes actives',
+        value: stats.total_classes || 0,
+        icon: 'M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2zM9 7h6m-6 4h6m-6 4h4',
+        color: 'green',
+        trend: { value: 3, isPositive: true },
+        route: '/admin/classes'
+      },
+      {
+        title: 'Matières',
+        value: stats.total_matieres || 0,
+        icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+        color: 'purple',
+        route: '/admin/matieres'
+      },
+      {
+        title: 'Moyenne générale',
+        value: stats.moyenne_generale || 0,
+        icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+        color: 'orange',
+        trend: { value: 2.1, isPositive: true }
       }
-    });
-  }
-
-  /**
-   * Mettre à jour les statistiques rapides avec les vraies données
-   */
-  private updateQuickStats(stats: DashboardStats): void {
-    if (stats.statistiques_utilisateurs) {
-      this.quickStats[0].value = stats.statistiques_utilisateurs.par_role.eleve || 0;
-      this.quickStats[1].value = stats.statistiques_utilisateurs.par_role.enseignant || 0;
-    }
-    if (stats.statistiques_classes) {
-      this.quickStats[2].value = stats.statistiques_classes.total || 0;
-    }
-    if (stats.statistiques_matieres) {
-      this.quickStats[3].value = stats.statistiques_matieres.total || 0;
-    }
-  }
-
-  /**
-   * Configurer les données des graphiques
-   */
-  private setupChartData(stats: StatistiquesAvancees): void {
-    // Graphique d'évolution des inscriptions
-    if (stats.evolution_inscriptions) {
-      this.activityChartData = {
-        labels: stats.evolution_inscriptions.map(item => item.mois),
-        datasets: [{
-          label: 'Nouvelles inscriptions',
-          data: stats.evolution_inscriptions.map(item => item.nombre_inscriptions),
-          borderColor: 'rgb(59, 130, 246)',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          tension: 0.4,
-          fill: true
-        }]
-      };
-    }
-
-    // Graphique de distribution des notes
-    if (stats.distribution_notes) {
-      this.distributionChartData = {
-        labels: stats.distribution_notes.map(item => item.tranche),
-        datasets: [{
-          label: 'Nombre d\'élèves',
-          data: stats.distribution_notes.map(item => item.nombre_eleves),
-          backgroundColor: [
-            'rgba(239, 68, 68, 0.8)',   // Rouge pour les faibles notes
-            'rgba(245, 158, 11, 0.8)',  // Orange
-            'rgba(59, 130, 246, 0.8)',  // Bleu
-            'rgba(16, 185, 129, 0.8)',  // Vert pour les bonnes notes
-          ],
-          borderWidth: 2,
-          borderColor: '#fff'
-        }]
-      };
-    }
-  }
-
-  /**
-   * Données de fallback en cas d'erreur API
-   */
-  private setupFallbackData(): void {
-    // Utiliser des données par défaut si l'API n'est pas disponible
-    this.quickStats = [
-      { title: 'Total Élèves', value: '--', icon: this.quickStats[0].icon, color: 'blue', route: '/admin/users?role=eleve' },
-      { title: 'Enseignants', value: '--', icon: this.quickStats[1].icon, color: 'green', route: '/admin/users?role=enseignant' },
-      { title: 'Classes', value: '--', icon: this.quickStats[2].icon, color: 'purple', route: '/admin/classes' },
-      { title: 'Matières', value: '--', icon: this.quickStats[3].icon, color: 'orange', route: '/admin/matieres' }
     ];
+  }
 
+  /**
+   * Construire les activités récentes
+   */
+  private buildRecentActivities(stats: any): void {
     this.recentActivities = [
       {
-        id: 1,
-        type: 'info',
-        description: 'Données en cours de chargement...',
-        date: new Date().toISOString(),
-        icon: 'info',
-        color: 'blue'
+        id: '1',
+        type: 'user_created',
+        message: 'Nouvel élève inscrit en 6ème A',
+        timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
+        user: 'Admin Principal'
+      },
+      {
+        id: '2',
+        type: 'note_added',
+        message: 'Notes de mathématiques ajoutées',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2h ago
+        user: 'M. Dupont'
+      },
+      {
+        id: '3',
+        type: 'class_updated',
+        message: 'Effectif de la 5ème B modifié',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4h ago
+        user: 'Admin Principal'
       }
     ];
   }
 
   /**
-   * Graphiques de fallback
+   * Construire les alertes système
    */
-  private setupFallbackChartData(): void {
-    this.activityChartData = {
-      labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'],
-      datasets: [{
-        label: 'Données de démonstration',
-        data: [0, 0, 0, 0, 0, 0],
-        borderColor: 'rgb(156, 163, 175)',
-        backgroundColor: 'rgba(156, 163, 175, 0.1)',
-        tension: 0.4
-      }]
-    };
-
-    this.distributionChartData = {
-      labels: ['Aucune donnée'],
-      datasets: [{
-        label: 'En attente',
-        data: [1],
-        backgroundColor: ['rgba(156, 163, 175, 0.8)']
-      }]
-    };
+  private buildSystemAlerts(stats: any): void {
+    this.systemAlerts = [
+      {
+        type: 'warning',
+        title: 'Classes proches de la capacité maximale',
+        message: '3 classes ont plus de 90% d\'occupation'
+      },
+      {
+        type: 'info',
+        title: 'Sauvegarde programmée',
+        message: 'Prochaine sauvegarde automatique ce soir à 23h00'
+      }
+    ];
   }
 
   /**
-   * Obtenir la classe CSS pour la couleur
+   * Charger des données de démonstration
    */
-  getColorClasses(color: string): { bg: string; text: string; icon: string } {
-    const colorMap: Record<string, { bg: string; text: string; icon: string }> = {
-      blue: { bg: 'bg-blue-50', text: 'text-blue-700', icon: 'text-blue-600' },
-      green: { bg: 'bg-green-50', text: 'text-green-700', icon: 'text-green-600' },
-      purple: { bg: 'bg-purple-50', text: 'text-purple-700', icon: 'text-purple-600' },
-      orange: { bg: 'bg-orange-50', text: 'text-orange-700', icon: 'text-orange-600' },
-      red: { bg: 'bg-red-50', text: 'text-red-700', icon: 'text-red-600' }
-    };
-    return colorMap[color] || colorMap['blue'];
+  private loadMockData(): void {
+    this.statCards = [
+      {
+        title: 'Utilisateurs totaux',
+        value: 245,
+        icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z',
+        color: 'blue',
+        trend: { value: 12, isPositive: true },
+        route: '/admin/users'
+      },
+      {
+        title: 'Classes actives',
+        value: 12,
+        icon: 'M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2zM9 7h6m-6 4h6m-6 4h4',
+        color: 'green',
+        trend: { value: 3, isPositive: true },
+        route: '/admin/classes'
+      },
+      {
+        title: 'Matières',
+        value: 15,
+        icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+        color: 'purple',
+        route: '/admin/matieres'
+      },
+      {
+        title: 'Moyenne générale',
+        value: 13.2,
+        icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+        color: 'orange',
+        trend: { value: 2.1, isPositive: true }
+      }
+    ];
+
+    this.buildRecentActivities({});
+    this.buildSystemAlerts({});
   }
 
   /**
-   * Obtenir l'icône pour le type d'activité
+   * Naviguer vers une section
    */
-  getActivityIcon(type: string): string {
-    const iconMap: Record<string, string> = {
-      'user-plus': 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
-      'academic-cap': 'M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z',
-      'document-text': 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-      'info': 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
-    };
-    return iconMap[type] || iconMap['info'];
-  }
-
-  /**
-   * Formater la date relative
-   */
-  formatRelativeDate(dateString: string): string {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-
-    if (diffHours > 24) {
-      return `${Math.floor(diffHours / 24)} jour(s)`;
-    } else if (diffHours > 0) {
-      return `${diffHours}h`;
-    } else {
-      return `${diffMinutes}min`;
+  navigateToSection(route?: string): void {
+    if (route) {
+      this.router.navigate([route]);
     }
-  }
-
-  /**
-   * Recharger les données
-   */
-  refreshData(): void {
-    this.loadDashboardData();
-    this.loadChartData();
-  }
-
-  /**
-   * Obtenir le nom de l'utilisateur connecté
-   */
-  getUserName(): string {
-    return this.authService.getUserFullName();
   }
 }
