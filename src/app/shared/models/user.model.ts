@@ -1,4 +1,3 @@
-// ===== src/app/shared/models/user.model.ts (ÉTENDU) =====
 import { Bulletin } from "./bulletin.model";
 import { Classe } from "./classe.model";
 import { Matiere } from "./matiere.model";
@@ -20,6 +19,7 @@ export interface User {
   updated_at: string;
   photo_url?: string;
   documents?: UserDocument[];
+  identifiant_genere?: string;
 }
 
 export interface Enseignant extends User {
@@ -156,7 +156,7 @@ export type UserSortField =
   | 'classe'
   | 'moyenne_generale';
 
-// ===== INTERFACES POUR LES RÉPONSES =====
+// ===== INTERFACE UNIFIÉE POUR LA PAGINATION =====
 
 export interface PaginatedResponse<T> {
   data: T[];
@@ -165,16 +165,49 @@ export interface PaginatedResponse<T> {
     per_page: number;
     total: number;
     last_page: number;
-    from: number;
-    to: number;
+    from: number | null;
+    to: number | null;
   };
   links: {
-    first: string;
-    last: string;
-    prev: string | null;
-    next: string | null;
+    first?: string;
+    last?: string;
+    prev?: string | null;
+    next?: string | null;
   };
 }
+
+// ===== INTERFACE POUR LA RÉPONSE BRUTE DE VOTRE API LARAVEL =====
+
+export interface LaravelApiResponse<T> {
+  message: string;
+  statut: 'succes' | 'erreur';
+  utilisateurs: {
+    current_page: number;
+    data: T[];
+    first_page_url: string;
+    from: number | null;
+    last_page: number;
+    last_page_url: string;
+    links: Array<{
+      url: string | null;
+      label: string;
+      active: boolean;
+    }>;
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number | null;
+    total: number;
+  };
+  filtres: {
+    role: string | null;
+    actif: string | null;
+    recherche: string | null;
+  };
+}
+
+// ===== INTERFACES POUR LES RÉPONSES =====
 
 export interface UserStats {
   total_utilisateurs: number;

@@ -1,6 +1,7 @@
-// ===== src/app/core/services/user.service.ts =====
+// ===== src/app/core/services/user.service.ts (TYPES CORRIGÉS) =====
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { API_ENDPOINTS } from '../constants/api-endpoints';
 import { 
@@ -11,7 +12,8 @@ import {
   CreateEleveRequest,
   UpdateUserRequest,
   UserFilters,
-  PaginatedResponse
+  PaginatedResponse,
+  LaravelApiResponse
 } from '../../shared/models/user.model';
 
 @Injectable({
@@ -23,29 +25,102 @@ export class UserService {
 
   /**
    * Récupérer la liste des utilisateurs avec filtres et pagination
+   * FORMAT DE VOTRE API: { message, statut, utilisateurs: { data: [...], pagination... } }
    */
   getUsers(filters?: UserFilters): Observable<PaginatedResponse<User>> {
     const params = this.buildFilterParams(filters);
-    return this.apiService.get<PaginatedResponse<User>>(
-      API_ENDPOINTS.ADMIN.USERS,
-      { params }
+    return this.apiService.get<LaravelApiResponse<User>>(API_ENDPOINTS.ADMIN.USERS, { params }).pipe(
+      map((response: LaravelApiResponse<User>) => {
+        console.log('🔍 Réponse API brute:', response);
+        
+        // Votre API retourne: { message, statut, utilisateurs: { data: [...], current_page, ... } }
+        if (response && response.utilisateurs) {
+          const result: PaginatedResponse<User> = {
+            data: response.utilisateurs.data || [],
+            meta: {
+              current_page: response.utilisateurs.current_page,
+              per_page: response.utilisateurs.per_page,
+              total: response.utilisateurs.total,
+              last_page: response.utilisateurs.last_page,
+              from: response.utilisateurs.from,
+              to: response.utilisateurs.to
+            },
+            links: {
+              first: response.utilisateurs.first_page_url,
+              last: response.utilisateurs.last_page_url,
+              prev: response.utilisateurs.prev_page_url,
+              next: response.utilisateurs.next_page_url
+            }
+          };
+          
+          console.log('✅ Données transformées:', result);
+          return result;
+        }
+        
+        console.warn('⚠️ Format de réponse inattendu:', response);
+        return this.createEmptyPaginatedResponse();
+      })
     );
   }
 
   /**
+   * Créer une réponse paginée vide
+   */
+  private createEmptyPaginatedResponse(): PaginatedResponse<User> {
+    return {
+      data: [],
+      meta: {
+        current_page: 1,
+        per_page: 15,
+        total: 0,
+        last_page: 1,
+        from: null,
+        to: null
+      },
+      links: {
+        first: undefined,
+        last: undefined,
+        prev: null,
+        next: null
+      }
+    };
+  }
+
+  /**
    * Récupérer un utilisateur par ID
+   * Adapté au format de votre API (à adapter selon votre réponse exacte)
    */
   getUserById(id: number): Observable<User> {
-    return this.apiService.get<User>(API_ENDPOINTS.ADMIN.USER_BY_ID(id));
+    return this.apiService.get<any>(API_ENDPOINTS.ADMIN.USER_BY_ID(id)).pipe(
+      map((response: any) => {
+        // Si votre API pour un utilisateur unique retourne { message, statut, utilisateur: {...} }
+        if (response && response.utilisateur) {
+          return response.utilisateur as User;
+        }
+        // Si votre API retourne directement l'utilisateur dans data
+        if (response && response.data) {
+          return response.data as User;
+        }
+        return response as User;
+      })
+    );
   }
 
   /**
    * Créer un nouvel enseignant
    */
   createEnseignant(data: CreateEnseignantRequest): Observable<Enseignant> {
-    return this.apiService.post<Enseignant>(
-      API_ENDPOINTS.ADMIN.CREATE_ENSEIGNANT,
-      data
+    return this.apiService.post<any>(API_ENDPOINTS.ADMIN.CREATE_ENSEIGNANT, data).pipe(
+      map((response: any) => {
+        // Adaptez selon le format de réponse de votre API pour la création
+        if (response && response.utilisateur) {
+          return response.utilisateur as Enseignant;
+        }
+        if (response && response.data) {
+          return response.data as Enseignant;
+        }
+        return response as Enseignant;
+      })
     );
   }
 
@@ -53,9 +128,16 @@ export class UserService {
    * Créer un nouvel élève
    */
   createEleve(data: CreateEleveRequest): Observable<Eleve> {
-    return this.apiService.post<Eleve>(
-      API_ENDPOINTS.ADMIN.CREATE_ELEVE,
-      data
+    return this.apiService.post<any>(API_ENDPOINTS.ADMIN.CREATE_ELEVE, data).pipe(
+      map((response: any) => {
+        if (response && response.utilisateur) {
+          return response.utilisateur as Eleve;
+        }
+        if (response && response.data) {
+          return response.data as Eleve;
+        }
+        return response as Eleve;
+      })
     );
   }
 
@@ -63,9 +145,16 @@ export class UserService {
    * Mettre à jour un utilisateur
    */
   updateUser(id: number, data: UpdateUserRequest): Observable<User> {
-    return this.apiService.put<User>(
-      API_ENDPOINTS.ADMIN.UPDATE_USER(id),
-      data
+    return this.apiService.put<any>(API_ENDPOINTS.ADMIN.UPDATE_USER(id), data).pipe(
+      map((response: any) => {
+        if (response && response.utilisateur) {
+          return response.utilisateur as User;
+        }
+        if (response && response.data) {
+          return response.data as User;
+        }
+        return response as User;
+      })
     );
   }
 
@@ -73,9 +162,16 @@ export class UserService {
    * Activer ou désactiver un utilisateur
    */
   toggleUserStatus(id: number): Observable<User> {
-    return this.apiService.patch<User>(
-      API_ENDPOINTS.ADMIN.TOGGLE_USER_STATUS(id),
-      {}
+    return this.apiService.patch<any>(API_ENDPOINTS.ADMIN.TOGGLE_USER_STATUS(id), {}).pipe(
+      map((response: any) => {
+        if (response && response.utilisateur) {
+          return response.utilisateur as User;
+        }
+        if (response && response.data) {
+          return response.data as User;
+        }
+        return response as User;
+      })
     );
   }
 
@@ -83,9 +179,13 @@ export class UserService {
    * Réinitialiser le mot de passe d'un utilisateur
    */
   resetPassword(id: number): Observable<{ nouveau_mot_de_passe: string }> {
-    return this.apiService.patch<{ nouveau_mot_de_passe: string }>(
-      API_ENDPOINTS.ADMIN.RESET_PASSWORD(id),
-      {}
+    return this.apiService.patch<any>(API_ENDPOINTS.ADMIN.RESET_PASSWORD(id), {}).pipe(
+      map((response: any) => {
+        if (response && response.data) {
+          return response.data;
+        }
+        return response;
+      })
     );
   }
 
@@ -93,7 +193,9 @@ export class UserService {
    * Supprimer un utilisateur
    */
   deleteUser(id: number): Observable<void> {
-    return this.apiService.delete<void>(API_ENDPOINTS.ADMIN.DELETE_USER(id));
+    return this.apiService.delete<any>(API_ENDPOINTS.ADMIN.DELETE_USER(id)).pipe(
+      map(() => void 0)
+    );
   }
 
   /**
@@ -104,6 +206,13 @@ export class UserService {
       `/admin/utilisateurs/${userId}/documents`,
       file,
       { type: documentType }
+    ).pipe(
+      map((response: any) => {
+        if (response && response.data) {
+          return response.data;
+        }
+        return response;
+      })
     );
   }
 
@@ -111,7 +220,14 @@ export class UserService {
    * Récupérer les statistiques des utilisateurs
    */
   getUserStats(): Observable<any> {
-    return this.apiService.get<any>('/admin/utilisateurs/statistiques');
+    return this.apiService.get<any>('/admin/utilisateurs/statistiques').pipe(
+      map((response: any) => {
+        if (response && response.data) {
+          return response.data;
+        }
+        return response;
+      })
+    );
   }
 
   /**
@@ -119,9 +235,13 @@ export class UserService {
    */
   searchUsers(query: string, role?: string): Observable<User[]> {
     const params = { q: query, ...(role && { role }) };
-    return this.apiService.get<User[]>(
-      '/admin/utilisateurs/recherche',
-      { params }
+    return this.apiService.get<any>('/admin/utilisateurs/recherche', { params }).pipe(
+      map((response: any) => {
+        if (Array.isArray(response)) return response as User[];
+        if (response.data && Array.isArray(response.data)) return response.data as User[];
+        if (response.utilisateurs && Array.isArray(response.utilisateurs)) return response.utilisateurs as User[];
+        return [] as User[];
+      })
     );
   }
 
@@ -140,7 +260,14 @@ export class UserService {
    * Importer des utilisateurs depuis un fichier
    */
   importUsers(file: File): Observable<any> {
-    return this.apiService.upload('/admin/utilisateurs/import', file);
+    return this.apiService.upload('/admin/utilisateurs/import', file).pipe(
+      map((response: any) => {
+        if (response && response.data) {
+          return response.data;
+        }
+        return response;
+      })
+    );
   }
 
   /**
@@ -217,9 +344,7 @@ export class UserService {
    * Vérifier si un utilisateur peut être supprimé
    */
   canDeleteUser(user: User): boolean {
-    // Ne pas supprimer le dernier administrateur
     if (user.role === 'administrateur') {
-      // Cette vérification devrait idéalement être faite côté serveur
       return true; // L'API se chargera de la validation
     }
     return true;

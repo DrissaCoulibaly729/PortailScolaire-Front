@@ -149,25 +149,48 @@ export class UserListComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Charger la liste des utilisateurs
+   * Charger la liste des utilisateurs - VERSION SIMPLIFIÉE
    */
   loadUsers(): void {
     this.isLoading = true;
     this.error = null;
 
+    console.log('🔍 Chargement des utilisateurs avec filtres:', this.currentFilters);
+
     this.userService.getUsers(this.currentFilters).subscribe({
       next: (response) => {
-        this.users = response.data;
+        console.log('📦 Réponse transformée:', response);
+        
+        // Le service a déjà transformé les données au bon format
+        this.users = response.data || [];
         this.paginationData = response.meta;
+        
+        console.log('👥 Utilisateurs chargés:', this.users.length);
         this.isLoading = false;
-        console.log('👥 Utilisateurs chargés:', response);
       },
       error: (error) => {
         console.error('❌ Erreur lors du chargement des utilisateurs:', error);
-        this.error = 'Erreur lors du chargement des utilisateurs';
+        this.handleLoadError(error);
         this.isLoading = false;
       }
     });
+  }
+
+  /**
+   * Gérer les erreurs de chargement
+   */
+  private handleLoadError(error: any): void {
+    if (error.status === 401) {
+      this.error = 'Session expirée. Veuillez vous reconnecter.';
+    } else if (error.status === 403) {
+      this.error = 'Accès non autorisé à cette ressource.';
+    } else if (error.status === 404) {
+      this.error = 'Endpoint API non trouvé. Vérifiez la configuration.';
+    } else if (error.status === 0) {
+      this.error = 'Impossible de contacter le serveur. Vérifiez votre connexion.';
+    } else {
+      this.error = error.message || 'Erreur lors du chargement des utilisateurs';
+    }
   }
 
   /**
