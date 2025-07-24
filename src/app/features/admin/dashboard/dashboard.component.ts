@@ -31,7 +31,7 @@ export class DashboardComponent implements OnInit {
   advancedStats: StatistiquesAvancees | null = null;
   error: string | null = null;
 
-  // Graphiques
+  // Graphiques - PROPRIÉTÉS AJOUTÉES
   activityChartData: any = null;
   distributionChartData: any = null;
   isChartsLoading = true;
@@ -78,6 +78,13 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.loadDashboardData();
     this.loadChartData();
+  }
+
+  /**
+   * Obtenir l'heure actuelle formatée
+   */
+  getCurrentTime(): string {
+    return new Date().toLocaleTimeString('fr-FR');
   }
 
   /**
