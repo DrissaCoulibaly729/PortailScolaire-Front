@@ -1,5 +1,7 @@
 // src/app/shared/models/classe.model.ts
 import { Enseignant, Eleve } from "./user.model";
+import { ApiResponse } from './api-response.model';
+import { PaginatedResponse } from './common.model';
 
 // ===== INTERFACE PRINCIPALE =====
 export interface Classe {
@@ -49,23 +51,23 @@ export interface ClasseFilters {
 }
 
 // ===== INTERFACE POUR LA PAGINATION =====
-export interface PaginatedResponse<T> {
-  data: T[];
-  meta: {
-    current_page: number;
-    per_page: number;
-    total: number;
-    last_page: number;
-    from: number | null;
-    to: number | null;
-  };
-  links: {
-    first?: string;
-    last?: string;
-    prev?: string | null;
-    next?: string | null;
-  };
-}
+// export interface PaginatedResponse<T> {
+//   data: T[];
+//   meta: {
+//     current_page: number;
+//     per_page: number;
+//     total: number;
+//     last_page: number;
+//     from: number | null;
+//     to: number | null;
+//   };
+//   links: {
+//     first?: string;
+//     last?: string;
+//     prev?: string | null;
+//     next?: string | null;
+//   };
+// }
 
 // ===== INTERFACE POUR LES STATISTIQUES =====
 export interface ClasseStatistiques {

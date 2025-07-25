@@ -1,6 +1,8 @@
 // src/app/shared/models/note.model.ts
 import { Matiere } from "./matiere.model";
 import { Eleve, Enseignant } from "./user.model";
+import { ApiResponse } from './api-response.model';
+import { PaginatedResponse } from './common.model';
 
 // ===== TYPES DE BASE =====
 export type TypeEvaluation = 'devoir' | 'controle' | 'examen';
@@ -64,33 +66,6 @@ export interface NoteFilters {
   per_page?: number;
   sort_by?: string;
   sort_direction?: 'asc' | 'desc';
-}
-
-// ===== INTERFACE POUR LA PAGINATION =====
-export interface PaginatedResponse<T> {
-  data: T[];
-  meta: {
-    current_page: number;
-    per_page: number;
-    total: number;
-    last_page: number;
-    from: number | null;
-    to: number | null;
-  };
-  links: {
-    first?: string;
-    last?: string;
-    prev?: string | null;
-    next?: string | null;
-  };
-}
-
-// ===== INTERFACE POUR LA RÉPONSE API =====
-export interface ApiResponse<T> {
-  message: string;
-  statut: 'succes' | 'erreur';
-  data: T;
-  erreurs?: { [key: string]: string[] };
 }
 
 // ===== INTERFACES POUR LES OPÉRATIONS GROUPÉES =====
@@ -294,4 +269,3 @@ export interface NoteWithDetails extends Note {
   couleur_mention?: string;
   peut_modifier?: boolean;
 }
-

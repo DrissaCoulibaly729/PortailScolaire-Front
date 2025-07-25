@@ -8,10 +8,11 @@ import {
   NoteBulletin,
   BulletinFilters,
   GenerateBulletinRequest,
-  ApiResponse,
-  PaginatedResponse,
+  
   MENTIONS_BULLETIN
 } from './bulletin.model';
+import { ApiResponse } from './api-response.model';
+import { PaginatedResponse } from './common.model';
 
 import {
   Note,

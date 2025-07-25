@@ -2,6 +2,8 @@
 import { Eleve } from "./user.model";
 import { Classe } from "./classe.model";
 import { Note } from "./note.model";
+import { ApiResponse } from './api-response.model';
+import { PaginatedResponse } from './common.model';
 
 // ===== TYPES DE BASE =====
 export type StatutBulletin = 'brouillon' | 'publie' | 'archive';
@@ -126,31 +128,31 @@ export interface BulletinFilters {
 }
 
 // ===== INTERFACE POUR LA PAGINATION =====
-export interface PaginatedResponse<T> {
-  data: T[];
-  meta: {
-    current_page: number;
-    per_page: number;
-    total: number;
-    last_page: number;
-    from: number | null;
-    to: number | null;
-  };
-  links: {
-    first?: string;
-    last?: string;
-    prev?: string | null;
-    next?: string | null;
-  };
-}
+// export interface PaginatedResponse<T> {
+//   data: T[];
+//   meta: {
+//     current_page: number;
+//     per_page: number;
+//     total: number;
+//     last_page: number;
+//     from: number | null;
+//     to: number | null;
+//   };
+//   links: {
+//     first?: string;
+//     last?: string;
+//     prev?: string | null;
+//     next?: string | null;
+//   };
+// }
 
-// ===== INTERFACE POUR LA RÉPONSE API =====
-export interface ApiResponse<T> {
-  message: string;
-  statut: 'succes' | 'erreur';
-  data: T;
-  erreurs?: { [key: string]: string[] };
-}
+// // ===== INTERFACE POUR LA RÉPONSE API =====
+// export interface ApiResponse<T> {
+//   message: string;
+//   statut: 'succes' | 'erreur';
+//   data: T;
+//   erreurs?: { [key: string]: string[] };
+// }
 
 // ===== STATISTIQUES DE BULLETIN =====
 export interface BulletinStatistiques {

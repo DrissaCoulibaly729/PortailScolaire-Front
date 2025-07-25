@@ -8,9 +8,9 @@ import {
   CreateNoteRequest, 
   UpdateNoteRequest, 
   NoteFilters,
-  PaginatedResponse,
-  ApiResponse
+ 
 } from '../../shared/models/note.model';
+import { ApiResponse, PaginatedResponse } from '../../shared/models/common.model';
 
 @Injectable({
   providedIn: 'root'

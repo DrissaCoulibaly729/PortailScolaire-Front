@@ -8,10 +8,10 @@ import { ClasseService } from '../../../../core/services/classe.service';
 import { 
   Classe, 
   ClasseFilters, 
-  PaginatedResponse,
   NIVEAUX_DISPONIBLES as NIVEAUX_SCOLAIRES,
   NiveauScolaire 
 } from '../../../../shared/models/classe.model';
+import { PaginatedResponse } from '../../../../shared/models/common.model';
 
 @Component({
   selector: 'app-classe-list',

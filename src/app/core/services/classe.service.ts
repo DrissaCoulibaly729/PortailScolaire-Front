@@ -6,12 +6,12 @@ import { API_ENDPOINTS } from '../constants/api-endpoints';
 import { 
   Classe, 
   ClasseStatistiques,
-  PaginatedResponse,
   CreateClasseRequest,
   UpdateClasseRequest,
   ClasseFilters 
 } from '../../shared/models/classe.model';
 import { Enseignant } from '../../shared/models/user.model';
+import { PaginatedResponse } from '../../shared/models/common.model';
 
 @Injectable({
   providedIn: 'root'
