@@ -8,9 +8,11 @@ import {
   Bulletin, 
   getMentionLabel, 
   getMentionColor,
-  formatNote 
+  formatNote, 
+  StatutBulletin
 } from '../../../shared/models/notes-bulletins.model';
 import { NoteService } from '../../../core/services/note.service';
+import { TypePeriode } from '../../../shared/models/note.model';
 
 @Component({
   selector: 'app-eleve-dashboard',
