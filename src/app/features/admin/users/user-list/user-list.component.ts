@@ -44,7 +44,7 @@ interface UserAction {
               </svg>
               Exporter
             </button>
-            <button routerLink="/admin/users/create" 
+            <button routerLink="/admin/utilisateurs/create" 
                     class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -273,7 +273,7 @@ interface UserAction {
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div class="flex justify-end space-x-2">
                     <!-- View -->
-                    <button (click)="viewUser(user)" 
+                    <button  (click)="viewUser(user)" 
                             class="text-blue-600 hover:text-blue-900" 
                             title="Voir les détails">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -330,7 +330,7 @@ interface UserAction {
                   </svg>
                   <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun utilisateur trouvé</h3>
                   <p class="text-gray-500 mb-6">Aucun utilisateur ne correspond aux critères de recherche.</p>
-                  <button routerLink="/admin/users/create" 
+                  <button routerLink="/admin/utilisateurs/create" 
                           class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>

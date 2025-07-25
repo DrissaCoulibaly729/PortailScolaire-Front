@@ -1,4 +1,3 @@
-// ===== src/app/core/auth/auth.service.ts (CORRECTION PERSISTANCE) =====
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
@@ -27,22 +26,26 @@ export class AuthService {
   public currentUser$ = this.currentUserSubject.asObservable();
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
+  // 🔧 CORRECTION: Clé pour stocker l'utilisateur dans localStorage
+  private readonly USER_STORAGE_KEY = 'portail_scolaire_user';
+
   constructor(
     private apiService: ApiService,
     private router: Router
   ) {
-    // 🔧 CORRECTION: Initialisation asynchrone pour éviter les problèmes
+    // 🔧 CORRECTION: Initialisation synchrone d'abord, puis vérification en arrière-plan
     this.initializeAuth();
   }
 
   /**
-   * 🔧 NOUVELLE MÉTHODE: Initialisation asynchrone de l'authentification
+   * 🔧 CORRECTION MAJEURE: Initialisation avec persistance utilisateur
    */
-  private async initializeAuth(): Promise<void> {
+  private initializeAuth(): void {
     console.log('🔐 Initialisation de l\'authentification...');
     
     try {
       const token = this.getToken();
+      const storedUser = this.getStoredUser();
       
       if (!token || !this.isValidSanctumToken(token)) {
         console.log('❌ Aucun token valide trouvé');
@@ -51,26 +54,96 @@ export class AuthService {
         return;
       }
 
-      console.log('🔑 Token trouvé, vérification du profil...');
-      
-      // Récupérer le profil utilisateur depuis l'API
-      this.getProfile().subscribe({
-        next: (user) => {
-          console.log('✅ Utilisateur reconnecté automatiquement:', user);
-          this.setAuthenticated(user);
-          this.isInitialized = true;
-        },
-        error: (error) => {
-          console.error('❌ Erreur lors de la récupération du profil:', error);
-          this.setNotAuthenticated();
-          this.isInitialized = true;
-        }
-      });
+      if (storedUser) {
+        // ✅ CORRECTION: Utiliser l'utilisateur stocké directement
+        console.log('✅ Utilisateur trouvé dans le localStorage:', storedUser.email);
+        this.setAuthenticated(storedUser);
+        this.isInitialized = true;
+        
+        // 🔧 NOUVEAU: Vérification optionnelle en arrière-plan (sans déconnecter en cas d'erreur)
+        this.verifyProfileInBackground();
+      } else {
+        // Seulement si pas d'utilisateur stocké, on essaie de récupérer le profil
+        console.log('⚠️ Token trouvé mais pas d\'utilisateur stocké, récupération du profil...');
+        this.getProfile().subscribe({
+          next: (user) => {
+            console.log('✅ Profil récupéré et utilisateur reconnecté:', user.email);
+            this.setAuthenticated(user);
+            this.storeUser(user); // ✅ CORRECTION: Stocker l'utilisateur
+            this.isInitialized = true;
+          },
+          error: (error) => {
+            console.error('❌ Erreur lors de la récupération du profil:', error);
+            this.setNotAuthenticated();
+            this.isInitialized = true;
+          }
+        });
+      }
     } catch (error) {
       console.error('❌ Erreur lors de l\'initialisation:', error);
       this.setNotAuthenticated();
       this.isInitialized = true;
     }
+  }
+
+  /**
+   * 🔧 NOUVELLE MÉTHODE: Stocker l'utilisateur dans localStorage
+   */
+  private storeUser(user: User): void {
+    try {
+      localStorage.setItem(this.USER_STORAGE_KEY, JSON.stringify(user));
+      console.log('💾 Utilisateur stocké dans localStorage');
+    } catch (error) {
+      console.error('❌ Erreur lors du stockage de l\'utilisateur:', error);
+    }
+  }
+
+  /**
+   * 🔧 NOUVELLE MÉTHODE: Récupérer l'utilisateur du localStorage
+   */
+  private getStoredUser(): User | null {
+    try {
+      const userData = localStorage.getItem(this.USER_STORAGE_KEY);
+      if (userData) {
+        const user = JSON.parse(userData) as User;
+        console.log('📖 Utilisateur récupéré du localStorage:', user.email);
+        return user;
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ Erreur lors de la lecture de l\'utilisateur stocké:', error);
+      // Nettoyer les données corrompues
+      localStorage.removeItem(this.USER_STORAGE_KEY);
+      return null;
+    }
+  }
+
+  /**
+   * 🔧 NOUVELLE MÉTHODE: Vérification du profil en arrière-plan
+   * Cette méthode ne déconnecte PAS l'utilisateur en cas d'erreur
+   */
+  private verifyProfileInBackground(): void {
+    console.log('🔍 Vérification du profil en arrière-plan...');
+    
+    this.getProfile().subscribe({
+      next: (user) => {
+        console.log('✅ Profil vérifié et à jour:', user.email);
+        // Mettre à jour les données si nécessaire
+        this.currentUserSubject.next(user);
+        this.storeUser(user);
+      },
+      error: (error) => {
+        console.warn('⚠️ Erreur lors de la vérification du profil (arrière-plan):', error);
+        
+        // ✅ CORRECTION: Déconnecter seulement si erreur 401 (token expiré)
+        if (error.status === 401) {
+          console.log('🚨 Token expiré, déconnexion...');
+          this.setNotAuthenticated();
+          this.router.navigate(['/auth/login']);
+        }
+        // Pour les autres erreurs (réseau, etc.), on garde l'utilisateur connecté
+      }
+    });
   }
 
   /**
@@ -129,7 +202,7 @@ export class AuthService {
           this.handleLogout();
         }),
         catchError(error => {
-          // Même en cas d'erreur, on déconnecte localement
+          // Même en cas d'erreur API, on déconnecte localement
           this.handleLogout();
           return of(null);
         })
@@ -141,7 +214,6 @@ export class AuthService {
    */
   getProfile(): Observable<User> {
     return this.apiService.get<any>(API_ENDPOINTS.AUTH.PROFILE, { 
-      // Éviter l'intercepteur pour cette requête spécifique
       skipErrorHandling: true 
     }).pipe(
       map((response: any) => {
@@ -155,12 +227,10 @@ export class AuthService {
         return response as User;
       }),
       tap(user => {
-        console.log('👤 Profil utilisateur récupéré:', user);
-        this.currentUserSubject.next(user);
+        console.log('👤 Profil utilisateur récupéré:', user.email);
       }),
       catchError(error => {
         console.error('❌ Erreur lors de la récupération du profil:', error);
-        // Ne pas appeler setNotAuthenticated ici pour éviter les boucles
         return throwError(() => error);
       })
     );
@@ -180,7 +250,9 @@ export class AuthService {
     return this.apiService.get(API_ENDPOINTS.AUTH.VERIFY_TOKEN)
       .pipe(
         catchError(error => {
-          this.handleLogout();
+          if (error.status === 401) {
+            this.handleLogout();
+          }
           return throwError(() => error);
         })
       );
@@ -201,7 +273,16 @@ export class AuthService {
     const user = this.getCurrentUser();
     
     // Pour Sanctum, on considère l'utilisateur authentifié s'il a un token valide et un utilisateur en mémoire
-    return !!(token && this.isValidSanctumToken(token) && user);
+    const isAuth = !!(token && this.isValidSanctumToken(token) && user);
+    
+    console.log('🔍 Vérification authentification:', {
+      hasToken: !!token,
+      tokenValid: token ? this.isValidSanctumToken(token) : false,
+      hasUser: !!user,
+      isAuthenticated: isAuth
+    });
+    
+    return isAuth;
   }
 
   /**
@@ -305,7 +386,7 @@ export class AuthService {
   }
 
   /**
-   * 🔧 NOUVELLE MÉTHODE: Définir l'état authentifié
+   * 🔧 CORRECTION: Définir l'état authentifié avec stockage
    */
   private setAuthenticated(user: User): void {
     this.currentUserSubject.next(user);
@@ -314,7 +395,7 @@ export class AuthService {
   }
 
   /**
-   * 🔧 NOUVELLE MÉTHODE: Définir l'état non authentifié
+   * 🔧 CORRECTION: Définir l'état non authentifié avec nettoyage complet
    */
   private setNotAuthenticated(): void {
     this.currentUserSubject.next(null);
@@ -324,16 +405,18 @@ export class AuthService {
   }
 
   /**
-   * 🔧 NOUVELLE MÉTHODE: Nettoyer les tokens
+   * 🔧 CORRECTION: Nettoyer tous les tokens et données
    */
   private clearTokens(): void {
     localStorage.removeItem(APP_CONSTANTS.JWT.TOKEN_KEY);
     localStorage.removeItem(APP_CONSTANTS.JWT.REFRESH_TOKEN_KEY);
+    localStorage.removeItem(this.USER_STORAGE_KEY); // ✅ CORRECTION: Nettoyer aussi l'utilisateur
     localStorage.removeItem('token_expires_at');
+    console.log('🧹 Tokens et données utilisateur nettoyés');
   }
 
   /**
-   * Gérer le succès de la connexion
+   * 🔧 CORRECTION: Gérer le succès de la connexion avec stockage utilisateur
    */
   private handleLoginSuccess(response: LoginResponse): void {
     // Vérifier que le token est valide
@@ -345,10 +428,11 @@ export class AuthService {
     // Stocker le token
     localStorage.setItem(APP_CONSTANTS.JWT.TOKEN_KEY, response.token);
     
-    // Stocker les informations utilisateur
+    // ✅ CORRECTION: Stocker l'utilisateur ET définir l'état authentifié
+    this.storeUser(response.user);
     this.setAuthenticated(response.user);
     
-    console.log('✅ Connexion réussie, token Sanctum stocké');
+    console.log('✅ Connexion réussie, token et utilisateur stockés');
   }
 
   /**
@@ -412,5 +496,38 @@ export class AuthService {
     console.log('🔧 Réinitialisation forcée de l\'authentification');
     this.isInitialized = false;
     this.initializeAuth();
+  }
+
+  /**
+   * 🔧 NOUVELLE MÉTHODE: Vérifier l'état de stockage (pour debug)
+   */
+  debugStorageState(): void {
+    console.log('🔍 État du stockage:', {
+      token: this.getToken()?.substring(0, 20) + '...',
+      storedUser: this.getStoredUser()?.email,
+      currentUser: this.getCurrentUser()?.email,
+      isAuthenticated: this.isAuthenticated()
+    });
+  }
+
+  /**
+   * 🔧 NOUVELLE MÉTHODE: Forcer la synchronisation (si désynchronisation)
+   */
+  forceSyncUserData(): void {
+    console.log('🔄 Synchronisation forcée des données utilisateur...');
+    
+    this.getProfile().subscribe({
+      next: (user) => {
+        this.storeUser(user);
+        this.setAuthenticated(user);
+        console.log('✅ Données utilisateur synchronisées');
+      },
+      error: (error) => {
+        console.error('❌ Erreur lors de la synchronisation:', error);
+        if (error.status === 401) {
+          this.setNotAuthenticated();
+        }
+      }
+    });
   }
 }

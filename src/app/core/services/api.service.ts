@@ -8,8 +8,8 @@ import { ApiResponse } from '../../shared/models/api-response.model';
 interface RequestOptions {
   headers?: HttpHeaders | { [header: string]: string | string[] };
   params?: HttpParams | { [param: string]: string | string[] };
-  skipApiResponseWrapper?: boolean; // Nouvelle option pour skiper le wrapper ApiResponse
-  skipErrorHandling?: boolean; // Nouvelle option pour skiper la gestion des erreurs
+  skipApiResponseWrapper?: boolean;
+  skipErrorHandling?: boolean;
 }
 
 @Injectable({
@@ -25,16 +25,15 @@ export class ApiService {
    */
   get<T>(endpoint: string, options?: RequestOptions): Observable<T> {
     if (options?.skipApiResponseWrapper) {
-      // Retourner directement la réponse sans wrapper
       return this.http.get<T>(`${this.baseUrl}${endpoint}`, options)
         .pipe(
           catchError(error => this.handleError(error))
         );
     }
 
-    return this.http.get<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, options)
+    return this.http.get<any>(`${this.baseUrl}${endpoint}`, options)
       .pipe(
-        map((response: ApiResponse<T>) => this.extractData<T>(response)),
+        map((response: any) => this.extractData<T>(response)),
         catchError(error => this.handleError(error))
       );
   }
@@ -44,16 +43,15 @@ export class ApiService {
    */
   post<T>(endpoint: string, body: any, options?: RequestOptions): Observable<T> {
     if (options?.skipApiResponseWrapper) {
-      // Retourner directement la réponse sans wrapper
       return this.http.post<T>(`${this.baseUrl}${endpoint}`, body, options)
         .pipe(
           catchError(error => this.handleError(error))
         );
     }
 
-    return this.http.post<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, options)
+    return this.http.post<any>(`${this.baseUrl}${endpoint}`, body, options)
       .pipe(
-        map((response: ApiResponse<T>) => this.extractData<T>(response)),
+        map((response: any) => this.extractData<T>(response)),
         catchError(error => this.handleError(error))
       );
   }
@@ -69,9 +67,9 @@ export class ApiService {
         );
     }
 
-    return this.http.put<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, options)
+    return this.http.put<any>(`${this.baseUrl}${endpoint}`, body, options)
       .pipe(
-        map((response: ApiResponse<T>) => this.extractData<T>(response)),
+        map((response: any) => this.extractData<T>(response)),
         catchError(error => this.handleError(error))
       );
   }
@@ -87,9 +85,9 @@ export class ApiService {
         );
     }
 
-    return this.http.patch<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, options)
+    return this.http.patch<any>(`${this.baseUrl}${endpoint}`, body, options)
       .pipe(
-        map((response: ApiResponse<T>) => this.extractData<T>(response)),
+        map((response: any) => this.extractData<T>(response)),
         catchError(error => this.handleError(error))
       );
   }
@@ -105,9 +103,9 @@ export class ApiService {
         );
     }
 
-    return this.http.delete<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, options)
+    return this.http.delete<any>(`${this.baseUrl}${endpoint}`, options)
       .pipe(
-        map((response: ApiResponse<T>) => this.extractData<T>(response)),
+        map((response: any) => this.extractData<T>(response)),
         catchError(error => this.handleError(error))
       );
   }
@@ -132,9 +130,9 @@ export class ApiService {
         );
     }
 
-    return this.http.post<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, formData, options)
+    return this.http.post<any>(`${this.baseUrl}${endpoint}`, formData, options)
       .pipe(
-        map((response: ApiResponse<T>) => this.extractData<T>(response)),
+        map((response: any) => this.extractData<T>(response)),
         catchError(error => this.handleError(error))
       );
   }
@@ -173,13 +171,69 @@ export class ApiService {
   }
 
   /**
-   * Extraire les données de la réponse API (pour le format ApiResponse)
+   * 🔧 MÉTHODE MODIFIÉE - Extraire les données selon le format de votre API Laravel
    */
-  private extractData<T>(response: ApiResponse<T>): T {
+  private extractData<T>(response: any): T {
+    console.log('🔍 ApiService - Réponse reçue:', response);
+    
+    // Vérifier le statut d'erreur
     if (response.statut === 'erreur') {
       throw new Error(response.message || 'Erreur API');
     }
-    return response.data as T;
+
+    // 🎯 LOGIQUE ADAPTÉE À VOTRE API LARAVEL
+    
+    // Format pour les utilisateurs: { message, statut, utilisateurs: {...} }
+    if (response.utilisateurs) {
+      console.log('✅ Format utilisateurs détecté');
+      return response as T;
+    }
+    
+    // Format pour les classes: { message, statut, classes: {...} }
+    if (response.classes) {
+      console.log('✅ Format classes détecté');
+      return response as T;
+    }
+    
+    // Format pour les matières: { message, statut, matieres: {...} }
+    if (response.matieres) {
+      console.log('✅ Format matières détecté');
+      return response as T;
+    }
+    
+    // Format générique avec data: { message, statut, data: {...} }
+    if (response.data !== undefined) {
+      console.log('✅ Format data générique détecté');
+      return response.data as T;
+    }
+    
+    // Format pour un utilisateur unique: { message, statut, utilisateur: {...} }
+    if (response.utilisateur) {
+      console.log('✅ Format utilisateur unique détecté');
+      return response.utilisateur as T;
+    }
+    
+    // Format pour une classe unique: { message, statut, classe: {...} }
+    if (response.classe) {
+      console.log('✅ Format classe unique détecté');
+      return response.classe as T;
+    }
+    
+    // Format pour une matière unique: { message, statut, matiere: {...} }
+    if (response.matiere) {
+      console.log('✅ Format matière unique détecté');
+      return response.matiere as T;
+    }
+    
+    // Si c'est déjà dans le bon format (ex: liste simple)
+    if (Array.isArray(response)) {
+      console.log('✅ Format array direct détecté');
+      return response as T;
+    }
+    
+    // Fallback: retourner la réponse complète
+    console.log('⚠️ Format non reconnu, retour de la réponse complète');
+    return response as T;
   }
 
   /**
@@ -189,10 +243,8 @@ export class ApiService {
     let errorMessage = 'Une erreur inconnue est survenue';
     
     if (error.error instanceof ErrorEvent) {
-      // Erreur côté client
       errorMessage = error.error.message;
     } else {
-      // Erreur côté serveur
       switch (error.status) {
         case 400:
           errorMessage = 'Requête invalide';
@@ -216,7 +268,6 @@ export class ApiService {
           errorMessage = `Erreur ${error.status}: ${error.message}`;
       }
       
-      // Si l'API retourne un message d'erreur spécifique
       if (error.error && error.error.message) {
         errorMessage = error.error.message;
       }
