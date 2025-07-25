@@ -208,7 +208,7 @@ export class ClasseService {
     const params: any = {};
 
     if (filters.niveau) params.niveau = filters.niveau;
-    if (filters.actif !== undefined) params.actif = filters.actif.toString();
+    if (filters.active !== undefined) params.active = filters.active.toString();
     if (filters.recherche) params.recherche = filters.recherche;
     if (filters.page) params.page = filters.page.toString();
     if (filters.per_page) params.per_page = filters.per_page.toString();

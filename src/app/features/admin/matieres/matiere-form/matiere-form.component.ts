@@ -424,23 +424,21 @@ export class MatiereFormComponent implements OnInit {
   /**
    * Add teacher to matiere
    */
-  addTeacher(): void {
-    const teacherId = this.matiereForm.get('selectedTeacher')?.value;
-    if (!teacherId || !this.matiereId) return;
+  onAffecterEnseignant(teacherId: any): void {
+  if (!teacherId || !this.matiereId) return;
 
-    this.matiereService.affecterEnseignant(this.matiereId, { enseignant_id: teacherId }).subscribe({
-      next: () => {
-        this.notificationService.success('Enseignant ajouté', 'L\'enseignant a été affecté à la matière avec succès');
-        this.matiereForm.patchValue({ selectedTeacher: '' });
-        this.loadMatiere(); // Reload to get updated teacher list
-        this.loadAvailableTeachers();
-      },
-      error: (error) => {
-        console.error('Erreur lors de l\'affectation:', error);
-        this.notificationService.error('Erreur', 'Impossible d\'affecter l\'enseignant à la matière');
-      }
-    });
-  }
+  this.matiereService.affecterEnseignant(this.matiereId, teacherId).subscribe({ // ✅ Passer directement teacherId
+    next: () => {
+      this.notificationService.success('Enseignant affecté', 'L\'enseignant a été affecté à la matière avec succès');
+      this.loadEnseignantsDisponibles();
+      this.loadMatiere();
+    },
+    error: (error) => {
+      console.error('Erreur:', error);
+      this.notificationService.error('Erreur', 'Impossible d\'affecter l\'enseignant');
+    }
+  });
+}
 
   /**
    * Remove teacher from matiere

@@ -14,6 +14,7 @@ import {
   NiveauScolaire 
 } from '../../../../shared/models/classe.model';
 import { User } from '../../../../shared/models/user.model';
+import { NotificationService } from '../../../../core/services/notification.service';
 
 @Component({
   selector: 'app-classe-form',

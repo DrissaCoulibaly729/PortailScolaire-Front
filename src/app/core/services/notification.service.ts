@@ -1,108 +1,143 @@
+// src/app/core/services/notification.service.ts
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
 
-export interface NotificationData {
-  id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  title: string;
-  message?: string;
+export type NotificationType = 'success' | 'error' | 'warning' | 'info';
+
+export interface NotificationOptions {
   duration?: number;
-  dismissible?: boolean;
+  closable?: boolean;
+  action?: {
+    label: string;
+    handler: () => void;
+  };
+}
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  timestamp: Date;
+  duration: number;
+  closable: boolean;
+  action?: {
+    label: string;
+    handler: () => void;
+  };
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class NotificationService {
-  private notificationsSubject = new BehaviorSubject<NotificationData[]>([]);
-  public notifications$ = this.notificationsSubject.asObservable();
+  private notifications: Notification[] = [];
+  private notificationId = 0;
 
-  private generateId(): string {
-    return Math.random().toString(36).substr(2, 9);
+  constructor() {}
+
+  /**
+   * Afficher une notification de succès
+   */
+  success(title: string, message: string, options?: NotificationOptions): void {
+    this.showNotification('success', title, message, options);
   }
 
   /**
-   * Show a success notification
+   * Afficher une notification d'erreur
    */
-  success(title: string, message?: string, duration: number = 5000): void {
-    this.show({
-      type: 'success',
+  error(title: string, message: string, options?: NotificationOptions): void {
+    this.showNotification('error', title, message, options);
+  }
+
+  /**
+   * Afficher une notification d'avertissement
+   */
+  warning(title: string, message: string, options?: NotificationOptions): void {
+    this.showNotification('warning', title, message, options);
+  }
+
+  /**
+   * Afficher une notification d'information
+   */
+  info(title: string, message: string, options?: NotificationOptions): void {
+    this.showNotification('info', title, message, options);
+  }
+
+  /**
+   * Afficher une notification
+   */
+  private showNotification(
+    type: NotificationType, 
+    title: string, 
+    message: string, 
+    options?: NotificationOptions
+  ): void {
+    const notification: Notification = {
+      id: `notification-${++this.notificationId}`,
+      type,
       title,
       message,
-      duration
-    });
-  }
-
-  /**
-   * Show an error notification
-   */
-  error(title: string, message?: string, duration: number = 8000): void {
-    this.show({
-      type: 'error',
-      title,
-      message,
-      duration
-    });
-  }
-
-  /**
-   * Show a warning notification
-   */
-  warning(title: string, message?: string, duration: number = 6000): void {
-    this.show({
-      type: 'warning',
-      title,
-      message,
-      duration
-    });
-  }
-
-  /**
-   * Show an info notification
-   */
-  info(title: string, message?: string, duration: number = 5000): void {
-    this.show({
-      type: 'info',
-      title,
-      message,
-      duration
-    });
-  }
-
-  /**
-   * Show a custom notification
-   */
-  show(data: Omit<NotificationData, 'id'>): void {
-    const notification: NotificationData = {
-      id: this.generateId(),
-      dismissible: true,
-      ...data
+      timestamp: new Date(),
+      duration: options?.duration || (type === 'error' ? 0 : 5000),
+      closable: options?.closable !== false,
+      action: options?.action
     };
 
-    const current = this.notificationsSubject.value;
-    this.notificationsSubject.next([...current, notification]);
+    this.notifications.unshift(notification);
 
-    // Auto-dismiss if duration is set
-    if (notification.duration && notification.duration > 0) {
+    // Auto-remove après la durée spécifiée
+    if (notification.duration > 0) {
       setTimeout(() => {
-        this.dismiss(notification.id);
+        this.remove(notification.id);
       }, notification.duration);
+    }
+
+    // Log dans la console pour le développement
+    console.log(`[${type.toUpperCase()}] ${title}: ${message}`);
+  }
+
+  /**
+   * Supprimer une notification
+   */
+  remove(id: string): void {
+    const index = this.notifications.findIndex(n => n.id === id);
+    if (index > -1) {
+      this.notifications.splice(index, 1);
     }
   }
 
   /**
-   * Dismiss a notification by ID
+   * Supprimer toutes les notifications
    */
-  dismiss(id: string): void {
-    const current = this.notificationsSubject.value;
-    const filtered = current.filter(n => n.id !== id);
-    this.notificationsSubject.next(filtered);
+  clear(): void {
+    this.notifications = [];
   }
 
   /**
-   * Clear all notifications
+   * Obtenir toutes les notifications actives
    */
-  clear(): void {
-    this.notificationsSubject.next([]);
+  getNotifications(): Notification[] {
+    return this.notifications;
+  }
+
+  /**
+   * Vérifier s'il y a des notifications
+   */
+  hasNotifications(): boolean {
+    return this.notifications.length > 0;
+  }
+
+  /**
+   * Obtenir le nombre de notifications
+   */
+  getCount(): number {
+    return this.notifications.length;
+  }
+
+  /**
+   * Obtenir les notifications par type
+   */
+  getByType(type: NotificationType): Notification[] {
+    return this.notifications.filter(n => n.type === type);
   }
 }

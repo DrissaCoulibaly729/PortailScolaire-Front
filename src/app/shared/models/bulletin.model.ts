@@ -1,91 +1,262 @@
-import { Periode } from "./notes-bulletins.model";
+// src/app/shared/models/bulletin.model.ts
+import { Eleve } from "./user.model";
+import { Classe } from "./classe.model";
+import { Note } from "./note.model";
 
+// ===== TYPES DE BASE =====
+export type StatutBulletin = 'brouillon' | 'publie' | 'archive';
+export type TypePeriode = 'trimestre1' | 'trimestre2' | 'trimestre3' | 'semestre1' | 'semestre2' | 'annuel';
+
+// ===== INTERFACE PERIODE =====
+export interface Periode {
+  id: number;
+  nom: string;
+  type: TypePeriode;
+  date_debut: string;
+  date_fin: string;
+  actif: boolean;
+  annee_scolaire: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ===== INTERFACE NOTE BULLETIN =====
+export interface NoteBulletin {
+  id: number;
+  bulletin_id: number;
+  matiere_id: number;
+  matiere_nom: string;
+  matiere_code: string;
+  coefficient: number;
+  notes: Note[];
+  moyenne: number;
+  rang?: number;
+  appreciation?: string;
+}
+
+// ===== INTERFACE BULLETIN PRINCIPALE =====
 export interface Bulletin {
   id: number;
   eleve_id: number;
   classe_id: number;
   periode_id: number;
+  annee_scolaire: string;
   moyenne_generale: number;
-  rang?: number;
-  mention: Mention;
-  appreciation_generale?: string;
-  date_generation: string;
+  rang_classe?: number;
+  total_eleves?: number;
+  mention: string;
   statut: StatutBulletin;
-  url_pdf?: string;
-  created_at?: string;
-  updated_at?: string;
+  observations_generales?: string;
+  appreciation_conseil?: string;
+  date_conseil?: string;
+  absences_justifiees?: number;
+  absences_non_justifiees?: number;
+  retards?: number;
+  sanctions?: string;
+  felicitations?: boolean;
+  encouragements?: boolean;
+  avertissement_travail?: boolean;
+  avertissement_conduite?: boolean;
+  blason?: boolean;
   
   // Relations
-  eleve?: {
-    id: number;
-    nom: string;
-    prenom: string;
-    numero_etudiant?: string;
-    date_naissance?: string;
-  };
-  classe?: {
-    id: number;
-    nom: string;
-    niveau: string;
-    section?: string;
-  };
+  eleve?: Eleve;
+  classe?: Classe;
   periode?: Periode;
-  notes_par_matiere?: NoteBulletin[];
-  statistiques_classe?: {
-    moyenne_classe: number;
-    nombre_eleves: number;
-    rang_eleve: number;
-  };
+  notes_bulletins?: NoteBulletin[];
+  
+  // Métadonnées
+  genere_le?: string;
+  genere_par?: string;
+  pdf_url?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface NoteBulletin {
-  matiere_id: number;
-  matiere_nom: string;
-  matiere_code: string;
-  coefficient: number;
-  moyenne: number;
-  nombre_notes: number;
-  appreciation?: string;
-  enseignant?: {
-    nom: string;
-    prenom: string;
-  };
+// ===== INTERFACES POUR LES REQUÊTES =====
+export interface GenerateBulletinRequest {
+  eleve_id: number;
+  periode_id: number;
+  classe_id: number;
+  observations_generales?: string;
+  appreciation_conseil?: string;
+  date_conseil?: string;
+  absences_justifiees?: number;
+  absences_non_justifiees?: number;
+  retards?: number;
+  sanctions?: string;
+  felicitations?: boolean;
+  encouragements?: boolean;
+  avertissement_travail?: boolean;
+  avertissement_conduite?: boolean;
+  blason?: boolean;
 }
 
-export type Mention = 'excellent' | 'tres_bien' | 'bien' | 'assez_bien' | 'passable' | 'insuffisant';
+export interface UpdateBulletinRequest {
+  observations_generales?: string;
+  appreciation_conseil?: string;
+  date_conseil?: string;
+  absences_justifiees?: number;
+  absences_non_justifiees?: number;
+  retards?: number;
+  sanctions?: string;
+  felicitations?: boolean;
+  encouragements?: boolean;
+  avertissement_travail?: boolean;
+  avertissement_conduite?: boolean;
+  blason?: boolean;
+}
 
-export const MENTIONS: { value: Mention; label: string; color: string; seuil_min: number }[] = [
-  { value: 'excellent', label: 'Excellent', color: 'green', seuil_min: 18 },
-  { value: 'tres_bien', label: 'Très Bien', color: 'blue', seuil_min: 16 },
-  { value: 'bien', label: 'Bien', color: 'indigo', seuil_min: 14 },
-  { value: 'assez_bien', label: 'Assez Bien', color: 'yellow', seuil_min: 12 },
-  { value: 'passable', label: 'Passable', color: 'orange', seuil_min: 10 },
-  { value: 'insuffisant', label: 'Insuffisant', color: 'red', seuil_min: 0 }
-];
-
-export type StatutBulletin = 'brouillon' | 'valide' | 'envoye' | 'archive';
-
-export const STATUTS_BULLETIN: { value: StatutBulletin; label: string; color: string }[] = [
-  { value: 'brouillon', label: 'Brouillon', color: 'gray' },
-  { value: 'valide', label: 'Validé', color: 'green' },
-  { value: 'envoye', label: 'Envoyé', color: 'blue' },
-  { value: 'archive', label: 'Archivé', color: 'purple' }
-];
-
+// ===== INTERFACES POUR LES FILTRES =====
 export interface BulletinFilters {
   eleve_id?: number;
   classe_id?: number;
   periode_id?: number;
   annee_scolaire?: string;
   statut?: StatutBulletin;
-  mention?: Mention;
+  moyenne_min?: number;
+  moyenne_max?: number;
+  mention?: string;
+  date_debut?: string;
+  date_fin?: string;
   page?: number;
   per_page?: number;
+  sort_by?: string;
+  sort_direction?: 'asc' | 'desc';
 }
 
-export interface GenerateBulletinRequest {
+// ===== INTERFACE POUR LA PAGINATION =====
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    current_page: number;
+    per_page: number;
+    total: number;
+    last_page: number;
+    from: number | null;
+    to: number | null;
+  };
+  links: {
+    first?: string;
+    last?: string;
+    prev?: string | null;
+    next?: string | null;
+  };
+}
+
+// ===== INTERFACE POUR LA RÉPONSE API =====
+export interface ApiResponse<T> {
+  message: string;
+  statut: 'succes' | 'erreur';
+  data: T;
+  erreurs?: { [key: string]: string[] };
+}
+
+// ===== STATISTIQUES DE BULLETIN =====
+export interface BulletinStatistiques {
+  total_bulletins: number;
+  par_statut: Record<StatutBulletin, number>;
+  moyenne_generale_classe: number;
+  repartition_mentions: Array<{
+    mention: string;
+    nombre: number;
+    pourcentage: number;
+  }>;
+  evolution_moyennes: Array<{
+    periode: string;
+    moyenne: number;
+  }>;
+}
+
+// ===== CONSTANTES =====
+export const STATUTS_BULLETIN: Array<{value: StatutBulletin, label: string, color: string}> = [
+  { value: 'brouillon', label: 'Brouillon', color: 'gray' },
+  { value: 'publie', label: 'Publié', color: 'green' },
+  { value: 'archive', label: 'Archivé', color: 'blue' }
+] as const;
+
+export const PERIODES_TYPES: Array<{value: TypePeriode, label: string}> = [
+  { value: 'trimestre1', label: '1er Trimestre' },
+  { value: 'trimestre2', label: '2ème Trimestre' },
+  { value: 'trimestre3', label: '3ème Trimestre' },
+  { value: 'semestre1', label: '1er Semestre' },
+  { value: 'semestre2', label: '2ème Semestre' },
+  { value: 'annuel', label: 'Annuel' }
+] as const;
+
+export const MENTIONS_BULLETIN = [
+  { value: 'excellent', label: 'Excellent', min: 16, color: 'green' },
+  { value: 'tres_bien', label: 'Très Bien', min: 14, color: 'blue' },
+  { value: 'bien', label: 'Bien', min: 12, color: 'yellow' },
+  { value: 'assez_bien', label: 'Assez Bien', min: 10, color: 'orange' },
+  { value: 'passable', label: 'Passable', min: 8, color: 'red-400' },
+  { value: 'insuffisant', label: 'Insuffisant', min: 0, color: 'red' }
+] as const;
+
+// ===== FONCTIONS UTILITAIRES =====
+export function getStatutBulletinLabel(statut: StatutBulletin): string {
+  const statutObj = STATUTS_BULLETIN.find(s => s.value === statut);
+  return statutObj ? statutObj.label : statut;
+}
+
+export function getStatutBulletinColor(statut: StatutBulletin): string {
+  const statutObj = STATUTS_BULLETIN.find(s => s.value === statut);
+  return statutObj ? statutObj.color : 'gray';
+}
+
+export function getPeriodeLabel(type: TypePeriode): string {
+  const periodeObj = PERIODES_TYPES.find(p => p.value === type);
+  return periodeObj ? periodeObj.label : type;
+}
+
+export function getMentionFromMoyenne(moyenne: number): string {
+  for (const mention of MENTIONS_BULLETIN) {
+    if (moyenne >= mention.min) {
+      return mention.value;
+    }
+  }
+  return 'insuffisant';
+}
+
+export function getMentionLabel(mentionValue: string): string {
+  const mentionObj = MENTIONS_BULLETIN.find(m => m.value === mentionValue);
+  return mentionObj ? mentionObj.label : mentionValue;
+}
+
+export function getMentionColor(mentionValue: string): string {
+  const mentionObj = MENTIONS_BULLETIN.find(m => m.value === mentionValue);
+  return mentionObj ? mentionObj.color : 'gray';
+}
+
+// ===== INTERFACES POUR LES ACTIONS =====
+export interface BulletinAction {
+  id: string;
+  label: string;
+  icon: string;
+  color: string;
+  permission?: string;
+  action: (bulletin: Bulletin) => void;
+}
+
+// ===== TYPES POUR LES FORMULAIRES =====
+export interface BulletinFormData {
   eleve_id: number;
   periode_id: number;
-  appreciation_generale?: string;
-  envoyer_notification?: boolean;
+  classe_id: number;
+  observations_generales: string;
+  appreciation_conseil: string;
+  date_conseil: string;
+  absences_justifiees: number;
+  absences_non_justifiees: number;
+  retards: number;
+  sanctions: string;
+  felicitations: boolean;
+  encouragements: boolean;
+  avertissement_travail: boolean;
+  avertissement_conduite: boolean;
+  blason: boolean;
+}
+
+export interface BulletinFormErrors {
+  [key: string]: string[];
 }
