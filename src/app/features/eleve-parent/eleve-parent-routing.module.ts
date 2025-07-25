@@ -1,11 +1,18 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { EleveDashboardComponent } from './dashboard/dashboard.component'; // ✅ Corrigé : utilise le bon nom d'export
+import { EleveLayoutComponent } from '../../layouts/eleve-layout/eleve-layout.component';
+import { EleveDashboardComponent } from './dashboard/dashboard.component';
 
 const routes: Routes = [
-  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: 'dashboard', component: EleveDashboardComponent }, // ✅ Corrigé
-  { path: 'bulletins', component: EleveDashboardComponent }
+  {
+    path: '',
+    component: EleveLayoutComponent, // ✅ AJOUT DU LAYOUT
+    children: [
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'dashboard', component: EleveDashboardComponent },
+      { path: 'bulletins', component: EleveDashboardComponent } // Remplacez par le bon composant
+    ]
+  }
 ];
 
 @NgModule({

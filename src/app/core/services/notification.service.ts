@@ -42,6 +42,13 @@ export class NotificationService {
     this.showNotification('success', title, message, options);
   }
 
+   showSuccess(message: string, options?: NotificationOptions): void {
+    this.success('Succès', message, options);
+  }
+
+  showError(message: string, options?: NotificationOptions): void {
+    this.error('Erreur', message, options);
+  }
   /**
    * Afficher une notification d'erreur
    */
@@ -140,4 +147,7 @@ export class NotificationService {
   getByType(type: NotificationType): Notification[] {
     return this.notifications.filter(n => n.type === type);
   }
+
+  
+  
 }
