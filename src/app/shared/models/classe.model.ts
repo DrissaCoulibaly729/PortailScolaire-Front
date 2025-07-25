@@ -10,7 +10,7 @@ export interface Classe {
   effectif_max: number;
   effectif_actuel?: number;
   description?: string;
-  active: boolean; // Ajouté la propriété manquante
+  actif: boolean; // Ajouté la propriété manquante
   moyenne: number;
   enseignants?: Enseignant[];
   eleves?: Eleve[];

@@ -294,3 +294,4 @@ export interface NoteWithDetails extends Note {
   couleur_mention?: string;
   peut_modifier?: boolean;
 }
+

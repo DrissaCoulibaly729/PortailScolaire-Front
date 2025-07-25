@@ -179,64 +179,64 @@ import { User } from '../../../../shared/models/user.model';
           </div>
 
           <!-- Enseignants Assignment (if editing) -->
-          <div *ngIf="isEditing" class="bg-white shadow-sm rounded-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-              <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-              </svg>
-              Enseignants affectés
-            </h3>
+<div *ngIf="isEditing" class="bg-white shadow-sm rounded-lg p-6">
+  <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+    </svg>
+    Enseignants affectés
+  </h3>
 
-            <!-- Current Teachers -->
-            <div *ngIf="currentMatiere?.enseignants && currentMatiere.enseignants.length > 0" class="mb-6">
-              <h4 class="text-sm font-medium text-gray-700 mb-3">Enseignants actuels</h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div *ngFor="let enseignant of currentMatiere?.enseignants" 
-                     class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div class="flex items-center">
-                    <div class="h-10 w-10 bg-blue-200 rounded-full flex items-center justify-center">
-                      <span class="text-sm font-medium text-blue-800">
-                        {{ enseignant.nom.charAt(0) }}{{ enseignant.prenom.charAt(0) }}
-                      </span>
-                    </div>
-                    <div class="ml-3">
-                      <p class="text-sm font-medium text-gray-900">{{ enseignant.nom }} {{ enseignant.prenom }}</p>
-                      <p class="text-xs text-gray-500">{{ enseignant.email }}</p>
-                    </div>
-                  </div>
-                  <button type="button" 
-                          (click)="removeTeacher(enseignant.id)"
-                          class="text-red-600 hover:text-red-800">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Add Teacher -->
-            <div>
-              <h4 class="text-sm font-medium text-gray-700 mb-3">Ajouter un enseignant</h4>
-              <div class="flex space-x-3">
-                <select formControlName="selectedTeacher" 
-                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-                  <option value="">Sélectionnez un enseignant</option>
-                  <option *ngFor="let teacher of availableTeachers" [value]="teacher.id">
-                    {{ teacher.nom }} {{ teacher.prenom }} - {{ teacher.email }}
-                  </option>
-                </select>
-                <button type="button" 
-                        (click)="addTeacher()"
-                        [disabled]="!matiereForm.get('selectedTeacher')?.value"
-                        class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
+  <!-- Current Teachers -->
+  <div *ngIf="hasEnseignants()" class="mb-6">
+    <h4 class="text-sm font-medium text-gray-700 mb-3">Enseignants actuels</h4>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div *ngFor="let enseignant of getEnseignants()" 
+           class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <div class="flex items-center">
+          <div class="h-10 w-10 bg-blue-200 rounded-full flex items-center justify-center">
+            <span class="text-sm font-medium text-blue-800">
+              {{ enseignant.nom?.charAt(0) || 'E' }}{{ enseignant.prenom?.charAt(0) || 'N' }}
+            </span>
           </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-gray-900">{{ enseignant.nom }} {{ enseignant.prenom }}</p>
+            <p class="text-xs text-gray-500">{{ enseignant.email }}</p>
+          </div>
+        </div>
+        <button type="button" 
+                (click)="removeTeacher(enseignant.id)"
+                class="text-red-600 hover:text-red-800">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Teacher -->
+  <div>
+    <h4 class="text-sm font-medium text-gray-700 mb-3">Ajouter un enseignant</h4>
+    <div class="flex space-x-3">
+      <select formControlName="selectedTeacher" 
+              class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+        <option value="">Sélectionnez un enseignant</option>
+        <option *ngFor="let teacher of enseignantsDisponibles" [value]="teacher.id">
+          {{ teacher.nom }} {{ teacher.prenom }} - {{ teacher.email }}
+        </option>
+      </select>
+      <button type="button" 
+              (click)="addTeacher()"
+              [disabled]="!matiereForm.get('selectedTeacher')?.value"
+              class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
 
           <!-- Status -->
           <div class="bg-white shadow-sm rounded-lg p-6">
@@ -251,7 +251,7 @@ import { User } from '../../../../shared/models/user.model';
             <div class="flex items-center">
               <input type="checkbox" 
                      id="active"
-                     formControlName="active"
+                     formControlName="actif"
                      class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
               <label for="active" class="ml-2 text-sm text-gray-700">
                 Matière active
@@ -300,6 +300,7 @@ export class MatiereFormComponent implements OnInit {
 
   currentMatiere: Matiere | null = null;
   availableTeachers: User[] = [];
+  enseignantsDisponibles: User[] = []; // ✅ Propriété ajoutée
 
   constructor(
     private fb: FormBuilder,
@@ -352,6 +353,20 @@ export class MatiereFormComponent implements OnInit {
   }
 
   /**
+ * Vérifie si la matière a des enseignants affectés
+ */
+hasEnseignants(): boolean {
+  return !!(this.currentMatiere?.enseignants && this.currentMatiere.enseignants.length > 0);
+}
+
+/**
+ * Retourne la liste des enseignants de la matière (safe)
+ */
+getEnseignants(): User[] {
+  return this.currentMatiere?.enseignants || [];
+}
+
+  /**
    * Load matiere data for editing
    */
   private loadMatiere(): void {
@@ -362,6 +377,7 @@ export class MatiereFormComponent implements OnInit {
       next: (matiere) => {
         this.currentMatiere = matiere;
         this.populateForm(matiere);
+        this.loadEnseignantsDisponibles(); // ✅ Charger les enseignants disponibles
         this.isLoading = false;
       },
       error: (error) => {
@@ -376,14 +392,47 @@ export class MatiereFormComponent implements OnInit {
    * Load available teachers
    */
   private loadAvailableTeachers(): void {
-    this.userService.getUsers({ role: 'enseignant', actif: true }).subscribe({
-      next: (response) => {
-        this.availableTeachers = response.data.filter(teacher => 
-          !this.currentMatiere?.enseignants?.some(assigned => assigned.id === teacher.id)
-        );
+  this.userService.getUsers({ role: 'enseignant', actif: true }).subscribe({
+    next: (response) => {
+      // ✅ Gestion sécurisée de la réponse
+      let teachers: User[] = [];
+      
+      if (Array.isArray(response)) {
+        teachers = response;
+      } else if (response && typeof response === 'object' && 'data' in response) {
+        teachers = (response as any).data || [];
+      }
+      
+      this.availableTeachers = teachers.filter(teacher => 
+        !this.currentMatiere?.enseignants?.some(assigned => assigned.id === teacher.id)
+      );
+    },
+    error: (error) => {
+      console.error('Erreur lors du chargement des enseignants:', error);
+    }
+  });
+}
+
+  /**
+   * Load available teachers for this subject
+   */
+  loadEnseignantsDisponibles(): void {
+    if (!this.matiereId) return;
+    
+    this.matiereService.getEnseignantsDisponibles(this.matiereId).subscribe({
+      next: (response: User[] | { data: User[] }) => {
+        // Gérer les deux formats de réponse possibles
+        if (Array.isArray(response)) {
+          this.enseignantsDisponibles = response;
+        } else if (response && 'data' in response) {
+          this.enseignantsDisponibles = response.data;
+        } else {
+          this.enseignantsDisponibles = [];
+        }
       },
       error: (error) => {
         console.error('Erreur lors du chargement des enseignants:', error);
+        this.enseignantsDisponibles = []; // Valeur par défaut en cas d'erreur
       }
     });
   }
@@ -391,15 +440,15 @@ export class MatiereFormComponent implements OnInit {
   /**
    * Populate form with matiere data
    */
-  private populateForm(matiere: Matiere): void {
-    this.matiereForm.patchValue({
-      nom: matiere.nom,
-      code: matiere.code,
-      coefficient: matiere.coefficient,
-      description: matiere.description || '',
-      actif: matiere.active
-    });
-  }
+ private populateForm(matiere: Matiere): void {
+  this.matiereForm.patchValue({
+    nom: matiere.nom,
+    code: matiere.code,
+    coefficient: matiere.coefficient,
+    description: matiere.description || '',
+    actif: matiere.actif // ✅ Utiliser 'actif' au lieu de 'active'
+  });
+}
 
   /**
    * Get coefficient percentage for visual indicator
@@ -422,33 +471,24 @@ export class MatiereFormComponent implements OnInit {
   }
 
   /**
-   * Add teacher to matiere
+   * Add teacher to matiere - ✅ Méthode ajoutée
    */
-  onAffecterEnseignant(teacherId: any): void {
-  if (!teacherId || !this.matiereId) return;
+  addTeacher(): void {
+  const selectedTeacherId = this.matiereForm.get('selectedTeacher')?.value;
+  if (!selectedTeacherId || !this.matiereId) return;
 
-  this.matiereService.affecterEnseignant(this.matiereId, teacherId).subscribe({ // ✅ Passer directement teacherId
+  // ✅ Passer directement l'ID numérique, pas un objet
+  this.matiereService.affecterEnseignant(this.matiereId, +selectedTeacherId).subscribe({
     next: () => {
       this.notificationService.success('Enseignant affecté', 'L\'enseignant a été affecté à la matière avec succès');
+      // Réinitialiser le formulaire et recharger les données
+      this.matiereForm.patchValue({ selectedTeacher: '' });
       this.loadEnseignantsDisponibles();
       this.loadMatiere();
     },
     error: (error) => {
       console.error('Erreur:', error);
       this.notificationService.error('Erreur', 'Impossible d\'affecter l\'enseignant');
-    }
-  });
-}
-
-loadEnseignantsDisponibles(): void {
-  if (!this.matiereId) return;
-  
-  this.matiereService.getEnseignantsDisponibles(this.matiereId).subscribe({
-    next: (response) => {
-      this.enseignantsDisponibles = response.data || [];
-    },
-    error: (error) => {
-      console.error('Erreur lors du chargement des enseignants:', error);
     }
   });
 }
@@ -464,7 +504,7 @@ loadEnseignantsDisponibles(): void {
         next: () => {
           this.notificationService.success('Enseignant retiré', 'L\'enseignant a été retiré de la matière avec succès');
           this.loadMatiere(); // Reload to get updated teacher list
-          this.loadAvailableTeachers();
+          this.loadEnseignantsDisponibles();
         },
         error: (error) => {
           console.error('Erreur lors du retrait:', error);

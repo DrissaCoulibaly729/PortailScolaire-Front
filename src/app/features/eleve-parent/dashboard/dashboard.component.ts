@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 
 import { AuthService } from '../../../core/auth/auth.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { User } from '../../../shared/models/auth.model';
 import { 
   Bulletin, 
@@ -41,10 +42,10 @@ import { TypePeriode } from '../../../shared/models/note.model';
             <div class="flex items-center space-x-4">
               <div class="text-right">
                 <p class="text-sm font-medium text-gray-900" *ngIf="currentUser">
-                  {{ currentUser.nom }} {{ currentUser.prenom }}
+                  {{ currentUser?.nom }} {{ currentUser?.prenom }}
                 </p>
                 <p class="text-xs text-gray-500" *ngIf="currentUser?.identifiant_genere">
-                  ID: {{ currentUser.identifiant_genere }}
+                  ID: {{ currentUser?.identifiant_genere }}
                 </p>
               </div>
               <button (click)="logout()" 
@@ -168,7 +169,7 @@ import { TypePeriode } from '../../../shared/models/note.model';
                           {{ bulletin.classe?.nom }} - {{ bulletin.classe?.niveau }}
                         </p>
                         <p class="text-xs text-gray-500 mt-1">
-                          Généré le {{ bulletin.date_generation | date:'dd/MM/yyyy à HH:mm' }}
+                          Généré le {{ bulletin.created_at | date:'dd/MM/yyyy à HH:mm' }}
                         </p>
                       </div>
                     </div>
@@ -199,10 +200,10 @@ import { TypePeriode } from '../../../shared/models/note.model';
                     </div>
 
                     <!-- Rang -->
-                    <div class="text-center" *ngIf="bulletin.rang">
+                    <div class="text-center" *ngIf="bulletin.rang_classe">
                       <p class="text-sm font-medium text-gray-600">Rang</p>
                       <p class="text-lg font-bold text-gray-900">
-                        {{ bulletin.rang }}{{ getOrdinalSuffix(bulletin.rang) }}
+                        {{ bulletin.rang_classe }}{{ getOrdinalSuffix(bulletin.rang_classe) }}
                       </p>
                     </div>
 
@@ -218,7 +219,7 @@ import { TypePeriode } from '../../../shared/models/note.model';
                       </button>
                       
                       <button (click)="downloadBulletin(bulletin)" 
-                              [disabled]="!bulletin.url_pdf"
+                              [disabled]="!bulletin.pdf_url"
                               class="inline-flex items-center px-3 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -229,10 +230,10 @@ import { TypePeriode } from '../../../shared/models/note.model';
                   </div>
                 </div>
 
-                <!-- Appreciation -->
-                <div *ngIf="bulletin.appreciation_generale" class="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <p class="text-sm font-medium text-blue-900 mb-1">Appréciation générale :</p>
-                  <p class="text-sm text-blue-800">{{ bulletin.appreciation_generale }}</p>
+                <!-- Observations générales - ✅ CORRIGÉ -->
+                <div *ngIf="bulletin.observations_generales" class="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p class="text-sm font-medium text-blue-900 mb-1">Observations générales :</p>
+                  <p class="text-sm text-blue-800">{{ bulletin.observations_generales }}</p>
                 </div>
               </div>
             </div>
@@ -259,12 +260,15 @@ export class EleveDashboardComponent implements OnInit {
   moyenneGenerale = 0;
   totalBulletins = 0;
   rangClasse: number | null = null;
+  totalEleves: number | null = null;
+  mention: string = '';
 
- constructor(
-  private authService: AuthService,
-  private noteService: NoteService, // ✅ Service ajouté
-  private router: Router
-) {}
+  constructor(
+    private authService: AuthService,
+    private noteService: NoteService,
+    private notificationService: NotificationService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadCurrentUser();
@@ -294,94 +298,106 @@ export class EleveDashboardComponent implements OnInit {
   }
 
   /**
-   * Load mock bulletins for demonstration
+   * Load mock bulletins for demonstration - ✅ CORRIGÉ avec observations_generales
    */
   private loadMockBulletins(): void {
-  this.bulletins = [
-    {
-      id: 1,
-      eleve_id: 1,
-      classe_id: 1,
-      periode_id: 1,
-      annee_scolaire: '2023-2024',
-      moyenne_generale: 14.5,
-      rang_classe: 5, // ✅ Utiliser rang_classe au lieu de rang
-      total_eleves: 28,
-      mention: 'Bien',
-      statut: 'publie' as StatutBulletin,
-      pdf_url: '/assets/bulletins/bulletin_1.pdf', // ✅ Utiliser pdf_url au lieu de url_pdf
-      created_at: '2024-01-15T08:00:00Z',
-      updated_at: '2024-01-15T08:00:00Z',
-      periode: {
+    this.bulletins = [
+      {
         id: 1,
-        nom: '1er Trimestre',
-        type: 'trimestre1' as TypePeriode, // ✅ Propriété ajoutée
-        date_debut: '2023-09-01',
-        date_fin: '2023-12-20',
-        actif: false,
+        eleve_id: 1,
+        classe_id: 1,
+        periode_id: 1,
         annee_scolaire: '2023-2024',
-        created_at: '2023-09-01T08:00:00Z', // ✅ Propriété ajoutée
-        updated_at: '2023-09-01T08:00:00Z' // ✅ Propriété ajoutée
+        moyenne_generale: 14.5,
+        rang_classe: 5,
+        total_eleves: 28,
+        mention: 'Bien',
+        statut: 'publie' as StatutBulletin,
+        pdf_url: '/assets/bulletins/bulletin_1.pdf',
+        observations_generales: 'Bon trimestre dans l\'ensemble. L\'élève fait preuve de sérieux et d\'assiduité. Quelques efforts à fournir en mathématiques pour améliorer la moyenne générale.', // ✅ Ajouté
+        created_at: '2024-01-15T08:00:00Z',
+        updated_at: '2024-01-15T08:00:00Z',
+        periode: {
+          id: 1,
+          nom: '1er Trimestre',
+          type: 'trimestre1' as TypePeriode,
+          date_debut: '2023-09-01',
+          date_fin: '2023-12-20',
+          actif: false,
+          annee_scolaire: '2023-2024',
+          created_at: '2023-09-01T08:00:00Z',
+          updated_at: '2023-09-01T08:00:00Z'
+        },
+        classe: {
+          id: 1,
+          nom: '6ème A',
+          niveau: '6ème',
+          section: 'A',
+          effectif_max: 30,
+          moyenne: 13.8,
+          actif: true,
+          created_at: '2023-09-01T08:00:00Z',
+          updated_at: '2023-09-01T08:00:00Z'
+        }
       },
-      classe: {
-        id: 1,
-        nom: '6ème A',
-        niveau: '6ème',
-        section: 'A',
-        effectif_max: 30, // ✅ Propriété ajoutée
-        active: true, // ✅ Propriété ajoutée
-        created_at: '2023-09-01T08:00:00Z', // ✅ Propriété ajoutée
-        updated_at: '2023-09-01T08:00:00Z' // ✅ Propriété ajoutée
-      }
-    },
-    {
-      id: 2,
-      eleve_id: 1,
-      classe_id: 1,
-      periode_id: 2,
-      annee_scolaire: '2023-2024',
-      moyenne_generale: 15.2,
-      rang_classe: 3,
-      total_eleves: 28,
-      mention: 'Bien',
-      statut: 'publie' as StatutBulletin,
-      pdf_url: '/assets/bulletins/bulletin_2.pdf',
-      created_at: '2024-01-15T08:00:00Z',
-      updated_at: '2024-01-15T08:00:00Z',
-      periode: {
+      {
         id: 2,
-        nom: '2ème Trimestre',
-        type: 'trimestre2' as TypePeriode,
-        date_debut: '2024-01-01',
-        date_fin: '2024-03-20',
-        actif: true,
+        eleve_id: 1,
+        classe_id: 1,
+        periode_id: 2,
         annee_scolaire: '2023-2024',
-        created_at: '2024-01-01T08:00:00Z',
-        updated_at: '2024-01-01T08:00:00Z'
-      },
-      classe: {
-        id: 1,
-        nom: '6ème A',
-        niveau: '6ème',
-        section: 'A',
-        effectif_max: 30,
-        active: true,
-        created_at: '2023-09-01T08:00:00Z',
-        updated_at: '2023-09-01T08:00:00Z'
+        moyenne_generale: 15.2,
+        rang_classe: 3,
+        total_eleves: 28,
+        mention: 'Bien',
+        statut: 'publie' as StatutBulletin,
+        pdf_url: '/assets/bulletins/bulletin_2.pdf',
+        observations_generales: 'Très bon trimestre ! L\'élève a progressé dans toutes les matières. Les efforts fournis portent leurs fruits. Continuez sur cette excellente lancée.', // ✅ Ajouté
+        created_at: '2024-01-15T08:00:00Z',
+        updated_at: '2024-01-15T08:00:00Z',
+        periode: {
+          id: 2,
+          nom: '2ème Trimestre',
+          type: 'trimestre2' as TypePeriode,
+          date_debut: '2024-01-01',
+          date_fin: '2024-03-20',
+          actif: true,
+          annee_scolaire: '2023-2024',
+          created_at: '2024-01-01T08:00:00Z',
+          updated_at: '2024-01-01T08:00:00Z'
+        },
+        classe: {
+          id: 1,
+          nom: '6ème A',
+          niveau: '6ème',
+          section: 'A',
+          effectif_max: 30,
+          moyenne: 14.1,
+          actif: true,
+          created_at: '2023-09-01T08:00:00Z',
+          updated_at: '2023-09-01T08:00:00Z'
+        }
       }
-    }
-  ];
-}
+    ];
 
-private loadUserStats(): void {
-  if (this.bulletins && this.bulletins.length > 0) {
-    const dernierBulletin = this.bulletins[0];
-    this.moyenneGenerale = dernierBulletin.moyenne_generale;
-    this.rangClasse = dernierBulletin.rang_classe || null; // ✅ Corrigé
-    this.totalEleves = dernierBulletin.total_eleves || null;
-    this.mention = dernierBulletin.mention;
+    // Update stats
+    this.totalBulletins = this.bulletins.length;
+    this.loadUserStats();
+    this.isLoading = false;
   }
-}
+
+  /**
+   * Load user statistics from latest bulletin
+   */
+  private loadUserStats(): void {
+    if (this.bulletins && this.bulletins.length > 0) {
+      const dernierBulletin = this.bulletins[0];
+      this.moyenneGenerale = dernierBulletin.moyenne_generale;
+      this.rangClasse = dernierBulletin.rang_classe || null;
+      this.totalEleves = dernierBulletin.total_eleves || null;
+      this.mention = dernierBulletin.mention;
+    }
+  }
 
   /**
    * View bulletin details
@@ -389,30 +405,52 @@ private loadUserStats(): void {
   viewBulletin(bulletin: Bulletin): void {
     // Navigate to bulletin detail view
     console.log('View bulletin:', bulletin);
+    // this.router.navigate(['/eleve/bulletins', bulletin.id]);
   }
 
   /**
    * Download bulletin PDF
    */
   downloadBulletin(bulletin: Bulletin): void {
-  if (!bulletin.pdf_url) { // ✅ Corrigé
-    this.notificationService.warning('PDF non disponible', 'Le bulletin n\'est pas encore généré en PDF');
-    return;
+    if (!bulletin.pdf_url) {
+      this.notificationService.warning('PDF non disponible', 'Le bulletin n\'est pas encore généré en PDF');
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.href = bulletin.pdf_url;
+    link.download = this.generateBulletinFilename(bulletin);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    this.notificationService.success('Téléchargement', 'Le bulletin a été téléchargé avec succès');
   }
 
-  const link = document.createElement('a');
-  link.href = bulletin.pdf_url; // ✅ Corrigé
-  link.download = this.generateBulletinFilename(bulletin);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
+  /**
+   * Generate filename for bulletin download
+   */
+  generateBulletinFilename(bulletin: Bulletin): string {
+    const periodeName = bulletin.periode?.nom?.replace(/\s+/g, '_') || 'bulletin';
+    const className = bulletin.classe?.nom?.replace(/\s+/g, '_') || 'classe';
+    const year = bulletin.annee_scolaire || '2023-2024';
+    
+    return `bulletin_${periodeName}_${className}_${year}.pdf`;
+  }
 
   /**
    * Logout user
    */
   logout(): void {
-    this.authService.logout().subscribe();
+    this.authService.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/auth/login']);
+      },
+      error: (error) => {
+        console.error('Erreur lors de la déconnexion:', error);
+        this.router.navigate(['/auth/login']);
+      }
+    });
   }
 
   /**

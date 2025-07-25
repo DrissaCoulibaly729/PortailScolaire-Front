@@ -38,16 +38,16 @@ import { User, ChangePasswordRequest } from '../../../shared/models/auth.model';
             <div class="flex items-center">
               <div class="h-20 w-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                 <span class="text-2xl font-bold text-white" *ngIf="currentUser">
-                  {{ currentUser.nom.charAt(0) }}{{ currentUser.prenom.charAt(0) }}
+                  {{ currentUser?.nom?.charAt(0) || 'U' }}{{ currentUser?.prenom?.charAt(0) || 'N' }}
                 </span>
               </div>
               <div class="ml-6 text-white">
                 <h2 class="text-2xl font-bold" *ngIf="currentUser">
-                  {{ currentUser.nom }} {{ currentUser.prenom }}
+                  {{ currentUser?.nom }} {{ currentUser?.prenom }}
                 </h2>
                 <p class="text-blue-100 capitalize">{{ getRoleLabel() }}</p>
                 <p class="text-blue-100 text-sm" *ngIf="currentUser?.identifiant_genere">
-                  ID: {{ currentUser.identifiant_genere }}
+                  ID: {{ currentUser?.identifiant_genere }}
                 </p>
               </div>
             </div>
@@ -86,23 +86,23 @@ import { User, ChangePasswordRequest } from '../../../shared/models/auth.model';
               </div>
               <div *ngIf="currentUser?.telephone">
                 <dt class="text-sm font-medium text-gray-600">Téléphone</dt>
-                <dd class="text-sm text-gray-900 mt-1">{{ currentUser.telephone }}</dd>
+                <dd class="text-sm text-gray-900 mt-1">{{ currentUser?.telephone }}</dd>
               </div>
               <div *ngIf="currentUser?.date_naissance">
                 <dt class="text-sm font-medium text-gray-600">Date de naissance</dt>
-                <dd class="text-sm text-gray-900 mt-1">{{ currentUser.date_naissance | date:'dd/MM/yyyy' }}</dd>
+                <dd class="text-sm text-gray-900 mt-1">{{ currentUser?.date_naissance | date:'dd/MM/yyyy' }}</dd>
               </div>
               <div *ngIf="currentUser?.adresse">
                 <dt class="text-sm font-medium text-gray-600">Adresse</dt>
-                <dd class="text-sm text-gray-900 mt-1">{{ currentUser.adresse }}</dd>
+                <dd class="text-sm text-gray-900 mt-1">{{ currentUser?.adresse }}</dd>
               </div>
               <div *ngIf="currentUser?.created_at">
                 <dt class="text-sm font-medium text-gray-600">Membre depuis</dt>
-                <dd class="text-sm text-gray-900 mt-1">{{ currentUser.created_at | date:'dd/MM/yyyy' }}</dd>
+                <dd class="text-sm text-gray-900 mt-1">{{ currentUser?.created_at | date:'dd/MM/yyyy' }}</dd>
               </div>
               <div *ngIf="currentUser?.updated_at">
                 <dt class="text-sm font-medium text-gray-600">Dernière modification</dt>
-                <dd class="text-sm text-gray-900 mt-1">{{ currentUser.updated_at | date:'dd/MM/yyyy à HH:mm' }}</dd>
+                <dd class="text-sm text-gray-900 mt-1">{{ currentUser?.updated_at | date:'dd/MM/yyyy à HH:mm' }}</dd>
               </div>
             </dl>
           </div>
@@ -309,11 +309,17 @@ export class ProfileComponent implements OnInit {
   }
 
   /**
-   * Load current user
+   * Load current user - VERSION CORRIGÉE
    */
   private loadCurrentUser(): void {
-    this.authService.currentUser$.subscribe(user => {
-      this.currentUser = user;
+    this.authService.currentUser$.subscribe({
+      next: (user) => {
+        this.currentUser = user;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement de l\'utilisateur:', error);
+        this.currentUser = null;
+      }
     });
   }
 
@@ -380,10 +386,10 @@ export class ProfileComponent implements OnInit {
   }
 
   /**
-   * Get role label
+   * Get role label - VERSION CORRIGÉE
    */
   getRoleLabel(): string {
-    if (!this.currentUser) return '';
+    if (!this.currentUser?.role) return 'Utilisateur';
     
     const roleLabels = {
       'administrateur': 'Administrateur',
@@ -450,15 +456,53 @@ export class ProfileComponent implements OnInit {
   }
 
   /**
-   * Navigate back
+   * Navigate back - VERSION CORRIGÉE
    */
   goBack(): void {
-    if (this.currentUser?.role === 'administrateur') {
-      this.router.navigate(['/admin/dashboard']);
-    } else if (this.currentUser?.role === 'enseignant') {
-      this.router.navigate(['/enseignant/dashboard']);
-    } else {
-      this.router.navigate(['/eleve/dashboard']);
+    if (!this.currentUser?.role) {
+      this.router.navigate(['/auth/login']);
+      return;
     }
+
+    switch (this.currentUser.role) {
+      case 'administrateur':
+        this.router.navigate(['/admin/dashboard']);
+        break;
+      case 'enseignant':
+        this.router.navigate(['/enseignant/dashboard']);
+        break;
+      case 'eleve':
+        this.router.navigate(['/eleve/dashboard']);
+        break;
+      default:
+        this.router.navigate(['/auth/login']);
+    }
+  }
+
+  // ===== MÉTHODES UTILITAIRES SUPPLÉMENTAIRES =====
+
+  /**
+   * Vérifier si l'utilisateur est connecté
+   */
+  get isUserLoaded(): boolean {
+    return !!this.currentUser;
+  }
+
+  /**
+   * Obtenir le nom complet de l'utilisateur
+   */
+  get fullName(): string {
+    if (!this.currentUser) return 'Utilisateur';
+    return `${this.currentUser.nom || ''} ${this.currentUser.prenom || ''}`.trim() || 'Utilisateur';
+  }
+
+  /**
+   * Obtenir les initiales de l'utilisateur
+   */
+  get userInitials(): string {
+    if (!this.currentUser) return 'UN';
+    const nom = this.currentUser.nom?.charAt(0) || 'U';
+    const prenom = this.currentUser.prenom?.charAt(0) || 'N';
+    return nom + prenom;
   }
 }
