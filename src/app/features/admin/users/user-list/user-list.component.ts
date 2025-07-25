@@ -500,60 +500,44 @@ export class UserListComponent implements OnInit {
    * Load mock data for demonstration
    */
   private loadMockData(): void {
-    this.users = [
-      {
-        id: 1,
-        nom: 'Dupont',
-        prenom: 'Jean',
-        email: 'jean.dupont&#64;ecole.fr',
-        telephone: '0123456789',
-        role: 'administrateur' as UserRole,
-        actif: true,
-        created_at: '2024-01-15T10:00:00Z',
-        identifiant_genere: 'ADM001'
-      },
-      {
-        id: 2,
-        nom: 'Martin',
-        prenom: 'Marie',
-        email: 'marie.martin&#64;ecole.fr',
-        telephone: '0123456790',
-        role: 'enseignant' as UserRole,
-        actif: true,
-        created_at: '2024-01-16T11:00:00Z',
-        identifiant_genere: 'ENS001'
-      },
-      {
-        id: 3,
-        nom: 'Durand',
-        prenom: 'Pierre',
-        email: 'pierre.durand@eleve.ecole.fr',
-        role: 'eleve' as UserRole,
-        actif: false,
-        created_at: '2024-01-17T12:00:00Z',
-        identifiant_genere: 'ELE001'
-      }
-    ];
-
-    this.pagination = {
-      meta: {
-        current_page: 1,
-        per_page: 25,
-        total: 3,
-        last_page: 1,
-        from: 1,
-        to: 3
-      },
-      links: {
-        first: null,
-        last: null,
-        prev: null,
-        next: null
-      }
-    };
-
-    this.isLoading = false;
-  }
+  this.users = [
+    {
+      id: 1,
+      nom: 'Dupont',
+      prenom: 'Jean',
+      email: 'jean.dupont@ecole.fr',
+      telephone: '0123456789',
+      role: 'enseignant' as UserRole,
+      actif: true,
+      created_at: '2024-01-15T08:00:00Z',
+      updated_at: '2024-01-15T08:00:00Z', // ✅ Propriété ajoutée
+      identifiant_genere: 'jean.dupont'
+    },
+    {
+      id: 2,
+      nom: 'Martin',
+      prenom: 'Marie',
+      email: 'marie.martin@ecole.fr',
+      telephone: '0123456780',
+      role: 'enseignant' as UserRole,
+      actif: true,
+      created_at: '2024-01-15T08:00:00Z',
+      updated_at: '2024-01-15T08:00:00Z', // ✅ Propriété ajoutée
+      identifiant_genere: 'marie.martin'
+    },
+    {
+      id: 3,
+      nom: 'Durand',
+      prenom: 'Lucas',
+      email: 'lucas.durand@ecole.fr',
+      role: 'eleve' as UserRole,
+      actif: false,
+      created_at: '2024-01-15T08:00:00Z',
+      updated_at: '2024-01-15T08:00:00Z', // ✅ Propriété ajoutée
+      identifiant_genere: 'lucas.durand'
+    }
+  ];
+}
 
   /**
    * Reset all filters

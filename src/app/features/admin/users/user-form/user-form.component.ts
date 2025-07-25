@@ -159,7 +159,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
             <div *ngIf="currentClasse?.enseignants && currentClasse.enseignants.length > 0" class="mb-6">
               <h4 class="text-sm font-medium text-gray-700 mb-3">Enseignants actuels</h4>
               <div class="space-y-2">
-                <div *ngFor="let enseignant of currentClasse.enseignants" 
+                <div *ngFor="let enseignant of currentClasse?.enseignants" 
                      class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
                   <div class="flex items-center">
                     <div class="h-8 w-8 bg-blue-200 rounded-full flex items-center justify-center">
@@ -360,23 +360,21 @@ export class ClasseFormComponent implements OnInit {
   /**
    * Add teacher to classe
    */
-  addTeacher(): void {
-    const teacherId = this.classeForm.get('selectedTeacher')?.value;
-    if (!teacherId || !this.classeId) return;
+ onAffecterEnseignant(teacherId: any): void {
+  if (!teacherId || !this.classeId) return;
 
-    this.classeService.affecterEnseignant(this.classeId, { enseignant_id: teacherId }).subscribe({
-      next: () => {
-        this.notificationService.success('Enseignant ajouté', 'L\'enseignant a été affecté à la classe avec succès');
-        this.classeForm.patchValue({ selectedTeacher: '' });
-        this.loadClasse(); // Reload to get updated teacher list
-        this.loadAvailableTeachers();
-      },
-      error: (error) => {
-        console.error('Erreur lors de l\'affectation:', error);
-        this.notificationService.error('Erreur', 'Impossible d\'affecter l\'enseignant à la classe');
-      }
-    });
-  }
+  // ✅ Passer directement teacherId au lieu d'un objet
+  this.classeService.affecterEnseignant(this.classeId, teacherId).subscribe({
+    next: () => {
+      this.notificationService.success('Enseignant affecté', 'L\'enseignant a été affecté à la classe avec succès');
+      this.loadClasse();
+    },
+    error: (error) => {
+      console.error('Erreur:', error);
+      this.notificationService.error('Erreur', 'Impossible d\'affecter l\'enseignant');
+    }
+  });
+}
 
   /**
    * Remove teacher from classe

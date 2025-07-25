@@ -1,11 +1,11 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { EleveEleveDashboardComponent } from './dashboard/dashboard.component'; // ✅ Corrigé : utilise le bon nom d'export
+import { EleveDashboardComponent } from './dashboard/dashboard.component'; // ✅ Corrigé : utilise le bon nom d'export
 
 const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: 'dashboard', component: EleveEleveDashboardComponent }, // ✅ Corrigé
-  { path: 'bulletins', loadChildren: () => import('./bulletins/bulletins.module').then(m => m.BulletinsModule) }
+  { path: 'dashboard', component: EleveDashboardComponent }, // ✅ Corrigé
+  { path: 'bulletins', component: EleveDashboardComponent }
 ];
 
 @NgModule({

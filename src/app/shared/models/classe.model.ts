@@ -75,6 +75,8 @@ export interface ClasseStatistiques {
   effectif_total: number;
   effectif_moyen: number;
   taux_occupation: number;
+  total_eleves: number; // ✅ AJOUTÉ
+  moyenne_generale: number; // ✅ AJOUTÉ
   repartition_par_niveau: Array<{
     niveau: string;
     nombre_classes: number;

@@ -10,6 +10,7 @@ import {
   getMentionColor,
   formatNote 
 } from '../../../shared/models/notes-bulletins.model';
+import { NoteService } from '../../../core/services/note.service';
 
 @Component({
   selector: 'app-eleve-dashboard',
@@ -257,10 +258,11 @@ export class EleveDashboardComponent implements OnInit {
   totalBulletins = 0;
   rangClasse: number | null = null;
 
-  constructor(
-    private authService: AuthService,
-    private noteService: NoteService
-  ) {}
+ constructor(
+  private authService: AuthService,
+  private noteService: NoteService, // ✅ Service ajouté
+  private router: Router
+) {}
 
   ngOnInit(): void {
     this.loadCurrentUser();
@@ -293,75 +295,91 @@ export class EleveDashboardComponent implements OnInit {
    * Load mock bulletins for demonstration
    */
   private loadMockBulletins(): void {
-    setTimeout(() => {
-      this.bulletins = [
-        {
-          id: 1,
-          eleve_id: this.currentUser?.id || 1,
-          classe_id: 1,
-          periode_id: 1,
-          moyenne_generale: 14.25,
-          rang: 3,
-          mention: 'bien' as any,
-          appreciation_generale: 'Bon trimestre avec des résultats satisfaisants. Continuez vos efforts en mathématiques.',
-          date_generation: '2024-01-25T10:00:00Z',
-          statut: 'valide' as any,
-          url_pdf: '/api/bulletins/1/pdf',
-          periode: {
-            id: 1,
-            nom: '1er Trimestre 2024',
-            date_debut: '2024-09-01',
-            date_fin: '2024-12-20',
-            actif: false,
-            annee_scolaire: '2024-2025'
-          },
-          classe: {
-            id: 1,
-            nom: '6ème A',
-            niveau: '6ème',
-            section: 'A'
-          }
-        },
-        {
-          id: 2,
-          eleve_id: this.currentUser?.id || 1,
-          classe_id: 1,
-          periode_id: 2,
-          moyenne_generale: 15.80,
-          rang: 2,
-          mention: 'bien' as any,
-          appreciation_generale: 'Excellent trimestre ! Progression notable dans toutes les matières. Félicitations.',
-          date_generation: '2024-04-15T14:30:00Z',
-          statut: 'valide' as any,
-          url_pdf: '/api/bulletins/2/pdf',
-          periode: {
-            id: 2,
-            nom: '2ème Trimestre 2024',
-            date_debut: '2024-01-01',
-            date_fin: '2024-03-31',
-            actif: true,
-            annee_scolaire: '2024-2025'
-          },
-          classe: {
-            id: 1,
-            nom: '6ème A',
-            niveau: '6ème',
-            section: 'A'
-          }
-        }
-      ];
-
-      // Calculate stats
-      this.totalBulletins = this.bulletins.length;
-      if (this.bulletins.length > 0) {
-        const dernierBulletin = this.bulletins[this.bulletins.length - 1];
-        this.moyenneGenerale = dernierBulletin.moyenne_generale;
-        this.rangClasse = dernierBulletin.rang || null;
+  this.bulletins = [
+    {
+      id: 1,
+      eleve_id: 1,
+      classe_id: 1,
+      periode_id: 1,
+      annee_scolaire: '2023-2024',
+      moyenne_generale: 14.5,
+      rang_classe: 5, // ✅ Utiliser rang_classe au lieu de rang
+      total_eleves: 28,
+      mention: 'Bien',
+      statut: 'publie' as StatutBulletin,
+      pdf_url: '/assets/bulletins/bulletin_1.pdf', // ✅ Utiliser pdf_url au lieu de url_pdf
+      created_at: '2024-01-15T08:00:00Z',
+      updated_at: '2024-01-15T08:00:00Z',
+      periode: {
+        id: 1,
+        nom: '1er Trimestre',
+        type: 'trimestre1' as TypePeriode, // ✅ Propriété ajoutée
+        date_debut: '2023-09-01',
+        date_fin: '2023-12-20',
+        actif: false,
+        annee_scolaire: '2023-2024',
+        created_at: '2023-09-01T08:00:00Z', // ✅ Propriété ajoutée
+        updated_at: '2023-09-01T08:00:00Z' // ✅ Propriété ajoutée
+      },
+      classe: {
+        id: 1,
+        nom: '6ème A',
+        niveau: '6ème',
+        section: 'A',
+        effectif_max: 30, // ✅ Propriété ajoutée
+        active: true, // ✅ Propriété ajoutée
+        created_at: '2023-09-01T08:00:00Z', // ✅ Propriété ajoutée
+        updated_at: '2023-09-01T08:00:00Z' // ✅ Propriété ajoutée
       }
+    },
+    {
+      id: 2,
+      eleve_id: 1,
+      classe_id: 1,
+      periode_id: 2,
+      annee_scolaire: '2023-2024',
+      moyenne_generale: 15.2,
+      rang_classe: 3,
+      total_eleves: 28,
+      mention: 'Bien',
+      statut: 'publie' as StatutBulletin,
+      pdf_url: '/assets/bulletins/bulletin_2.pdf',
+      created_at: '2024-01-15T08:00:00Z',
+      updated_at: '2024-01-15T08:00:00Z',
+      periode: {
+        id: 2,
+        nom: '2ème Trimestre',
+        type: 'trimestre2' as TypePeriode,
+        date_debut: '2024-01-01',
+        date_fin: '2024-03-20',
+        actif: true,
+        annee_scolaire: '2023-2024',
+        created_at: '2024-01-01T08:00:00Z',
+        updated_at: '2024-01-01T08:00:00Z'
+      },
+      classe: {
+        id: 1,
+        nom: '6ème A',
+        niveau: '6ème',
+        section: 'A',
+        effectif_max: 30,
+        active: true,
+        created_at: '2023-09-01T08:00:00Z',
+        updated_at: '2023-09-01T08:00:00Z'
+      }
+    }
+  ];
+}
 
-      this.isLoading = false;
-    }, 1000);
+private loadUserStats(): void {
+  if (this.bulletins && this.bulletins.length > 0) {
+    const dernierBulletin = this.bulletins[0];
+    this.moyenneGenerale = dernierBulletin.moyenne_generale;
+    this.rangClasse = dernierBulletin.rang_classe || null; // ✅ Corrigé
+    this.totalEleves = dernierBulletin.total_eleves || null;
+    this.mention = dernierBulletin.mention;
   }
+}
 
   /**
    * View bulletin details
@@ -375,19 +393,18 @@ export class EleveDashboardComponent implements OnInit {
    * Download bulletin PDF
    */
   downloadBulletin(bulletin: Bulletin): void {
-    if (!bulletin.url_pdf) {
-      alert('Le PDF de ce bulletin n\'est pas encore disponible');
-      return;
-    }
-
-    // Simulate PDF download
-    const link = document.createElement('a');
-    link.href = bulletin.url_pdf;
-    link.download = `bulletin_${bulletin.periode?.nom}_${this.currentUser?.nom}_${this.currentUser?.prenom}.pdf`;
-    link.click();
-    
-    console.log('Download bulletin PDF:', bulletin);
+  if (!bulletin.pdf_url) { // ✅ Corrigé
+    this.notificationService.warning('PDF non disponible', 'Le bulletin n\'est pas encore généré en PDF');
+    return;
   }
+
+  const link = document.createElement('a');
+  link.href = bulletin.pdf_url; // ✅ Corrigé
+  link.download = this.generateBulletinFilename(bulletin);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
   /**
    * Logout user

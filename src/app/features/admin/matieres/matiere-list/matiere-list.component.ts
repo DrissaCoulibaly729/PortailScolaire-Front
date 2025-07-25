@@ -10,6 +10,7 @@ import {
   MatiereFilters, 
   PaginatedResponse 
 } from '../../../../shared/models/matiere.model';
+import { UserRole } from '../../../../shared/models/user.model';
 
 @Component({
   selector: 'app-matiere-list',
@@ -554,87 +555,100 @@ export class MatiereListComponent implements OnInit {
    * Load mock data for demonstration
    */
   private loadMockData(): void {
-    this.matieres = [
-      {
-        id: 1,
-        nom: 'Mathématiques',
-        code: 'MATH',
-        coefficient: 4.0,
-        description: 'Mathématiques générales - Algèbre, géométrie et analyse',
-        actif: true,
-        nombre_notes: 156,
-        moyenne_generale: 13.2,
-        enseignants: [
-          { id: 1, nom: 'Dupont', prenom: 'Jean', email: 'jean.dupont&#64;ecole.fr' },
-          { id: 2, nom: 'Martin', prenom: 'Marie', email: 'marie.martin&#64;ecole.fr' }
-        ],
-        created_at: '2024-01-15T10:00:00Z',
-        updated_at: '2024-01-20T14:30:00Z'
-      },
-      {
-        id: 2,
-        nom: 'Français',
-        code: 'FR',
-        coefficient: 3.0,
-        description: 'Langue française - Littérature et expression écrite',
-        actif: true,
-        nombre_notes: 124,
-        moyenne_generale: 12.8,
-        enseignants: [
-          { id: 3, nom: 'Durand', prenom: 'Sophie', email: 'sophie.durand&#64;ecole.fr' }
-        ],
-        created_at: '2024-01-16T11:00:00Z',
-        updated_at: '2024-01-21T15:45:00Z'
-      },
-      {
-        id: 3,
-        nom: 'Sciences Physiques',
-        code: 'PHYS',
-        coefficient: 3.5,
-        description: 'Physique et chimie appliquées',
-        actif: true,
-        nombre_notes: 89,
-        moyenne_generale: 11.5,
-        enseignants: [
-          { id: 4, nom: 'Moreau', prenom: 'Pierre', email: 'pierre.moreau&#64;ecole.fr' }
-        ],
-        created_at: '2024-01-17T12:00:00Z',
-        updated_at: '2024-01-22T16:00:00Z'
-      },
-      {
-        id: 4,
-        nom: 'Art Plastique',
-        code: 'ART',
-        coefficient: 1.0,
-        description: 'Arts visuels et créativité',
-        actif: false,
-        nombre_notes: 45,
-        moyenne_generale: 15.2,
-        enseignants: [],
-        created_at: '2024-01-18T13:00:00Z',
-        updated_at: '2024-01-23T17:00:00Z'
-      }
-    ];
-
-    this.pagination = {
-      meta: {
-        current_page: 1,
-        per_page: 25,
-        total: 4,
-        last_page: 1,
-        from: 1,
-        to: 4
-      },
-      links: {
-        first: null,
-        last: null,
-        prev: null,
-        next: null
-      }
-    };
-
-    this.isLoading = false;
-  }
+  this.matieres = [
+    {
+      id: 1,
+      nom: 'Mathématiques',
+      code: 'MATH',
+      coefficient: 4,
+      description: 'Mathématiques niveau collège',
+      active: true, // ✅ Propriété ajoutée
+      actif: true,
+      nombre_notes: 45,
+      created_at: '2024-01-15T08:00:00Z',
+      updated_at: '2024-01-15T08:00:00Z',
+      enseignants: [
+        { 
+          id: 1, 
+          nom: 'Dupont', 
+          prenom: 'Jean', 
+          email: 'jean.dupont@ecole.fr',
+          // ✅ Propriétés complètes pour Enseignant
+          identifiant_connexion: 'jean.dupont',
+          role: 'enseignant' as UserRole,
+          actif: true,
+          telephone: '0123456789',
+          created_at: '2024-01-15T08:00:00Z',
+          updated_at: '2024-01-15T08:00:00Z'
+        },
+        { 
+          id: 2, 
+          nom: 'Martin', 
+          prenom: 'Marie', 
+          email: 'marie.martin@ecole.fr',
+          identifiant_connexion: 'marie.martin',
+          role: 'enseignant' as UserRole,
+          actif: true,
+          telephone: '0123456780',
+          created_at: '2024-01-15T08:00:00Z',
+          updated_at: '2024-01-15T08:00:00Z'
+        }
+      ]
+    },
+    {
+      id: 2,
+      nom: 'Français',
+      code: 'FR',
+      coefficient: 3,
+      description: 'Français niveau collège',
+      active: true, // ✅ Propriété ajoutée
+      actif: true,
+      nombre_notes: 32,
+      created_at: '2024-01-15T08:00:00Z',
+      updated_at: '2024-01-15T08:00:00Z',
+      enseignants: [
+        { 
+          id: 3, 
+          nom: 'Durand', 
+          prenom: 'Sophie', 
+          email: 'sophie.durand@ecole.fr',
+          identifiant_connexion: 'sophie.durand',
+          role: 'enseignant' as UserRole,
+          actif: true,
+          telephone: '0123456781',
+          created_at: '2024-01-15T08:00:00Z',
+          updated_at: '2024-01-15T08:00:00Z'
+        }
+      ]
+    },
+    {
+      id: 3,
+      nom: 'Histoire',
+      code: 'HIST',
+      coefficient: 2,
+      description: 'Histoire niveau collège',
+      active: false, // ✅ Propriété ajoutée
+      actif: false,
+      nombre_notes: 0,
+      created_at: '2024-01-15T08:00:00Z',
+      updated_at: '2024-01-15T08:00:00Z',
+      enseignants: [
+        { 
+          id: 4, 
+          nom: 'Moreau', 
+          prenom: 'Pierre', 
+          email: 'pierre.moreau@ecole.fr',
+          identifiant_connexion: 'pierre.moreau',
+          role: 'enseignant' as UserRole,
+          actif: true,
+          telephone: '0123456782',
+          created_at: '2024-01-15T08:00:00Z',
+          updated_at: '2024-01-15T08:00:00Z'
+        }
+      ]
+    }
+  ];
+}
 
   /**
    * Reset all filters

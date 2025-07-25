@@ -269,16 +269,21 @@ export class ClasseService {
    * Obtenir le taux d'occupation d'une classe
    */
   getTauxOccupation(classe: Classe): number {
-    if (classe.effectif_max === 0) return 0;
-    return Math.round((classe.effectif_actuel / classe.effectif_max) * 100);
+  if (!classe.effectif_actuel || classe.effectif_max === 0) {
+    return 0;
   }
+  return Math.round((classe.effectif_actuel / classe.effectif_max) * 100);
+}
 
   /**
    * Vérifier si une classe est pleine
    */
   isClassePleine(classe: Classe): boolean {
-    return classe.effectif_actuel >= classe.effectif_max;
+  if (!classe.effectif_actuel) {
+    return false;
   }
+  return classe.effectif_actuel >= classe.effectif_max;
+}
 
   /**
    * Obtenir la couleur du statut d'occupation

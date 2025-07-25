@@ -191,7 +191,7 @@ import { User } from '../../../../shared/models/user.model';
             <div *ngIf="currentMatiere?.enseignants && currentMatiere.enseignants.length > 0" class="mb-6">
               <h4 class="text-sm font-medium text-gray-700 mb-3">Enseignants actuels</h4>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div *ngFor="let enseignant of currentMatiere.enseignants" 
+                <div *ngFor="let enseignant of currentMatiere?.enseignants" 
                      class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
                   <div class="flex items-center">
                     <div class="h-10 w-10 bg-blue-200 rounded-full flex items-center justify-center">
@@ -436,6 +436,19 @@ export class MatiereFormComponent implements OnInit {
     error: (error) => {
       console.error('Erreur:', error);
       this.notificationService.error('Erreur', 'Impossible d\'affecter l\'enseignant');
+    }
+  });
+}
+
+loadEnseignantsDisponibles(): void {
+  if (!this.matiereId) return;
+  
+  this.matiereService.getEnseignantsDisponibles(this.matiereId).subscribe({
+    next: (response) => {
+      this.enseignantsDisponibles = response.data || [];
+    },
+    error: (error) => {
+      console.error('Erreur lors du chargement des enseignants:', error);
     }
   });
 }
