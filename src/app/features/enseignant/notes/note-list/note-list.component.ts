@@ -243,7 +243,7 @@ import { Matiere } from '../../../../shared/models/matiere.model';
                         {{ note.eleve?.nom || 'N/A' }} {{ note.eleve?.prenom || 'N/A' }}
                       </div>
                       <div class="text-sm text-gray-500" *ngIf="note.eleve?.numero_etudiant">
-                        {{ note.eleve.numero_etudiant }}
+                        {{ note.eleve?.numero_etudiant }}
                       </div>
                     </div>
                   </div>
