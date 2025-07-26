@@ -146,6 +146,19 @@ export interface UserFilters {
   sort_direction?: 'asc' | 'desc';
 }
 
+export interface ClasseFilters {
+  active?: boolean;
+  niveau?: string;
+  recherche?: string;
+  enseignant_id?: number; // ✅ AJOUTÉ
+  effectif_min?: number;
+  effectif_max?: number;
+  page?: number;
+  per_page?: number;
+  sort_by?: string;
+  sort_direction?: 'asc' | 'desc';
+}
+
 export type UserSortField = 
   | 'nom' 
   | 'prenom' 

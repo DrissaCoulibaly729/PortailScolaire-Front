@@ -3,8 +3,10 @@ import { RouterModule, Routes } from '@angular/router';
 import { EnseignantLayoutComponent } from '../../layouts/enseignant-layout/enseignant-layout.component';
 import { EnseignantDashboardComponent } from './dashboard/dashboard.component';
 import { NoteListComponent } from './notes/note-list/note-list.component';
-import { ClasseListComponent } from './classes/classe-list/classe-list.component';
-import { ClasseDetailComponent } from './classes/classe-detail/classe-detail.component';
+import { NoteFormComponent } from './notes/note-form/note-form.component';
+// import { NoteDetailComponent } from './notes/note-detail/note-detail.component';
+// import { NoteBatchComponent } from './notes/note-batch/note-batch.component';
+// import { NoteImportComponent } from './notes/note-import/note-import.component';
 
 const routes: Routes = [
   {
@@ -21,43 +23,65 @@ const routes: Routes = [
       { 
         path: 'notes', 
         children: [
-          { path: '', component: NoteListComponent }, // Liste des notes
-          { path: 'create', component: NoteListComponent }, // Créer une note (composant à créer)
-          { path: 'edit/:id', component: NoteListComponent }, // Modifier une note (composant à créer)
-          { path: ':id', component: NoteListComponent } // Détail d'une note (composant à créer)
+          { path: '', component: NoteListComponent }, // ✅ Liste des notes
+          { path: 'create', component: NoteFormComponent }, // ✅ Créer une note
+          // { path: 'batch', component: NoteBatchComponent }, // ✅ Saisie en lot
+          // { path: 'import', component: NoteImportComponent }, // ✅ Import CSV
+          // { path: 'edit/:id', component: NoteFormComponent }, // ✅ Modifier une note
+          // { path: ':id', component: NoteDetailComponent } // ✅ Détail d'une note
         ]
       },
       
-      // Gestion des classes
+      // Gestion des classes (composants à créer si pas encore fait)
       { 
         path: 'classes', 
         children: [
-          { path: '', component: ClasseListComponent }, // ✅ Liste des classes
-          { path: ':id', component: ClasseDetailComponent } // ✅ Détail d'une classe avec ID
+          { path: '', component: EnseignantDashboardComponent }, // Temporaire - Liste des classes
+          { path: ':id', component: EnseignantDashboardComponent } // Temporaire - Détail d'une classe
         ]
       },
       
-      // Gestion des élèves (routes futures)
+      // Gestion des matières
+      { 
+        path: 'matieres',
+        children: [
+          { path: '', component: EnseignantDashboardComponent }, // Temporaire - Liste des matières
+          { path: ':id', component: EnseignantDashboardComponent } // Temporaire - Détail d'une matière
+        ]
+      },
+      
+      // Gestion des bulletins
+      { 
+        path: 'bulletins',
+        children: [
+          { path: '', component: EnseignantDashboardComponent }, // Temporaire - Liste des bulletins
+          { path: 'generate/:eleveId', component: EnseignantDashboardComponent }, // Générer bulletin
+          { path: ':id', component: EnseignantDashboardComponent } // Détail bulletin
+        ]
+      },
+      
+      // Gestion des élèves (via classes)
       { 
         path: 'eleves',
         children: [
           { path: '', redirectTo: '/enseignant/classes', pathMatch: 'full' }, // Redirection vers classes
-          { path: ':id', component: ClasseDetailComponent } // Profil élève (composant à créer)
+          { path: ':id', component: EnseignantDashboardComponent } // Profil élève
         ]
       },
       
-      // Rapports et statistiques (routes futures)
+      // Rapports et statistiques
       { 
         path: 'rapports',
         children: [
-          { path: '', component: EnseignantDashboardComponent }, // Composant rapports à créer
-          { path: 'classe/:id', component: ClasseDetailComponent }, // Rapport par classe
-          { path: 'export', component: EnseignantDashboardComponent } // Export (composant à créer)
+          { path: '', component: EnseignantDashboardComponent }, // Tableau de bord rapports
+          { path: 'classe/:id', component: EnseignantDashboardComponent }, // Rapport par classe
+          { path: 'matiere/:id', component: EnseignantDashboardComponent }, // Rapport par matière
+          { path: 'export', component: EnseignantDashboardComponent } // Export données
         ]
       },
       
-      // Mes matières (route future)
-      { path: 'mes-matieres', component: EnseignantDashboardComponent },
+      // Profil enseignant
+      { path: 'profile', component: EnseignantDashboardComponent }, // Composant profil à créer
       
       // Route wildcard - redirection vers dashboard si route inconnue
       { path: '**', redirectTo: 'dashboard' }

@@ -1,0 +1,682 @@
+<!-- src/app/features/admin/bulletins/bulletin-management/bulletin-management.component.html -->
+<div class="min-h-screen bg-gray-50 py-6">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- En-tête avec navigation -->
+    <div class="mb-8">
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8">
+          <button (click)="changerVue('liste')"
+                  [class.border-blue-500]="vueActive === 'liste'"
+                  [class.text-blue-600]="vueActive === 'liste'"
+                  [class.border-transparent]="vueActive !== 'liste'"
+                  [class.text-gray-500]="vueActive !== 'liste'"
+                  class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
+            📋 Liste des bulletins
+          </button>
+          <button (click)="changerVue('generation')"
+                  [class.border-blue-500]="vueActive === 'generation'"
+                  [class.text-blue-600]="vueActive === 'generation'"
+                  [class.border-transparent]="vueActive !== 'generation'"
+                  [class.text-gray-500]="vueActive !== 'generation'"
+                  class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
+            ⚙️ Génération automatique
+          </button>
+          <button (click)="changerVue('statistiques')"
+                  [class.border-blue-500]="vueActive === 'statistiques'"
+                  [class.text-blue-600]="vueActive === 'statistiques'"
+                  [class.border-transparent]="vueActive !== 'statistiques'"
+                  [class.text-gray-500]="vueActive !== 'statistiques'"
+                  class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
+            📊 Statistiques
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="flex justify-center items-center py-12">
+      <div class="text-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p class="text-gray-500">Chargement des bulletins...</p>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error && !isLoading" class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+      <div class="text-red-400 text-6xl mb-4">❌</div>
+      <h3 class="text-lg font-medium text-red-800 mb-2">Erreur de chargement</h3>
+      <p class="text-red-700 mb-4">{{ error }}</p>
+      <button (click)="loadInitialData()" 
+              class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+        Réessayer
+      </button>
+    </div>
+
+    <!-- VUE LISTE DES BULLETINS -->
+    <div *ngIf="vueActive === 'liste' && !isLoading && !error">
+      
+      <!-- Filtres -->
+      <div class="bg-white rounded-lg shadow mb-6">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">Filtres de recherche</h2>
+        </div>
+        
+        <form [formGroup]="filterForm" class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Période -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Période</label>
+              <select formControlName="periode_id"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="">Toutes les périodes</option>
+                <option *ngFor="let periode of periodes" [value]="periode.id">
+                  {{ periode.nom }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Classe -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Classe</label>
+              <select formControlName="classe_id"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="">Toutes les classes</option>
+                <option *ngFor="let classe of classes" [value]="classe.id">
+                  {{ classe.nom }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Statut -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Statut</label>
+              <select formControlName="statut"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="">Tous les statuts</option>
+                <option *ngFor="let statut of statutsDisponibles" [value]="statut.value">
+                  {{ statut.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Recherche élève -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Recherche élève</label>
+              <input type="text" 
+                     formControlName="eleve_search"
+                     placeholder="Nom ou prénom..."
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+          </div>
+
+          <!-- Filtres avancés -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Moyenne minimum</label>
+              <input type="number" 
+                     formControlName="moyenne_min"
+                     min="0" max="20" step="0.1"
+                     placeholder="Ex: 10"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Moyenne maximum</label>
+              <input type="number" 
+                     formControlName="moyenne_max"
+                     min="0" max="20" step="0.1"
+                     placeholder="Ex: 20"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Année scolaire</label>
+              <input type="text" 
+                     formControlName="annee_scolaire"
+                     placeholder="2024-2025"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Actions groupées -->
+      <div class="bg-white rounded-lg shadow mb-6" *ngIf="bulletinsSelectionnes.size > 0">
+        <div class="px-6 py-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <span class="text-sm text-gray-600">
+                {{ bulletinsSelectionnes.size }} bulletin(s) sélectionné(s)
+              </span>
+              <button (click)="bulletinsSelectionnes.clear()"
+                      class="text-sm text-gray-500 hover:text-gray-700">
+                ❌ Tout désélectionner
+              </button>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+              <button (click)="publierBulletinsSelectionnes()"
+                      class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                ✅ Publier
+              </button>
+              <button (click)="telechargerBulletinsSelectionnes()"
+                      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                📦 Télécharger en lot
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions générales -->
+      <div class="bg-white rounded-lg shadow mb-6">
+        <div class="px-6 py-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium text-gray-900">Actions</h3>
+            <div class="flex items-center space-x-3">
+              <button (click)="synchroniserTousLesBulletins()"
+                      class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                🔄 Synchroniser avec les notes
+              </button>
+              <button (click)="rechargerBulletins()"
+                      class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                🔄 Actualiser
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Liste des bulletins -->
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium text-gray-900">
+              Bulletins ({{ totalBulletins }})
+            </h3>
+            <div class="flex items-center space-x-2">
+              <input type="checkbox" 
+                     [checked]="tousLesBulletinsSelectionnes"
+                     (change)="toggleTousLesBulletins()"
+                     class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+              <label class="text-sm text-gray-700">Tout sélectionner</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tableau des bulletins -->
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Sélection
+                </th>
+                <th (click)="changerTri('eleve_nom')" 
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                  Élève
+                  <span *ngIf="sortBy === 'eleve_nom'">
+                    {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Classe
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Période
+                </th>
+                <th (click)="changerTri('moyenne_generale')"
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                  Moyenne
+                  <span *ngIf="sortBy === 'moyenne_generale'">
+                    {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Mention
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Rang
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Statut
+                </th>
+                <th (click)="changerTri('created_at')"
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                  Créé le
+                  <span *ngIf="sortBy === 'created_at'">
+                    {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let bulletin of bulletins" 
+                  class="hover:bg-gray-50"
+                  [class.bg-blue-50]="bulletinsSelectionnes.has(bulletin.id)">
+                
+                <!-- Sélection -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <input type="checkbox" 
+                         [checked]="bulletinsSelectionnes.has(bulletin.id)"
+                         (change)="toggleBulletinSelection(bulletin.id)"
+                         class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                </td>
+
+                <!-- Élève -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-8 w-8">
+                      <div class="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
+                        <span class="text-xs font-medium text-white">
+                          {{ bulletin.eleve?.prenom?.charAt(0) }}{{ bulletin.eleve?.nom?.charAt(0) }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="ml-3">
+                      <div class="text-sm font-medium text-gray-900">
+                        {{ bulletin.eleve_nom_complet }}
+                      </div>
+                      <div class="text-xs text-gray-500">
+                        {{ bulletin.eleve?.numero_etudiant }}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Classe -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ bulletin.classe_nom }}
+                </td>
+
+                <!-- Période -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ bulletin.periode_nom }}
+                </td>
+
+                <!-- Moyenne -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <span class="text-sm font-medium" 
+                          [ngClass]="getCouleurMoyenne(bulletin.moyenne_generale)">
+                      {{ bulletin.moyenne_generale.toFixed(2) }}/20
+                    </span>
+                    <div class="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                      <div class="h-2 rounded-full"
+                           [style.width.%]="getPourcentageProgression(bulletin.moyenne_generale)"
+                           [ngClass]="{
+                             'bg-green-500': bulletin.moyenne_generale >= 12,
+                             'bg-yellow-500': bulletin.moyenne_generale >= 8 && bulletin.moyenne_generale < 12,
+                             'bg-red-500': bulletin.moyenne_generale < 8
+                           }">
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Mention -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        [ngClass]="{
+                          'bg-green-100 text-green-800': bulletin.mention === 'Excellent',
+                          'bg-blue-100 text-blue-800': bulletin.mention === 'Très Bien',
+                          'bg-yellow-100 text-yellow-800': bulletin.mention === 'Bien',
+                          'bg-orange-100 text-orange-800': bulletin.mention === 'Assez Bien',
+                          'bg-red-100 text-red-800': bulletin.mention === 'Passable' || bulletin.mention === 'Insuffisant'
+                        }">
+                    {{ bulletin.mention }}
+                  </span>
+                </td>
+
+                <!-- Rang -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <span *ngIf="bulletin.rang_classe && bulletin.total_eleves">
+                    {{ bulletin.rang_classe }} / {{ bulletin.total_eleves }}
+                  </span>
+                  <span *ngIf="!bulletin.rang_classe" class="text-gray-400">
+                    Non classé
+                  </span>
+                </td>
+
+                <!-- Statut -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        [ngClass]="getStatutColor(bulletin.statut)">
+                    {{ bulletin.statut_label }}
+                  </span>
+                </td>
+
+                <!-- Date création -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ bulletin.created_at | date:'dd/MM/yyyy' }}
+                </td>
+
+                <!-- Actions -->
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div class="flex items-center justify-end space-x-2">
+                    
+                    <!-- Télécharger PDF -->
+                    <button *ngIf="bulletin.peut_telecharger"
+                            (click)="telechargerBulletinPDF(bulletin)"
+                            class="text-blue-600 hover:text-blue-900"
+                            title="Télécharger PDF">
+                      📄
+                    </button>
+
+                    <!-- Recalculer -->
+                    <button *ngIf="bulletin.statut === 'brouillon'"
+                            (click)="recalculerBulletin(bulletin)"
+                            class="text-yellow-600 hover:text-yellow-900"
+                            title="Recalculer">
+                      🔄
+                    </button>
+
+                    <!-- Voir détails -->
+                    <button class="text-gray-600 hover:text-gray-900"
+                            title="Voir détails">
+                      👁️
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-between" *ngIf="totalPages > 1">
+          <div class="flex-1 flex justify-between items-center">
+            <div class="text-sm text-gray-700">
+              Page {{ page }} sur {{ totalPages }} ({{ totalBulletins }} bulletins au total)
+            </div>
+            
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+              <button (click)="changerPage(page - 1)"
+                      [disabled]="page === 1"
+                      class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                ←
+              </button>
+              
+              <button *ngFor="let p of [].constructor(totalPages); let i = index"
+                      (click)="changerPage(i + 1)"
+                      [class.bg-blue-50]="page === i + 1"
+                      [class.border-blue-500]="page === i + 1"
+                      [class.text-blue-600]="page === i + 1"
+                      class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                {{ i + 1 }}
+              </button>
+              
+              <button (click)="changerPage(page + 1)"
+                      [disabled]="page === totalPages"
+                      class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                →
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        <!-- État vide -->
+        <div *ngIf="bulletins.length === 0" class="text-center py-12">
+          <span class="text-6xl mb-4 block">📄</span>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun bulletin trouvé</h3>
+          <p class="text-gray-500">Aucun bulletin ne correspond aux critères de recherche.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- VUE GÉNÉRATION AUTOMATIQUE -->
+    <div *ngIf="vueActive === 'generation' && !isLoading && !error">
+      <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Génération automatique des bulletins</h2>
+            <p class="mt-1 text-sm text-gray-500">
+              Générez automatiquement les bulletins pour une période et/ou classe spécifique
+            </p>
+          </div>
+
+          <form [formGroup]="generationForm" (ngSubmit)="genererBulletinsAutomatiques()" class="p-6">
+            <div class="space-y-6">
+              
+              <!-- Configuration de base -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Période *</label>
+                  <select formControlName="periode_id"
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">Sélectionner une période</option>
+                    <option *ngFor="let periode of periodes" [value]="periode.id">
+                      {{ periode.nom }}
+                    </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Classe (optionnel)</label>
+                  <select formControlName="classe_id"
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">Toutes les classes</option>
+                    <option *ngFor="let classe of classes" [value]="classe.id">
+                      {{ classe.nom }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Sélection d'élèves spécifiques -->
+              <div *ngIf="eleves.length > 0">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Élèves spécifiques (optionnel)
+                </label>
+                <div class="max-h-40 overflow-y-auto border border-gray-300 rounded-md p-3">
+                  <div *ngFor="let eleve of eleves" class="flex items-center space-x-2 py-1">
+                    <input type="checkbox" 
+                           [value]="eleve.id"
+                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                    <span class="text-sm text-gray-700">
+                      {{ eleve.nom }} {{ eleve.prenom }} ({{ eleve.numero_etudiant }})
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Options de génération -->
+              <div>
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Options de génération</h3>
+                <div class="space-y-4">
+                  
+                  <label class="flex items-center">
+                    <input type="checkbox" 
+                           formControlName="generer_pdf"
+                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                    <span class="ml-2 text-sm text-gray-700">Générer automatiquement les PDFs</span>
+                  </label>
+
+                  <label class="flex items-center">
+                    <input type="checkbox" 
+                           formControlName="envoyer_email"
+                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                    <span class="ml-2 text-sm text-gray-700">Envoyer notification email aux parents (🎁 Fonctionnalité Bonus)</span>
+                  </label>
+
+                  <label class="flex items-center">
+                    <input type="checkbox" 
+                           formControlName="inclure_appreciations"
+                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                    <span class="ml-2 text-sm text-gray-700">Inclure les appréciations existantes</span>
+                  </label>
+
+                  <label class="flex items-center">
+                    <input type="checkbox" 
+                           formControlName="inclure_statistiques"
+                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                    <span class="ml-2 text-sm text-gray-700">Inclure les statistiques de classe</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Template de bulletin -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Template de bulletin</label>
+                <select formControlName="template"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                  <option value="standard">Bulletin Standard</option>
+                  <option value="detaille">Bulletin Détaillé</option>
+                  <option value="conseil_classe">Bulletin Conseil de Classe</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mt-8 pt-6 border-t border-gray-200 flex items-center justify-between">
+              <div class="text-sm text-gray-500">
+                <p><strong>Note :</strong> La génération automatique calculera les moyennes et mentions selon les notes existantes.</p>
+              </div>
+              
+              <div class="flex items-center space-x-3">
+                <button type="button"
+                        (click)="changerVue('liste')"
+                        class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                  Annuler
+                </button>
+                
+                <button type="submit"
+                        [disabled]="generationForm.invalid || isGenerating"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <span *ngIf="!isGenerating">⚙️ Générer les bulletins</span>
+                  <span *ngIf="isGenerating" class="flex items-center">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Génération en cours...
+                  </span>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- VUE STATISTIQUES -->
+    <div *ngIf="vueActive === 'statistiques' && !isLoading && !error">
+      <div class="space-y-6">
+        
+        <!-- Statistiques globales -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" *ngIf="(statistiques$ | async) as stats">
+          <div *ngFor="let stat of stats" class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-medium text-gray-900">{{ stat.periode.nom }}</h3>
+              <span class="text-2xl">📊</span>
+            </div>
+            
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Total bulletins:</span>
+                <span class="font-medium">{{ stat.total_bulletins }}</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Publiés:</span>
+                <span class="font-medium text-green-600">{{ stat.bulletins_publies }}</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Brouillons:</span>
+                <span class="font-medium text-yellow-600">{{ stat.bulletins_brouillons }}</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Sans bulletin:</span>
+                <span class="font-medium text-red-600">{{ stat.eleves_sans_bulletin }}</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Moyenne générale:</span>
+                <span class="font-medium" [ngClass]="getCouleurMoyenne(stat.moyenne_generale)">
+                  {{ stat.moyenne_generale.toFixed(2) }}
+                </span>
+              </div>
+            </div>
+            
+            <!-- Répartition des mentions -->
+            <div class="mt-4" *ngIf="stat.repartition_mentions.length > 0">
+              <h4 class="text-sm font-medium text-gray-900 mb-2">Répartition des mentions</h4>
+              <div class="space-y-1">
+                <div *ngFor="let mention of stat.repartition_mentions" 
+                     class="flex items-center justify-between text-xs">
+                  <span class="text-gray-600">{{ mention.mention }}:</span>
+                  <span class="font-medium">{{ mention.nombre }} ({{ mention.pourcentage }}%)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistiques détaillées de la période sélectionnée -->
+        <div *ngIf="getStatistiquesPeriodeSelectionnee() as statsPeriode" class="bg-white rounded-lg shadow">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">
+              Détails - {{ statsPeriode.periode.nom }}
+            </h3>
+          </div>
+          
+          <div class="p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              
+              <!-- Graphique des mentions -->
+              <div>
+                <h4 class="text-sm font-medium text-gray-900 mb-4">Répartition des mentions</h4>
+                <div class="space-y-2">
+                  <div *ngFor="let mention of statsPeriode.repartition_mentions" 
+                       class="flex items-center">
+                    <div class="w-24 text-xs text-gray-600">{{ mention.mention }}</div>
+                    <div class="flex-1 bg-gray-200 rounded-full h-4 mx-2">
+                      <div class="h-4 rounded-full bg-blue-600"
+                           [style.width.%]="mention.pourcentage">
+                      </div>
+                    </div>
+                    <div class="w-16 text-xs text-right">{{ mention.nombre }} ({{ mention.pourcentage }}%)</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Autres statistiques -->
+              <div>
+                <h4 class="text-sm font-medium text-gray-900 mb-4">Indicateurs</h4>
+                <div class="space-y-4">
+                  
+                  <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <div>
+                      <div class="text-sm font-medium text-green-900">Taux de réussite</div>
+                      <div class="text-xs text-green-700">Moyennes ≥ 10</div>
+                    </div>
+                    <div class="text-lg font-bold text-green-600">
+                      {{ ((statsPeriode.repartition_mentions.filter(m => ['Excellent', 'Très Bien', 'Bien', 'Assez Bien'].includes(m.mention)).reduce((sum, m) => sum + m.nombre, 0) / statsPeriode.total_bulletins) * 100).toFixed(1) }}%
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <div>
+                      <div class="text-sm font-medium text-blue-900">Moyenne générale</div>
+                      <div class="text-xs text-blue-700">Toutes classes confondues</div>
+                    </div>
+                    <div class="text-lg font-bold text-blue-600">
+                      {{ statsPeriode.moyenne_generale.toFixed(2) }}/20
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                    <div>
+                      <div class="text-sm font-medium text-yellow-900">Progression</div>
+                      <div class="text-xs text-yellow-700">Bulletins publiés</div>
+                    </div>
+                    <div class="text-lg font-bold text-yellow-600">
+                      {{ ((statsPeriode.bulletins_publies / statsPeriode.total_bulletins) * 100).toFixed(1) }}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

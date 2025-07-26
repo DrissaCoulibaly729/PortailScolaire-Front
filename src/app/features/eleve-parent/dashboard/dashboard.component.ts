@@ -1,19 +1,29 @@
+// src/app/features/eleve-parent/dashboard/dashboard.component.ts
+
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 
 import { AuthService } from '../../../core/auth/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+
+// FIX: Importer directement depuis les bons fichiers au lieu de notes-bulletins.model
 import { User } from '../../../shared/models/auth.model';
 import { 
   Bulletin, 
+  StatutBulletin,
+  getMentionFromMoyenne,
   getMentionLabel, 
-  getMentionColor,
-  formatNote, 
-  StatutBulletin
-} from '../../../shared/models/notes-bulletins.model';
+  getMentionColor
+} from '../../../shared/models/bulletin.model';
+
+import { 
+  Note,
+  TypePeriode,
+  formatNote 
+} from '../../../shared/models/note.model';
+
 import { NoteService } from '../../../core/services/note.service';
-import { TypePeriode } from '../../../shared/models/note.model';
 
 @Component({
   selector: 'app-eleve-dashboard',
@@ -44,60 +54,65 @@ import { TypePeriode } from '../../../shared/models/note.model';
                 <p class="text-sm font-medium text-gray-900" *ngIf="currentUser">
                   {{ currentUser?.nom }} {{ currentUser?.prenom }}
                 </p>
-                <p class="text-xs text-gray-500" *ngIf="currentUser?.identifiant_genere">
-                  ID: {{ currentUser?.identifiant_genere }}
+                <p class="text-xs text-gray-500" *ngIf="currentUser">
+                  Élève
                 </p>
               </div>
-              <button (click)="logout()" 
-                      class="text-gray-400 hover:text-gray-600">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
-              </button>
+              <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <span class="text-sm font-medium text-blue-600">
+                  {{ getUserInitials() }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="isLoading" class="flex justify-center items-center py-12">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span class="ml-3 text-gray-600">Chargement...</span>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="error" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-red-50 border border-red-200 rounded-md p-4">
+          <div class="flex">
+            <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+            </svg>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800">Erreur</h3>
+              <p class="text-sm text-red-700 mt-1">{{ error }}</p>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Main Content -->
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Welcome Section -->
+      <div *ngIf="!isLoading && !error" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Welcome Message -->
         <div class="mb-8">
-          <div class="bg-gradient-to-r from-green-500 to-blue-600 rounded-lg p-6 text-white">
-            <h2 class="text-2xl font-bold mb-2">
-              Bienvenue {{ currentUser?.prenom }} !
-            </h2>
-            <p class="text-green-100">
-              Consultez vos bulletins de notes et suivez votre progression scolaire
-            </p>
-          </div>
+          <h2 class="text-2xl font-bold text-gray-900">
+            Bonjour {{ currentUser?.prenom }} !
+          </h2>
+          <p class="text-gray-600 mt-1">
+            Voici un aperçu de vos résultats scolaires
+          </p>
         </div>
 
         <!-- Quick Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div class="bg-white rounded-lg shadow-sm border p-6">
             <div class="flex items-center">
-              <div class="p-2 bg-blue-100 rounded-lg">
+              <div class="p-2 rounded-lg bg-blue-100">
                 <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                </svg>
-              </div>
-              <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Moyenne générale</p>
-                <p class="text-2xl font-bold text-gray-900">{{ moyenneGenerale | number:'1.2-2' }}/20</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-lg shadow-sm border p-6">
-            <div class="flex items-center">
-              <div class="p-2 bg-green-100 rounded-lg">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Bulletins disponibles</p>
+                <p class="text-sm font-medium text-gray-600">Bulletins</p>
                 <p class="text-2xl font-bold text-gray-900">{{ totalBulletins }}</p>
               </div>
             </div>
@@ -105,380 +120,330 @@ import { TypePeriode } from '../../../shared/models/note.model';
 
           <div class="bg-white rounded-lg shadow-sm border p-6">
             <div class="flex items-center">
-              <div class="p-2 bg-purple-100 rounded-lg">
-                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 rounded-lg bg-green-100">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                 </svg>
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Rang dans la classe</p>
+                <p class="text-sm font-medium text-gray-600">Moyenne générale</p>
+                <p class="text-2xl font-bold text-gray-900">{{ formatNote(moyenneGenerale) }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+              <div class="p-2 rounded-lg bg-yellow-100">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                </svg>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-600">Mention</p>
+                <p class="text-lg font-bold text-gray-900">{{ getMentionLabel(mentionActuelle) }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+              <div class="p-2 rounded-lg bg-purple-100">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-600">Rang classe</p>
                 <p class="text-2xl font-bold text-gray-900">{{ rangClasse || '-' }}</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Loading State -->
-        <div *ngIf="isLoading" class="flex justify-center items-center h-64">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-        </div>
-
-        <!-- Error State -->
-        <div *ngIf="error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <div class="flex">
-            <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-            </svg>
-            <p class="text-red-800">{{ error }}</p>
+        <!-- Recent Bulletins -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">Mes bulletins récents</h3>
+            <button 
+              routerLink="/eleve/bulletins"
+              class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+              Voir tous →
+            </button>
           </div>
-        </div>
 
-        <!-- Bulletins List -->
-        <div *ngIf="!isLoading && !error">
-          <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200">
-              <h3 class="text-lg font-semibold text-gray-900">Mes bulletins de notes</h3>
-              <p class="text-sm text-gray-600 mt-1">Consultez et téléchargez vos bulletins par période</p>
-            </div>
+          <div *ngIf="recentBulletins.length === 0" class="text-center py-8">
+            <svg class="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun bulletin disponible</h3>
+            <p class="text-gray-600">Vos bulletins apparaîtront ici dès qu'ils seront publiés.</p>
+          </div>
 
-            <div *ngIf="bulletins.length === 0" class="p-12 text-center">
-              <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-              </svg>
-              <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun bulletin disponible</h3>
-              <p class="text-gray-500">Vos bulletins apparaîtront ici dès qu'ils seront générés par l'administration.</p>
-            </div>
-
-            <div *ngIf="bulletins.length > 0" class="divide-y divide-gray-200">
-              <div *ngFor="let bulletin of bulletins" class="p-6 hover:bg-gray-50 transition-colors">
-                <div class="flex items-center justify-between">
-                  <!-- Bulletin Info -->
-                  <div class="flex-1">
-                    <div class="flex items-center space-x-4">
-                      <div class="p-3 bg-green-100 rounded-lg">
-                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                      </div>
-                      
-                      <div class="flex-1">
-                        <h4 class="text-lg font-semibold text-gray-900">
-                          {{ bulletin.periode?.nom || 'Période inconnue' }}
-                        </h4>
-                        <p class="text-sm text-gray-600">
-                          {{ bulletin.classe?.nom }} - {{ bulletin.classe?.niveau }}
-                        </p>
-                        <p class="text-xs text-gray-500 mt-1">
-                          Généré le {{ bulletin.created_at | date:'dd/MM/yyyy à HH:mm' }}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Stats -->
-                  <div class="flex items-center space-x-8">
-                    <!-- Moyenne -->
-                    <div class="text-center">
-                      <p class="text-sm font-medium text-gray-600">Moyenne</p>
-                      <p class="text-2xl font-bold" 
-                         [ngClass]="{
-                           'text-green-600': bulletin.moyenne_generale >= 12,
-                           'text-yellow-600': bulletin.moyenne_generale >= 10 && bulletin.moyenne_generale < 12,
-                           'text-red-600': bulletin.moyenne_generale < 10
-                         }">
-                        {{ formatNote(bulletin.moyenne_generale) }}/20
-                      </p>
-                    </div>
-
-                    <!-- Mention -->
-                    <div class="text-center">
-                      <p class="text-sm font-medium text-gray-600">Mention</p>
-                      <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
-                            [ngClass]="'bg-' + getMentionColor(bulletin.mention) + '-100 text-' + getMentionColor(bulletin.mention) + '-800'">
-                        {{ getMentionLabel(bulletin.mention) }}
-                      </span>
-                    </div>
-
-                    <!-- Rang -->
-                    <div class="text-center" *ngIf="bulletin.rang_classe">
-                      <p class="text-sm font-medium text-gray-600">Rang</p>
-                      <p class="text-lg font-bold text-gray-900">
-                        {{ bulletin.rang_classe }}{{ getOrdinalSuffix(bulletin.rang_classe) }}
-                      </p>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="flex space-x-2">
-                      <button (click)="viewBulletin(bulletin)" 
-                              class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                        </svg>
-                        Consulter
-                      </button>
-                      
-                      <button (click)="downloadBulletin(bulletin)" 
-                              [disabled]="!bulletin.pdf_url"
-                              class="inline-flex items-center px-3 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        PDF
-                      </button>
-                    </div>
-                  </div>
+          <div *ngIf="recentBulletins.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div *ngFor="let bulletin of recentBulletins" 
+                 class="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                 (click)="viewBulletin(bulletin.id)">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-sm font-medium text-gray-900">
+                  {{ bulletin.periode?.nom || 'Période' }}
+                </span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      [ngClass]="getBulletinStatusClass(bulletin.statut)">
+                  {{ getBulletinStatusLabel(bulletin.statut) }}
+                </span>
+              </div>
+              
+              <div class="space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-sm text-gray-600">Moyenne générale</span>
+                  <span class="text-sm font-medium text-gray-900">
+                    {{ formatNote(bulletin.moyenne_generale) }}/20
+                  </span>
                 </div>
-
-                <!-- Observations générales - ✅ CORRIGÉ -->
-                <div *ngIf="bulletin.observations_generales" class="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <p class="text-sm font-medium text-blue-900 mb-1">Observations générales :</p>
-                  <p class="text-sm text-blue-800">{{ bulletin.observations_generales }}</p>
+                
+                <div class="flex justify-between">
+                  <span class="text-sm text-gray-600">Mention</span>
+                  <span class="text-sm font-medium"
+                        [ngClass]="'text-' + getMentionColor(bulletin.mention) + '-600'">
+                    {{ getMentionLabel(bulletin.mention) }}
+                  </span>
+                </div>
+                
+                <div *ngIf="bulletin.rang_classe" class="flex justify-between">
+                  <span class="text-sm text-gray-600">Rang</span>
+                  <span class="text-sm font-medium text-gray-900">
+                    {{ bulletin.rang_classe }}/{{ bulletin.total_eleves }}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Footer -->
-        <div class="mt-12 text-center">
-          <p class="text-sm text-gray-500">
-            Pour toute question concernant vos bulletins, contactez l'administration de l'établissement.
-          </p>
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <button 
+              routerLink="/eleve/bulletins"
+              class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <div class="p-2 bg-blue-100 rounded-lg">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="font-medium text-gray-900">Mes bulletins</p>
+                <p class="text-sm text-gray-600">Consulter tous mes bulletins</p>
+              </div>
+            </button>
+
+            <button 
+              (click)="downloadLatestBulletin()"
+              [disabled]="!hasLatestBulletin()"
+              class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <div class="p-2 bg-green-100 rounded-lg">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="font-medium text-gray-900">Télécharger</p>
+                <p class="text-sm text-gray-600">Dernier bulletin PDF</p>
+              </div>
+            </button>
+
+            <button 
+              routerLink="/eleve/profile"
+              class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <div class="p-2 bg-purple-100 rounded-lg">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="font-medium text-gray-900">Mon profil</p>
+                <p class="text-sm text-gray-600">Informations personnelles</p>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    :host {
+      display: block;
+      min-height: 100vh;
+    }
+  `]
 })
 export class EleveDashboardComponent implements OnInit {
-  currentUser: User | null = null;
-  bulletins: Bulletin[] = [];
-  isLoading = false;
+  // État du composant
+  isLoading = true;
   error: string | null = null;
-
-  // Stats
-  moyenneGenerale = 0;
+  
+  // Données utilisateur
+  currentUser: User | null = null;
+  
+  // Statistiques
   totalBulletins = 0;
+  moyenneGenerale = 0;
+  mentionActuelle = '';
   rangClasse: number | null = null;
-  totalEleves: number | null = null;
-  mention: string = '';
+  
+  // Bulletins récents
+  recentBulletins: Bulletin[] = [];
 
   constructor(
+    private router: Router,
     private authService: AuthService,
-    private noteService: NoteService,
-    private notificationService: NotificationService,
-    private router: Router
+    private notificationService: NotificationService
+    // FIX: Retirer l'injection de NoteService qui causait l'erreur
+    // private noteService: NoteService
   ) {}
 
   ngOnInit(): void {
-    this.loadCurrentUser();
-    this.loadBulletins();
+    this.loadDashboardData();
   }
 
   /**
-   * Load current user
+   * Charger les données du dashboard
    */
-  private loadCurrentUser(): void {
-    this.authService.currentUser$.subscribe(user => {
-      this.currentUser = user;
-    });
-  }
-
-  /**
-   * Load bulletins for current user
-   */
-  private loadBulletins(): void {
-    if (!this.currentUser) return;
-
+  private loadDashboardData(): void {
     this.isLoading = true;
     this.error = null;
 
-    // Mock data for demo
-    this.loadMockBulletins();
-  }
-
-  /**
-   * Load mock bulletins for demonstration - ✅ CORRIGÉ avec observations_generales
-   */
-  private loadMockBulletins(): void {
-    this.bulletins = [
-      {
-        id: 1,
-        eleve_id: 1,
-        classe_id: 1,
-        periode_id: 1,
-        annee_scolaire: '2023-2024',
-        moyenne_generale: 14.5,
-        rang_classe: 5,
-        total_eleves: 28,
-        mention: 'Bien',
-        statut: 'publie' as StatutBulletin,
-        pdf_url: '/assets/bulletins/bulletin_1.pdf',
-        observations_generales: 'Bon trimestre dans l\'ensemble. L\'élève fait preuve de sérieux et d\'assiduité. Quelques efforts à fournir en mathématiques pour améliorer la moyenne générale.', // ✅ Ajouté
-        created_at: '2024-01-15T08:00:00Z',
-        updated_at: '2024-01-15T08:00:00Z',
-        periode: {
-          id: 1,
-          nom: '1er Trimestre',
-          type: 'trimestre1' as TypePeriode,
-          date_debut: '2023-09-01',
-          date_fin: '2023-12-20',
-          actif: false,
-          annee_scolaire: '2023-2024',
-          created_at: '2023-09-01T08:00:00Z',
-          updated_at: '2023-09-01T08:00:00Z'
-        },
-        classe: {
-          id: 1,
-          nom: '6ème A',
-          niveau: '6ème',
-          section: 'A',
-          effectif_max: 30,
-          moyenne: 13.8,
-          actif: true,
-          created_at: '2023-09-01T08:00:00Z',
-          updated_at: '2023-09-01T08:00:00Z'
-        }
-      },
-      {
-        id: 2,
-        eleve_id: 1,
-        classe_id: 1,
-        periode_id: 2,
-        annee_scolaire: '2023-2024',
-        moyenne_generale: 15.2,
-        rang_classe: 3,
-        total_eleves: 28,
-        mention: 'Bien',
-        statut: 'publie' as StatutBulletin,
-        pdf_url: '/assets/bulletins/bulletin_2.pdf',
-        observations_generales: 'Très bon trimestre ! L\'élève a progressé dans toutes les matières. Les efforts fournis portent leurs fruits. Continuez sur cette excellente lancée.', // ✅ Ajouté
-        created_at: '2024-01-15T08:00:00Z',
-        updated_at: '2024-01-15T08:00:00Z',
-        periode: {
-          id: 2,
-          nom: '2ème Trimestre',
-          type: 'trimestre2' as TypePeriode,
-          date_debut: '2024-01-01',
-          date_fin: '2024-03-20',
-          actif: true,
-          annee_scolaire: '2023-2024',
-          created_at: '2024-01-01T08:00:00Z',
-          updated_at: '2024-01-01T08:00:00Z'
-        },
-        classe: {
-          id: 1,
-          nom: '6ème A',
-          niveau: '6ème',
-          section: 'A',
-          effectif_max: 30,
-          moyenne: 14.1,
-          actif: true,
-          created_at: '2023-09-01T08:00:00Z',
-          updated_at: '2023-09-01T08:00:00Z'
-        }
-      }
-    ];
-
-    // Update stats
-    this.totalBulletins = this.bulletins.length;
-    this.loadUserStats();
-    this.isLoading = false;
-  }
-
-  /**
-   * Load user statistics from latest bulletin
-   */
-  private loadUserStats(): void {
-    if (this.bulletins && this.bulletins.length > 0) {
-      const dernierBulletin = this.bulletins[0];
-      this.moyenneGenerale = dernierBulletin.moyenne_generale;
-      this.rangClasse = dernierBulletin.rang_classe || null;
-      this.totalEleves = dernierBulletin.total_eleves || null;
-      this.mention = dernierBulletin.mention;
-    }
-  }
-
-  /**
-   * View bulletin details
-   */
-  viewBulletin(bulletin: Bulletin): void {
-    // Navigate to bulletin detail view
-    console.log('View bulletin:', bulletin);
-    // this.router.navigate(['/eleve/bulletins', bulletin.id]);
-  }
-
-  /**
-   * Download bulletin PDF
-   */
-  downloadBulletin(bulletin: Bulletin): void {
-    if (!bulletin.pdf_url) {
-      this.notificationService.warning('PDF non disponible', 'Le bulletin n\'est pas encore généré en PDF');
-      return;
-    }
-
-    const link = document.createElement('a');
-    link.href = bulletin.pdf_url;
-    link.download = this.generateBulletinFilename(bulletin);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    this.notificationService.success('Téléchargement', 'Le bulletin a été téléchargé avec succès');
-  }
-
-  /**
-   * Generate filename for bulletin download
-   */
-  generateBulletinFilename(bulletin: Bulletin): string {
-    const periodeName = bulletin.periode?.nom?.replace(/\s+/g, '_') || 'bulletin';
-    const className = bulletin.classe?.nom?.replace(/\s+/g, '_') || 'classe';
-    const year = bulletin.annee_scolaire || '2023-2024';
+    // FIX: Utiliser la méthode synchrone getCurrentUser
+    const user = this.authService.getCurrentUser();
     
-    return `bulletin_${periodeName}_${className}_${year}.pdf`;
+    if (user && user.role === 'eleve') {
+      this.currentUser = user;
+      this.loadEleveData();
+    } else {
+      this.error = 'Accès non autorisé';
+      this.isLoading = false;
+    }
   }
 
   /**
-   * Logout user
+   * Charger les données spécifiques à l'élève
    */
-  logout(): void {
-    this.authService.logout().subscribe({
-      next: () => {
-        this.router.navigate(['/auth/login']);
-      },
-      error: (error) => {
-        console.error('Erreur lors de la déconnexion:', error);
-        this.router.navigate(['/auth/login']);
-      }
-    });
+  private loadEleveData(): void {
+    if (!this.currentUser) return;
+
+    // Pour l'instant, on utilise des données simulées
+    // Plus tard, vous pourrez les remplacer par de vrais appels API
+    this.loadMockData();
   }
 
   /**
-   * Format note with comma separator
+   * Charger des données simulées (temporaire)
    */
-  formatNote(note: number): string {
-    return formatNote(note);
+  private loadMockData(): void {
+    // Simuler un délai de chargement
+    setTimeout(() => {
+      this.totalBulletins = 3;
+      this.moyenneGenerale = 14.25;
+      this.mentionActuelle = getMentionFromMoyenne(this.moyenneGenerale);
+      this.rangClasse = 8;
+      
+      // Bulletins simulés
+      this.recentBulletins = [
+        {
+          id: 1,
+          eleve_id: this.currentUser!.id,
+          classe_id: 1,
+          periode_id: 1,
+          annee_scolaire: '2024-2025',
+          moyenne_generale: 14.25,
+          rang_classe: 8,
+          total_eleves: 28,
+          mention: this.mentionActuelle,
+          statut: 'publie' as StatutBulletin,
+          periode: {
+            id: 1,
+            nom: '1er Trimestre',
+            type: 'trimestre1' as TypePeriode,
+            date_debut: '2024-09-01',
+            date_fin: '2024-12-20',
+            actif: true,
+            annee_scolaire: '2024-2025',
+            created_at: '2024-09-01',
+            updated_at: '2024-09-01'
+          },
+          created_at: '2024-12-20',
+          updated_at: '2024-12-20'
+        }
+      ];
+      
+      this.isLoading = false;
+    }, 1000);
   }
 
   /**
-   * Get mention label
+   * Obtenir les initiales de l'utilisateur
    */
-  getMentionLabel(mention: any): string {
-    return getMentionLabel(mention);
+  getUserInitials(): string {
+    if (!this.currentUser) return '??';
+    const firstInitial = this.currentUser.prenom?.charAt(0).toUpperCase() || '';
+    const lastInitial = this.currentUser.nom?.charAt(0).toUpperCase() || '';
+    return `${firstInitial}${lastInitial}`;
   }
 
   /**
-   * Get mention color
+   * Voir un bulletin spécifique
    */
-  getMentionColor(mention: any): string {
-    return getMentionColor(mention);
+  viewBulletin(bulletinId: number): void {
+    this.router.navigate(['/eleve/bulletins', bulletinId]);
   }
 
   /**
-   * Get ordinal suffix for ranking
+   * Télécharger le dernier bulletin
    */
-  getOrdinalSuffix(rang: number): string {
-    if (rang === 1) return 'er';
-    return 'ème';
+  downloadLatestBulletin(): void {
+    if (this.recentBulletins.length > 0) {
+      const latestBulletin = this.recentBulletins[0];
+      // Ici vous pouvez implémenter le téléchargement PDF
+      this.notificationService.info('Téléchargement', 'Fonctionnalité en cours de développement');
+    }
   }
+
+  /**
+   * Vérifier si un bulletin récent est disponible
+   */
+  hasLatestBulletin(): boolean {
+    return this.recentBulletins.length > 0;
+  }
+
+  /**
+   * Obtenir la classe CSS pour le statut du bulletin
+   */
+  getBulletinStatusClass(statut: StatutBulletin): string {
+    const classes = {
+      'brouillon': 'bg-gray-100 text-gray-800',
+      'publie': 'bg-green-100 text-green-800',
+      'archive': 'bg-blue-100 text-blue-800'
+    };
+    return classes[statut] || 'bg-gray-100 text-gray-800';
+  }
+
+  /**
+   * Obtenir le label du statut du bulletin
+   */
+  getBulletinStatusLabel(statut: StatutBulletin): string {
+    const labels = {
+      'brouillon': 'Brouillon',
+      'publie': 'Publié',
+      'archive': 'Archivé'
+    };
+    return labels[statut] || statut;
+  }
+
+  // Exposer les fonctions utilitaires pour le template
+  getMentionLabel = getMentionLabel;
+  getMentionColor = getMentionColor;
+  formatNote = formatNote;
 }

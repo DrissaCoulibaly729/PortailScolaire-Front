@@ -1,5 +1,7 @@
-export * from './note.model';
+
 export * from './bulletin.model';
+export * from './note.model';
+
 
 
 // Types spécifiques pour les notes et bulletins

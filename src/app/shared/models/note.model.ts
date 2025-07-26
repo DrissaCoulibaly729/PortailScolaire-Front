@@ -1,12 +1,13 @@
 // src/app/shared/models/note.model.ts
+
 import { Matiere } from "./matiere.model";
 import { Eleve, Enseignant } from "./user.model";
 import { ApiResponse } from './api-response.model';
-import { PaginatedResponse } from './common.model';
 
 // ===== TYPES DE BASE =====
 export type TypeEvaluation = 'devoir' | 'controle' | 'examen';
 export type TypePeriode = 'trimestre1' | 'trimestre2' | 'trimestre3';
+export type Mention = 'excellent' | 'tres_bien' | 'bien' | 'assez_bien' | 'passable' | 'insuffisant';
 
 // ===== INTERFACE PRINCIPALE =====
 export interface Note {
@@ -17,14 +18,18 @@ export interface Note {
   classe_id: number;
   valeur: number;
   type: TypeEvaluation;
-  type_evaluation?: TypeEvaluation; // Alias pour la compatibilité
+  type_evaluation: TypeEvaluation; // Alias pour compatibilité backend
   periode: TypePeriode;
-  coefficient?: number; // Ajouté la propriété manquante
+  coefficient: number; // Obligatoire, par défaut 1
   date_evaluation: string;
   commentaire?: string;
+  
+  // Relations (chargées selon le contexte)
   eleve?: Eleve;
   matiere?: Matiere;
   enseignant?: Enseignant;
+  
+  // Métadonnées
   created_at: string;
   updated_at: string;
 }
@@ -38,16 +43,27 @@ export interface CreateNoteRequest {
   type: TypeEvaluation;
   periode: TypePeriode;
   date_evaluation: string;
-  coefficient?: number;
+  coefficient?: number; // Par défaut 1 côté backend
   commentaire?: string;
 }
 
 export interface UpdateNoteRequest {
   valeur?: number;
   type?: TypeEvaluation;
+  periode?: TypePeriode;
   date_evaluation?: string;
   coefficient?: number;
   commentaire?: string;
+}
+
+export interface CreateNotesBatchRequest {
+  notes: CreateNoteRequest[];
+  matiere_id?: number; // Si toutes les notes sont pour la même matière
+  classe_id?: number;  // Si toutes les notes sont pour la même classe
+  type?: TypeEvaluation; // Si toutes les notes ont le même type
+  periode?: TypePeriode; // Si toutes les notes sont pour la même période
+  date_evaluation?: string; // Si toutes les notes ont la même date
+  coefficient?: number; // Si toutes les notes ont le même coefficient
 }
 
 // ===== INTERFACES POUR LES FILTRES =====
@@ -56,12 +72,16 @@ export interface NoteFilters {
   matiere_id?: number;
   classe_id?: number;
   enseignant_id?: number;
-  type?: string;
-  periode?: string;
+  type?: TypeEvaluation;
+  periode?: TypePeriode;
   date_debut?: string;
   date_fin?: string;
   note_min?: number;
   note_max?: number;
+  avec_relations?: boolean; // Pour charger eleve, matiere, enseignant
+  search?: string; // Recherche sur nom élève ou matière
+  
+  // Pagination
   page?: number;
   per_page?: number;
   sort_by?: string;
@@ -77,27 +97,52 @@ export interface BulkNoteOperation {
 export interface BulkNoteResult {
   success: number;
   errors: number;
+  total: number;
   details?: Array<{
     note: any;
     error?: string;
     success?: boolean;
+    index?: number;
   }>;
+  messages?: string[];
 }
 
 // ===== INTERFACES POUR LES STATISTIQUES =====
 export interface NoteStatistiques {
   total_notes: number;
   moyenne_generale: number;
-  repartition_par_type: Record<string, number>;
-  repartition_par_periode: Record<string, number>;
+  note_min: number;
+  note_max: number;
+  
+  repartition_par_type: Record<TypeEvaluation, number>;
+  repartition_par_periode: Record<TypePeriode, number>;
+  repartition_par_mention: Record<Mention, number>;
+  
   notes_par_tranche: Array<{
-    tranche: string;
+    tranche: string; // "0-5", "5-10", etc.
     nombre: number;
     pourcentage: number;
   }>;
+  
   evolution_moyennes: Array<{
-    periode: string;
+    periode: TypePeriode;
     moyenne: number;
+    nombre_notes: number;
+  }>;
+  
+  top_eleves: Array<{
+    eleve_id: number;
+    eleve?: Eleve;
+    moyenne: number;
+    nombre_notes: number;
+  }>;
+  
+  matieres_stats: Array<{
+    matiere_id: number;
+    matiere?: Matiere;
+    moyenne: number;
+    nombre_notes: number;
+    coefficient_moyen: number;
   }>;
 }
 
@@ -105,34 +150,30 @@ export interface MoyenneEleve {
   eleve_id: number;
   eleve?: Eleve;
   moyenne_generale: number;
+  rang?: number;
+  mention?: Mention;
+  
   moyennes_par_matiere: Array<{
     matiere_id: number;
     matiere?: Matiere;
     moyenne: number;
     nombre_notes: number;
-  }>;
-  rang?: number;
-  mention?: string;
-}
-
-// ===== INTERFACE POUR LE RELEVÉ DE NOTES =====
-export interface ReleveNotes {
-  eleve: Eleve;
-  periode: string;
-  notes_par_matiere: Array<{
-    matiere: Matiere;
-    notes: Note[];
-    moyenne: number;
     coefficient: number;
   }>;
-  moyenne_generale: number;
-  rang_classe?: number;
-  total_eleves?: number;
-  mention: string;
-  observations?: string;
+  
+  moyennes_par_periode: Array<{
+    periode: TypePeriode;
+    moyenne: number;
+    nombre_notes: number;
+  }>;
+  
+  progression: {
+    evolution: number; // Différence avec la période précédente
+    tendance: 'hausse' | 'baisse' | 'stable';
+  };
 }
 
-// ===== TYPES POUR LES FORMULAIRES =====
+// ===== INTERFACES POUR LES FORMULAIRES =====
 export interface NoteFormData {
   eleve_id: number;
   matiere_id: number;
@@ -145,80 +186,113 @@ export interface NoteFormData {
   commentaire: string;
 }
 
-export interface NoteFormErrors {
-  [key: string]: string[];
+export interface NoteBatchFormData {
+  matiere_id: number;
+  classe_id: number;
+  type: TypeEvaluation;
+  periode: TypePeriode;
+  date_evaluation: string;
+  coefficient: number;
+  eleves: Array<{
+    eleve_id: number;
+    nom: string;
+    prenom: string;
+    numero_etudiant?: string;
+    note?: number;
+    commentaire?: string;
+  }>;
 }
 
 // ===== CONSTANTES =====
-export const NOTE_RANGE = {
-  MIN: 0,
-  MAX: 20
-} as const;
+export const TYPES_EVALUATION: Array<{
+  value: TypeEvaluation;
+  label: string;
+  color: string;
+  description: string;
+}> = [
+  {
+    value: 'devoir',
+    label: 'Devoir',
+    color: 'blue',
+    description: 'Devoir en classe ou à la maison'
+  },
+  {
+    value: 'controle',
+    label: 'Contrôle',
+    color: 'orange',
+    description: 'Contrôle continu'
+  },
+  {
+    value: 'examen',
+    label: 'Examen',
+    color: 'red',
+    description: 'Examen de fin de période'
+  }
+];
 
-export const TYPES_EVALUATION: Array<{value: TypeEvaluation, label: string, color: string}> = [
-  { value: 'devoir', label: 'Devoir', color: 'blue' },
-  { value: 'controle', label: 'Contrôle', color: 'orange' },
-  { value: 'examen', label: 'Examen', color: 'red' }
-] as const;
+export const PERIODES: Array<{
+  value: TypePeriode;
+  label: string;
+  order: number;
+}> = [
+  { value: 'trimestre1', label: '1er Trimestre', order: 1 },
+  { value: 'trimestre2', label: '2ème Trimestre', order: 2 },
+  { value: 'trimestre3', label: '3ème Trimestre', order: 3 }
+];
 
-export const PERIODES_TYPES: Array<{value: TypePeriode, label: string}> = [
-  { value: 'trimestre1', label: '1er Trimestre' },
-  { value: 'trimestre2', label: '2ème Trimestre' },
-  { value: 'trimestre3', label: '3ème Trimestre' }
-] as const;
-
-export const MENTIONS = [
-  { value: 'excellent', label: 'Excellent', min: 16, color: 'green' },
-  { value: 'tres_bien', label: 'Très Bien', min: 14, color: 'blue' },
-  { value: 'bien', label: 'Bien', min: 12, color: 'yellow' },
-  { value: 'assez_bien', label: 'Assez Bien', min: 10, color: 'orange' },
-  { value: 'passable', label: 'Passable', min: 8, color: 'red-400' },
-  { value: 'insuffisant', label: 'Insuffisant', min: 0, color: 'red' }
-] as const;
+export const MENTIONS_BULLETIN: Array<{
+  value: Mention;
+  label: string;
+  color: string;
+  min: number;
+}> = [
+  { value: 'excellent', label: 'Excellent', color: 'green', min: 16 },
+  { value: 'tres_bien', label: 'Très Bien', color: 'blue', min: 14 },
+  { value: 'bien', label: 'Bien', color: 'indigo', min: 12 },
+  { value: 'assez_bien', label: 'Assez Bien', color: 'yellow', min: 10 },
+  { value: 'passable', label: 'Passable', color: 'orange', min: 8 },
+  { value: 'insuffisant', label: 'Insuffisant', color: 'red', min: 0 }
+];
 
 // ===== FONCTIONS UTILITAIRES =====
+export function getMentionFromNote(note: number): Mention {
+  const mention = MENTIONS_BULLETIN.find(m => note >= m.min);
+  return mention ? mention.value : 'insuffisant';
+}
+
+export function getMentionLabel(mention: Mention): string {
+  return MENTIONS_BULLETIN.find(m => m.value === mention)?.label ?? mention;
+}
+
+export function getMentionColor(mention: Mention): string {
+  return MENTIONS_BULLETIN.find(m => m.value === mention)?.color ?? 'gray';
+}
+
 export function getTypeEvaluationLabel(type: TypeEvaluation): string {
-  const typeObj = TYPES_EVALUATION.find(t => t.value === type);
-  return typeObj ? typeObj.label : type;
+  return TYPES_EVALUATION.find(t => t.value === type)?.label ?? type;
 }
 
 export function getTypeEvaluationColor(type: TypeEvaluation): string {
-  const typeObj = TYPES_EVALUATION.find(t => t.value === type);
-  return typeObj ? typeObj.color : 'gray';
+  return TYPES_EVALUATION.find(t => t.value === type)?.color ?? 'gray';
 }
 
-export function getMentionFromNote(note: number): string {
-  for (const mention of MENTIONS) {
-    if (note >= mention.min) {
-      return mention.value;
-    }
-  }
-  return 'insuffisant';
-}
-
-export function getMentionLabel(mentionValue: string): string {
-  const mentionObj = MENTIONS.find(m => m.value === mentionValue);
-  return mentionObj ? mentionObj.label : mentionValue;
-}
-
-export function getMentionColor(mentionValue: string): string {
-  const mentionObj = MENTIONS.find(m => m.value === mentionValue);
-  return mentionObj ? mentionObj.color : 'gray';
+export function getPeriodeLabel(periode: TypePeriode): string {
+  return PERIODES.find(p => p.value === periode)?.label ?? periode;
 }
 
 export function calculateMoyenne(notes: Note[]): number {
-  if (!notes || notes.length === 0) return 0;
-  
-  let totalPoints = 0;
-  let totalCoefficients = 0;
-  
-  notes.forEach(note => {
-    const coefficient = note.coefficient || 1;
-    totalPoints += note.valeur * coefficient;
-    totalCoefficients += coefficient;
-  });
-  
-  return totalCoefficients > 0 ? Math.round((totalPoints / totalCoefficients) * 100) / 100 : 0;
+  if (!notes?.length) return 0;
+
+  let sommeNotes = 0;
+  let sommeCoefficients = 0;
+
+  for (const note of notes) {
+    const coef = note.coefficient ?? 1;
+    sommeNotes += note.valeur * coef;
+    sommeCoefficients += coef;
+  }
+
+  return sommeCoefficients > 0 ? Math.round((sommeNotes / sommeCoefficients) * 100) / 100 : 0;
 }
 
 export function formatNote(note: number): string {
@@ -226,46 +300,30 @@ export function formatNote(note: number): string {
 }
 
 export function isNoteValide(note: number): boolean {
-  return note >= NOTE_RANGE.MIN && note <= NOTE_RANGE.MAX;
+  return note >= 0 && note <= 20;
 }
 
-// ===== INTERFACES POUR LES ACTIONS =====
-export interface NoteAction {
-  id: string;
-  label: string;
-  icon: string;
-  color: string;
-  permission?: string;
-  action: (note: Note) => void;
-}
-
-// ===== VALIDATION =====
-export interface NoteValidationRules {
-  valeur: {
-    required: true;
-    min: typeof NOTE_RANGE.MIN;
-    max: typeof NOTE_RANGE.MAX;
-  };
-  type: {
-    required: true;
-    enum: typeof TYPES_EVALUATION;
-  };
-  periode: {
-    required: true;
-    enum: typeof PERIODES_TYPES;
-  };
-  date_evaluation: {
-    required: true;
-    format: 'date';
-  };
-}
-
-// ===== INTERFACES POUR L'AFFICHAGE =====
-export interface NoteWithDetails extends Note {
-  eleve_nom_complet?: string;
-  matiere_nom?: string;
-  enseignant_nom_complet?: string;
-  mention?: string;
-  couleur_mention?: string;
-  peut_modifier?: boolean;
+export function compareNotes(a: Note, b: Note, sortBy: string = 'date_evaluation', direction: 'asc' | 'desc' = 'desc'): number {
+  let comparison = 0;
+  
+  switch (sortBy) {
+    case 'valeur':
+      comparison = a.valeur - b.valeur;
+      break;
+    case 'date_evaluation':
+      comparison = new Date(a.date_evaluation).getTime() - new Date(b.date_evaluation).getTime();
+      break;
+    case 'type':
+      comparison = a.type.localeCompare(b.type);
+      break;
+    case 'periode':
+      const orderA = PERIODES.find(p => p.value === a.periode)?.order ?? 0;
+      const orderB = PERIODES.find(p => p.value === b.periode)?.order ?? 0;
+      comparison = orderA - orderB;
+      break;
+    default:
+      comparison = 0;
+  }
+  
+  return direction === 'asc' ? comparison : -comparison;
 }
