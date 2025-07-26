@@ -1,0 +1,122 @@
+/* ===== Styles pour le layout enseignant ===== */
+
+/* Style pour les liens de la sidebar */
+.sidebar-link {
+  @apply flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg transition-colors duration-200;
+}
+
+.sidebar-link:hover {
+  @apply bg-gray-100 text-gray-900;
+}
+
+/* Style pour le lien actif de la sidebar */
+.sidebar-link.active {
+  @apply bg-green-50 text-green-700 border-r-2 border-green-600;
+}
+
+/* Animation pour l'ouverture/fermeture de la sidebar */
+.sidebar-transition {
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .sidebar-mobile {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar-mobile.open {
+    transform: translateX(0);
+  }
+}
+
+/* Overlay pour mobile */
+.mobile-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+/* Style pour les notifications */
+.notification-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+/* Amélioration de l'accessibilité */
+.focus-visible {
+  @apply focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2;
+}
+
+/* Style pour les boutons d'action rapide */
+.quick-action-btn {
+  @apply w-full text-left text-sm text-green-700 hover:text-green-800 flex items-center transition-colors duration-200;
+}
+
+.quick-action-btn:hover {
+  @apply bg-green-100 rounded-md px-2 py-1;
+}
+
+/* Animation pour le menu profil */
+.profile-menu {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Couleurs personnalisées pour l'enseignant */
+:root {
+  --enseignant-primary: #059669; /* green-600 */
+  --enseignant-primary-light: #d1fae5; /* green-50 */
+  --enseignant-primary-dark: #047857; /* green-700 */
+}
+
+/* Classes utilitaires personnalisées */
+.text-enseignant-primary {
+  color: var(--enseignant-primary);
+}
+
+.bg-enseignant-primary {
+  background-color: var(--enseignant-primary);
+}
+
+.bg-enseignant-light {
+  background-color: var(--enseignant-primary-light);
+}
+
+.border-enseignant-primary {
+  border-color: var(--enseignant-primary);
+}
+
+/* Amélioration du scroll */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}

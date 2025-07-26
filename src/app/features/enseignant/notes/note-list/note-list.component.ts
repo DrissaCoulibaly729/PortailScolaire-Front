@@ -10,6 +10,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { 
   Note,
   NoteFilters,
+  TypeEvaluation,
   TYPES_EVALUATION,
   getTypeEvaluationLabel,
   getTypeEvaluationColor,
@@ -17,7 +18,9 @@ import {
   getMentionFromNote,
   getMentionLabel,
   getMentionColor
-} from '../../../../shared/models/notes-bulletins.model';
+} from '../../../../shared/models/note.model';
+import { Eleve, Enseignant } from '../../../../shared/models/user.model';
+import { Matiere } from '../../../../shared/models/matiere.model';
 
 @Component({
   selector: 'app-note-list',
@@ -232,12 +235,12 @@ import {
                   <div class="flex items-center">
                     <div class="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
                       <span class="text-xs font-medium text-gray-700">
-                        {{ note.eleve?.nom?.charAt(0) }}{{ note.eleve?.prenom?.charAt(0) }}
+                        {{ note.eleve?.nom?.charAt(0) || '' }}{{ note.eleve?.prenom?.charAt(0) || '' }}
                       </span>
                     </div>
                     <div class="ml-3">
                       <div class="text-sm font-medium text-gray-900">
-                        {{ note.eleve?.nom }} {{ note.eleve?.prenom }}
+                        {{ note.eleve?.nom || 'N/A' }} {{ note.eleve?.prenom || 'N/A' }}
                       </div>
                       <div class="text-sm text-gray-500" *ngIf="note.eleve?.numero_etudiant">
                         {{ note.eleve.numero_etudiant }}
@@ -248,15 +251,20 @@ import {
 
                 <!-- Matière -->
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900">{{ note.matiere?.nom }}</div>
-                  <div class="text-sm text-gray-500">{{ note.matiere?.code }}</div>
+                  <div class="text-sm text-gray-900">{{ note.matiere?.nom || 'N/A' }}</div>
+                  <div class="text-sm text-gray-500">{{ note.matiere?.code || '' }}</div>
                 </td>
 
                 <!-- Type -->
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  <span *ngIf="note.type_evaluation" 
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                         [ngClass]="'bg-' + getTypeEvaluationColor(note.type_evaluation) + '-100 text-' + getTypeEvaluationColor(note.type_evaluation) + '-800'">
                     {{ getTypeEvaluationLabel(note.type_evaluation) }}
+                  </span>
+                  <span *ngIf="!note.type_evaluation" 
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    N/A
                   </span>
                 </td>
 
@@ -412,7 +420,7 @@ export class NoteListComponent implements OnInit {
 
   // Form and filters
   filterForm: FormGroup;
-  matieres: any[] = [];
+  matieres: Matiere[] = [];
   classes: any[] = [];
   typesEvaluation = TYPES_EVALUATION;
 
@@ -454,11 +462,38 @@ export class NoteListComponent implements OnInit {
   }
 
   private loadFilterData(): void {
-    // Mock data
+    // Mock data avec toutes les propriétés requises
     this.matieres = [
-      { id: 1, nom: 'Mathématiques' },
-      { id: 2, nom: 'Français' },
-      { id: 3, nom: 'Physique' }
+      { 
+        id: 1, 
+        nom: 'Mathématiques',
+        code: 'MATH',
+        coefficient: 4,
+        active: true,
+        actif: true,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z'
+      },
+      { 
+        id: 2, 
+        nom: 'Français',
+        code: 'FR',
+        coefficient: 3,
+        active: true,
+        actif: true,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z'
+      },
+      { 
+        id: 3, 
+        nom: 'Physique',
+        code: 'PHY',
+        coefficient: 2,
+        active: true,
+        actif: true,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z'
+      }
     ];
 
     this.classes = [
@@ -483,42 +518,126 @@ export class NoteListComponent implements OnInit {
           id: 1,
           valeur: 16.5,
           coefficient: 2,
-          type_evaluation: 'devoir_surveille' as any,
+          type: 'devoir' as TypeEvaluation,
+          type_evaluation: 'devoir' as TypeEvaluation,
+          periode: 'trimestre1',
           date_evaluation: '2024-01-20',
           commentaire: 'Très bon travail',
           eleve_id: 1,
           matiere_id: 1,
           enseignant_id: 1,
-          eleve: { id: 1, nom: 'Dupont', prenom: 'Pierre', numero_etudiant: 'ELE001' },
-          matiere: { id: 1, nom: 'Mathématiques', code: 'MATH', coefficient: 4 },
-          created_at: '2024-01-20T10:00:00Z'
+          classe_id: 1,
+          eleve: { 
+            id: 1, 
+            nom: 'Dupont', 
+            prenom: 'Pierre', 
+            numero_etudiant: 'ELE001',
+            email: 'pierre.dupont@email.com',
+            role: 'eleve',
+            actif: true,
+            classe_id: 1,
+            nom_parent: 'Dupont',
+            prenom_parent: 'Jean',
+            telephone_parent: '0123456789',
+            email_parent: 'jean.dupont@email.com',
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z'
+          },
+          matiere: { 
+            id: 1, 
+            nom: 'Mathématiques', 
+            code: 'MATH', 
+            coefficient: 4,
+            active: true,
+            actif: true,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z'
+          },
+          created_at: '2024-01-20T10:00:00Z',
+          updated_at: '2024-01-20T10:00:00Z'
         },
         {
           id: 2,
           valeur: 14.0,
           coefficient: 1,
-          type_evaluation: 'interrogation' as any,
+          type: 'controle' as TypeEvaluation,
+          type_evaluation: 'controle' as TypeEvaluation,
+          periode: 'trimestre1',
           date_evaluation: '2024-01-18',
           eleve_id: 2,
           matiere_id: 1,
           enseignant_id: 1,
-          eleve: { id: 2, nom: 'Martin', prenom: 'Sophie', numero_etudiant: 'ELE002' },
-          matiere: { id: 1, nom: 'Mathématiques', code: 'MATH', coefficient: 4 },
-          created_at: '2024-01-18T14:30:00Z'
+          classe_id: 1,
+          eleve: { 
+            id: 2, 
+            nom: 'Martin', 
+            prenom: 'Sophie', 
+            numero_etudiant: 'ELE002',
+            email: 'sophie.martin@email.com',
+            role: 'eleve',
+            actif: true,
+            classe_id: 1,
+            nom_parent: 'Martin',
+            prenom_parent: 'Claire',
+            telephone_parent: '0123456790',
+            email_parent: 'claire.martin@email.com',
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z'
+          },
+          matiere: { 
+            id: 1, 
+            nom: 'Mathématiques', 
+            code: 'MATH', 
+            coefficient: 4,
+            active: true,
+            actif: true,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z'
+          },
+          created_at: '2024-01-18T14:30:00Z',
+          updated_at: '2024-01-18T14:30:00Z'
         },
         {
           id: 3,
           valeur: 12.5,
           coefficient: 1,
-          type_evaluation: 'devoir_maison' as any,
+          type: 'examen' as TypeEvaluation,
+          type_evaluation: 'examen' as TypeEvaluation,
+          periode: 'trimestre1',
           date_evaluation: '2024-01-15',
           commentaire: 'Peut mieux faire',
           eleve_id: 3,
           matiere_id: 2,
           enseignant_id: 1,
-          eleve: { id: 3, nom: 'Durand', prenom: 'Lucas', numero_etudiant: 'ELE003' },
-          matiere: { id: 2, nom: 'Français', code: 'FR', coefficient: 3 },
-          created_at: '2024-01-15T16:00:00Z'
+          classe_id: 1,
+          eleve: { 
+            id: 3, 
+            nom: 'Durand', 
+            prenom: 'Lucas', 
+            numero_etudiant: 'ELE003',
+            email: 'lucas.durand@email.com',
+            role: 'eleve',
+            actif: true,
+            classe_id: 1,
+            nom_parent: 'Durand',
+            prenom_parent: 'Marie',
+            telephone_parent: '0123456791',
+            email_parent: 'marie.durand@email.com',
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z'
+          },
+          matiere: { 
+            id: 2, 
+            nom: 'Français', 
+            code: 'FR', 
+            coefficient: 3,
+            active: true,
+            actif: true,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z'
+          },
+          created_at: '2024-01-15T16:00:00Z',
+          updated_at: '2024-01-15T16:00:00Z'
         }
       ];
 
@@ -544,10 +663,19 @@ export class NoteListComponent implements OnInit {
     });
   }
 
-  // Helper methods for template
+  // Helper methods for template - avec gestion des types optionnels
   formatNote = formatNote;
-  getTypeEvaluationLabel = getTypeEvaluationLabel;
-  getTypeEvaluationColor = getTypeEvaluationColor;
+  
+  getTypeEvaluationLabel(type: TypeEvaluation | undefined): string {
+    if (!type) return 'N/A';
+    return getTypeEvaluationLabel(type);
+  }
+  
+  getTypeEvaluationColor(type: TypeEvaluation | undefined): string {
+    if (!type) return 'gray';
+    return getTypeEvaluationColor(type);
+  }
+  
   getMentionFromNote = getMentionFromNote;
   getMentionLabel = getMentionLabel;
   getMentionColor = getMentionColor;
@@ -602,73 +730,3 @@ export class NoteListComponent implements OnInit {
     return pages;
   }
 }
-
-// ===== Models Complets - Classe.model.ts =====
-export interface Classe {
-  id: number;
-  nom: string;
-  niveau: NiveauScolaire;
-  section?: string;
-  effectif_max: number;
-  effectif_actuel?: number;
-  description?: string;
-  actif: boolean;
-  moyenne?: number;
-  created_at?: string;
-  updated_at?: string;
-  
-  // Relations
-  enseignants?: Enseignant[];
-  eleves?: Eleve[];
-}
-
-export type NiveauScolaire = '6ème' | '5ème' | '4ème' | '3ème' | '2nde' | '1ère' | 'Terminale';
-
-export const NIVEAUX_SCOLAIRES: { value: NiveauScolaire; label: string }[] = [
-  { value: '6ème', label: '6ème' },
-  { value: '5ème', label: '5ème' },
-  { value: '4ème', label: '4ème' },
-  { value: '3ème', label: '3ème' },
-  { value: '2nde', label: '2nde' },
-  { value: '1ère', label: '1ère' },
-  { value: 'Terminale', label: 'Terminale' }
-];
-
-export interface CreateClasseRequest {
-  nom: string;
-  niveau: NiveauScolaire;
-  section?: string;
-  effectif_max: number;
-  description?: string;
-  active?: boolean;
-}
-
-export interface UpdateClasseRequest {
-  nom?: string;
-  niveau?: NiveauScolaire;
-  section?: string;
-  effectif_max?: number;
-  description?: string;
-  active?: boolean;
-}
-
-export interface ClasseFilters {
-  recherche?: string;
-  niveau?: NiveauScolaire;
-  active?: string;
-  page?: number;
-  per_page?: number;
-}
-
-export interface ClasseStatistiques {
-  total_classes: number;
-  classes_actives: number;
-  total_eleves: number;
-  taux_occupation: number;
-  moyenne_generale: number;
-}
-
-export interface AffecterEnseignantRequest {
-  enseignant_id: number;
-}
-

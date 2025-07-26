@@ -1,0 +1,165 @@
+/* ===== Styles pour le layout élève/parent ===== */
+
+/* Style pour les liens de la sidebar */
+.sidebar-link {
+  @apply flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg transition-colors duration-200;
+}
+
+.sidebar-link:hover {
+  @apply bg-gray-100 text-gray-900;
+}
+
+/* Style pour le lien actif de la sidebar */
+.sidebar-link.active {
+  @apply bg-purple-50 text-purple-700 border-r-2 border-purple-600;
+}
+
+/* Animation pour l'ouverture/fermeture de la sidebar */
+.sidebar-transition {
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .sidebar-mobile {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar-mobile.open {
+    transform: translateX(0);
+  }
+}
+
+/* Overlay pour mobile */
+.mobile-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+/* Style pour les notifications */
+.notification-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+/* Amélioration de l'accessibilité */
+.focus-visible {
+  @apply focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2;
+}
+
+/* Style pour les boutons d'action rapide */
+.quick-action-btn {
+  @apply w-full text-left text-sm text-purple-700 hover:text-purple-800 flex items-center transition-colors duration-200;
+}
+
+.quick-action-btn:hover {
+  @apply bg-purple-100 rounded-md px-2 py-1;
+}
+
+/* Animation pour le menu profil */
+.profile-menu {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Couleurs personnalisées pour l'élève/parent */
+:root {
+  --eleve-primary: #7c3aed; /* purple-600 */
+  --eleve-primary-light: #f3e8ff; /* purple-50 */
+  --eleve-primary-dark: #6d28d9; /* purple-700 */
+}
+
+/* Classes utilitaires personnalisées */
+.text-eleve-primary {
+  color: var(--eleve-primary);
+}
+
+.bg-eleve-primary {
+  background-color: var(--eleve-primary);
+}
+
+.bg-eleve-light {
+  background-color: var(--eleve-primary-light);
+}
+
+.border-eleve-primary {
+  border-color: var(--eleve-primary);
+}
+
+/* Amélioration du scroll */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Styles spécifiques pour l'interface élève */
+.student-card {
+  @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200;
+}
+
+.grade-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.grade-excellent {
+  @apply bg-green-100 text-green-800;
+}
+
+.grade-good {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.grade-average {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.grade-poor {
+  @apply bg-red-100 text-red-800;
+}
+
+/* Styles pour les bulletins */
+.bulletin-summary {
+  @apply bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 border border-purple-200;
+}
+
+/* Styles pour le planning */
+.schedule-item {
+  @apply bg-white rounded-lg p-3 border-l-4 border-purple-400 shadow-sm;
+}
+
+.schedule-current {
+  @apply border-l-4 border-purple-600 bg-purple-50;
+}
+
+.schedule-next {
+  @apply border-l-4 border-blue-400 bg-blue-50;
+}
