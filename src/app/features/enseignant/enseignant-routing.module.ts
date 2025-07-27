@@ -1,90 +1,86 @@
+// src/app/features/enseignant/enseignant-routing.module.ts
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+
 import { EnseignantLayoutComponent } from '../../layouts/enseignant-layout/enseignant-layout.component';
 import { EnseignantDashboardComponent } from './dashboard/dashboard.component';
 import { NoteListComponent } from './notes/note-list/note-list.component';
 import { NoteFormComponent } from './notes/note-form/note-form.component';
-// import { NoteDetailComponent } from './notes/note-detail/note-detail.component';
-// import { NoteBatchComponent } from './notes/note-batch/note-batch.component';
-// import { NoteImportComponent } from './notes/note-import/note-import.component';
+import { ClasseListComponent } from './classes/classe-list/classe-list.component';
+import { ClasseDetailComponent } from './classes/classe-detail/classe-detail.component';
+import { MatiereListComponent } from './matieres/matiere-list/matiere-list.component';
+import { MatiereDetailComponent } from './matieres/matiere-detail/matiere-detail.component';
 
 const routes: Routes = [
   {
     path: '',
-    component: EnseignantLayoutComponent, // ✅ Layout enseignant
+    component: EnseignantLayoutComponent,
     children: [
-      // Route par défaut
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      
-      // Dashboard principal
-      { path: 'dashboard', component: EnseignantDashboardComponent },
-      
-      // Gestion des notes
       { 
-        path: 'notes', 
+        path: '', 
+        redirectTo: 'dashboard', 
+        pathMatch: 'full' 
+      },
+      { 
+        path: 'dashboard', 
+        component: EnseignantDashboardComponent,
+        data: { title: 'Tableau de bord' }
+      },
+      {
+        path: 'notes',
         children: [
-          { path: '', component: NoteListComponent }, // ✅ Liste des notes
-          { path: 'create', component: NoteFormComponent }, // ✅ Créer une note
-          // { path: 'batch', component: NoteBatchComponent }, // ✅ Saisie en lot
-          // { path: 'import', component: NoteImportComponent }, // ✅ Import CSV
-          // { path: 'edit/:id', component: NoteFormComponent }, // ✅ Modifier une note
-          // { path: ':id', component: NoteDetailComponent } // ✅ Détail d'une note
+          { 
+            path: '', 
+            component: NoteListComponent,
+            data: { title: 'Gestion des notes' }
+          },
+          { 
+            path: 'new', 
+            component: NoteFormComponent,
+            data: { title: 'Nouvelle note' }
+          },
+          { 
+            path: 'edit/:id', 
+            component: NoteFormComponent,
+            data: { title: 'Modifier la note' }
+          },
+          {
+            path: 'batch',
+            component: NoteFormComponent,
+            data: { title: 'Saisie en lot', mode: 'batch' }
+          }
         ]
       },
-      
-      // Gestion des classes (composants à créer si pas encore fait)
-      { 
-        path: 'classes', 
+      {
+        path: 'classes',
         children: [
-          { path: '', component: EnseignantDashboardComponent }, // Temporaire - Liste des classes
-          { path: ':id', component: EnseignantDashboardComponent } // Temporaire - Détail d'une classe
+          { 
+            path: '', 
+            component: ClasseListComponent,
+            data: { title: 'Mes classes' }
+          },
+          { 
+            path: ':id', 
+            component: ClasseDetailComponent,
+            data: { title: 'Détail de la classe' }
+          }
         ]
       },
-      
-      // Gestion des matières
-      { 
+      {
         path: 'matieres',
         children: [
-          { path: '', component: EnseignantDashboardComponent }, // Temporaire - Liste des matières
-          { path: ':id', component: EnseignantDashboardComponent } // Temporaire - Détail d'une matière
+          { 
+            path: '', 
+            component: MatiereListComponent,
+            data: { title: 'Mes matières' }
+          },
+          { 
+            path: ':id', 
+            component: MatiereDetailComponent,
+            data: { title: 'Détail de la matière' }
+          }
         ]
-      },
-      
-      // Gestion des bulletins
-      { 
-        path: 'bulletins',
-        children: [
-          { path: '', component: EnseignantDashboardComponent }, // Temporaire - Liste des bulletins
-          { path: 'generate/:eleveId', component: EnseignantDashboardComponent }, // Générer bulletin
-          { path: ':id', component: EnseignantDashboardComponent } // Détail bulletin
-        ]
-      },
-      
-      // Gestion des élèves (via classes)
-      { 
-        path: 'eleves',
-        children: [
-          { path: '', redirectTo: '/enseignant/classes', pathMatch: 'full' }, // Redirection vers classes
-          { path: ':id', component: EnseignantDashboardComponent } // Profil élève
-        ]
-      },
-      
-      // Rapports et statistiques
-      { 
-        path: 'rapports',
-        children: [
-          { path: '', component: EnseignantDashboardComponent }, // Tableau de bord rapports
-          { path: 'classe/:id', component: EnseignantDashboardComponent }, // Rapport par classe
-          { path: 'matiere/:id', component: EnseignantDashboardComponent }, // Rapport par matière
-          { path: 'export', component: EnseignantDashboardComponent } // Export données
-        ]
-      },
-      
-      // Profil enseignant
-      { path: 'profile', component: EnseignantDashboardComponent }, // Composant profil à créer
-      
-      // Route wildcard - redirection vers dashboard si route inconnue
-      { path: '**', redirectTo: 'dashboard' }
+      }
     ]
   }
 ];

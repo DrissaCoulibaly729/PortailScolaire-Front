@@ -1,33 +1,34 @@
 // src/app/core/services/note.service.ts
-
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
 import { environment } from '../../../environments/environment';
+import { ApiResponse } from '../../shared/models/api-response.model';
+import { PaginatedResponse } from '../../shared/models/common.model';
 import { 
   Note, 
   CreateNoteRequest, 
   UpdateNoteRequest, 
-  NoteFilters,
-  NoteStatistiques,
-  BulkNoteOperation,
-  BulkNoteResult
+  NoteFilters, 
+  BulkNoteResult,
+  NoteStatistiques 
 } from '../../shared/models/note.model';
-import { ApiResponse } from '../../shared/models/api-response.model';
-import { PaginatedResponse } from '../../shared/models/common.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class NoteService {
-  private apiUrl = `${environment.apiUrl}/enseignant/notes`;
+  private readonly apiUrl = `${environment.apiUrl}/notes`;
+  private readonly baseUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
   /**
-   * Obtenir la liste des notes avec filtres
+   * Obtenir toutes les notes avec filtres et pagination
    */
-  getNotes(filters?: NoteFilters): Observable<PaginatedResponse<Note>> {
+  getNotes(filters?: NoteFilters): Observable<ApiResponse<PaginatedResponse<Note>>> {
     let params = new HttpParams();
     
     if (filters) {
@@ -39,7 +40,7 @@ export class NoteService {
       });
     }
 
-    return this.http.get<PaginatedResponse<Note>>(this.apiUrl, { params });
+    return this.http.get<ApiResponse<PaginatedResponse<Note>>>(this.apiUrl, { params });
   }
 
   /**
@@ -52,97 +53,70 @@ export class NoteService {
   /**
    * Créer une nouvelle note
    */
-  createNote(noteData: CreateNoteRequest): Observable<ApiResponse<Note>> {
-    return this.http.post<ApiResponse<Note>>(this.apiUrl, noteData);
+  createNote(note: CreateNoteRequest): Observable<ApiResponse<Note>> {
+    return this.http.post<ApiResponse<Note>>(this.apiUrl, note);
   }
 
   /**
-   * Créer plusieurs notes en lot - MÉTHODE AJOUTÉE
+   * Créer plusieurs notes en une seule fois (MÉTHODE MANQUANTE AJOUTÉE)
    */
   createNotesEnLot(notes: CreateNoteRequest[]): Observable<ApiResponse<BulkNoteResult>> {
-    return this.http.post<ApiResponse<BulkNoteResult>>(`${this.apiUrl}/batch`, { 
-      notes: notes 
-    });
+    return this.http.post<ApiResponse<BulkNoteResult>>(`${this.apiUrl}/batch`, { notes });
   }
 
   /**
    * Mettre à jour une note
    */
-  updateNote(id: number, noteData: UpdateNoteRequest): Observable<ApiResponse<Note>> {
-    return this.http.put<ApiResponse<Note>>(`${this.apiUrl}/${id}`, noteData);
+  updateNote(id: number, note: UpdateNoteRequest): Observable<ApiResponse<Note>> {
+    return this.http.put<ApiResponse<Note>>(`${this.apiUrl}/${id}`, note);
   }
 
   /**
    * Supprimer une note
    */
-  deleteNote(id: number): Observable<ApiResponse<void>> {
-    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/${id}`);
+  deleteNote(id: number): Observable<ApiResponse<boolean>> {
+    return this.http.delete<ApiResponse<boolean>>(`${this.apiUrl}/${id}`);
   }
 
   /**
    * Supprimer plusieurs notes
    */
-  deleteNotes(noteIds: number[]): Observable<ApiResponse<BulkNoteResult>> {
-    return this.http.request<ApiResponse<BulkNoteResult>>('DELETE', this.apiUrl, {
-      body: { note_ids: noteIds }
+  deleteNotes(ids: number[]): Observable<ApiResponse<BulkNoteResult>> {
+    return this.http.request<ApiResponse<BulkNoteResult>>('delete', this.apiUrl, {
+      body: { ids }
     });
   }
 
   /**
-   * Obtenir les notes par classe
+   * Obtenir les notes d'un élève
    */
-  getNotesByClasse(classeId: number, filters?: NoteFilters): Observable<PaginatedResponse<Note>> {
-    const url = `${this.apiUrl}/classe/${classeId}`;
-    let params = new HttpParams();
-    
-    if (filters) {
-      Object.keys(filters).forEach(key => {
-        const value = (filters as any)[key];
-        if (value !== null && value !== undefined && value !== '') {
-          params = params.set(key, value.toString());
-        }
-      });
-    }
-
-    return this.http.get<PaginatedResponse<Note>>(url, { params });
+  getNotesByEleve(eleveId: number, filters?: NoteFilters): Observable<ApiResponse<PaginatedResponse<Note>>> {
+    const queryFilters = { ...filters, eleve_id: eleveId };
+    return this.getNotes(queryFilters);
   }
 
   /**
-   * Obtenir les notes par élève
+   * Obtenir les notes d'une classe
    */
-  getNotesByEleve(eleveId: number, filters?: NoteFilters): Observable<PaginatedResponse<Note>> {
-    const url = `${this.apiUrl}/eleve/${eleveId}`;
-    let params = new HttpParams();
-    
-    if (filters) {
-      Object.keys(filters).forEach(key => {
-        const value = (filters as any)[key];
-        if (value !== null && value !== undefined && value !== '') {
-          params = params.set(key, value.toString());
-        }
-      });
-    }
-
-    return this.http.get<PaginatedResponse<Note>>(url, { params });
+  getNotesByClasse(classeId: number, filters?: NoteFilters): Observable<ApiResponse<PaginatedResponse<Note>>> {
+    const queryFilters = { ...filters, classe_id: classeId };
+    return this.getNotes(queryFilters);
   }
 
   /**
-   * Obtenir les notes par matière
+   * Obtenir les notes d'une matière
    */
-  getNotesByMatiere(matiereId: number, filters?: NoteFilters): Observable<PaginatedResponse<Note>> {
-    const url = `${this.apiUrl}/matiere/${matiereId}`;
-    let params = new HttpParams();
-    
-    if (filters) {
-      Object.keys(filters).forEach(key => {
-        const value = (filters as any)[key];
-        if (value !== null && value !== undefined && value !== '') {
-          params = params.set(key, value.toString());
-        }
-      });
-    }
+  getNotesByMatiere(matiereId: number, filters?: NoteFilters): Observable<ApiResponse<PaginatedResponse<Note>>> {
+    const queryFilters = { ...filters, matiere_id: matiereId };
+    return this.getNotes(queryFilters);
+  }
 
-    return this.http.get<PaginatedResponse<Note>>(url, { params });
+  /**
+   * Obtenir les notes d'un enseignant
+   */
+  getNotesByEnseignant(enseignantId: number, filters?: NoteFilters): Observable<ApiResponse<PaginatedResponse<Note>>> {
+    const queryFilters = { ...filters, enseignant_id: enseignantId };
+    return this.getNotes(queryFilters);
   }
 
   /**
@@ -161,20 +135,6 @@ export class NoteService {
     }
 
     return this.http.get<ApiResponse<NoteStatistiques>>(`${this.apiUrl}/statistiques`, { params });
-  }
-
-  /**
-   * Obtenir les moyennes par élève
-   */
-  getMoyennesEleves(classeId: number, matiereId?: number): Observable<ApiResponse<any[]>> {
-    let url = `${this.apiUrl}/moyennes/classe/${classeId}`;
-    let params = new HttpParams();
-    
-    if (matiereId) {
-      params = params.set('matiere_id', matiereId.toString());
-    }
-
-    return this.http.get<ApiResponse<any[]>>(url, { params });
   }
 
   /**
@@ -199,18 +159,25 @@ export class NoteService {
   }
 
   /**
-   * Importer des notes depuis un fichier CSV
+   * Obtenir les classes d'un enseignant (NOUVELLE MÉTHODE)
    */
-  importNotes(file: File): Observable<ApiResponse<BulkNoteResult>> {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    return this.http.post<ApiResponse<BulkNoteResult>>(`${this.apiUrl}/import`, formData);
+  getClassesEnseignant(enseignantId: number): Observable<ApiResponse<any[]>> {
+    return this.http.get<ApiResponse<any[]>>(`${this.baseUrl}/enseignants/${enseignantId}/classes`);
   }
 
-  // =====================================
-  // MÉTHODES UTILITAIRES
-  // =====================================
+  /**
+   * Obtenir les matières d'un enseignant (NOUVELLE MÉTHODE)
+   */
+  getMatieresEnseignant(enseignantId: number): Observable<ApiResponse<any[]>> {
+    return this.http.get<ApiResponse<any[]>>(`${this.baseUrl}/enseignants/${enseignantId}/matieres`);
+  }
+
+  /**
+   * Obtenir les élèves d'une classe (NOUVELLE MÉTHODE)
+   */
+  getElevesClasse(classeId: number): Observable<ApiResponse<any[]>> {
+    return this.http.get<ApiResponse<any[]>>(`${this.baseUrl}/classes/${classeId}/eleves`);
+  }
 
   /**
    * Valider une note
@@ -225,26 +192,16 @@ export class NoteService {
   calculerMoyenne(notes: Note[]): number {
     if (!notes || notes.length === 0) return 0;
     
-    let sommeNotes = 0;
-    let sommeCoefficients = 0;
+    let totalPoints = 0;
+    let totalCoefficients = 0;
     
     notes.forEach(note => {
       const coefficient = note.coefficient || 1;
-      sommeNotes += note.valeur * coefficient;
-      sommeCoefficients += coefficient;
+      totalPoints += note.valeur * coefficient;
+      totalCoefficients += coefficient;
     });
     
-    return sommeCoefficients > 0 ? Math.round((sommeNotes / sommeCoefficients) * 100) / 100 : 0;
-  }
-
-  /**
-   * Calculer la moyenne simple
-   */
-  calculerMoyenneSimple(notes: Note[]): number {
-    if (!notes || notes.length === 0) return 0;
-    
-    const total = notes.reduce((sum, note) => sum + note.valeur, 0);
-    return Math.round((total / notes.length) * 100) / 100;
+    return totalCoefficients > 0 ? Math.round((totalPoints / totalCoefficients) * 100) / 100 : 0;
   }
 
   /**
@@ -279,66 +236,9 @@ export class NoteService {
   }
 
   /**
-   * Obtenir le label du type d'évaluation
+   * Vérifier si une note est dans la plage valide
    */
-  getTypeEvaluationLabel(type: string): string {
-    const types: { [key: string]: string } = {
-      'devoir': 'Devoir',
-      'controle': 'Contrôle',
-      'examen': 'Examen'
-    };
-    return types[type] || type;
-  }
-
-  /**
-   * Obtenir la couleur du type d'évaluation
-   */
-  getTypeEvaluationColor(type: string): string {
-    const colors: { [key: string]: string } = {
-      'devoir': 'blue',
-      'controle': 'orange',
-      'examen': 'red'
-    };
-    return colors[type] || 'gray';
-  }
-
-  /**
-   * Vérifier si l'enseignant peut modifier une note
-   */
-  canEditNote(note: Note, enseignantId: number): boolean {
-    return note.enseignant_id === enseignantId;
-  }
-
-  /**
-   * Vérifier si l'enseignant peut supprimer une note
-   */
-  canDeleteNote(note: Note, enseignantId: number): boolean {
-    return note.enseignant_id === enseignantId;
-  }
-
-  /**
-   * Grouper les notes par élève
-   */
-  groupNotesByEleve(notes: Note[]): { [eleveId: number]: Note[] } {
-    return notes.reduce((acc, note) => {
-      if (!acc[note.eleve_id]) {
-        acc[note.eleve_id] = [];
-      }
-      acc[note.eleve_id].push(note);
-      return acc;
-    }, {} as { [eleveId: number]: Note[] });
-  }
-
-  /**
-   * Grouper les notes par matière
-   */
-  groupNotesByMatiere(notes: Note[]): { [matiereId: number]: Note[] } {
-    return notes.reduce((acc, note) => {
-      if (!acc[note.matiere_id]) {
-        acc[note.matiere_id] = [];
-      }
-      acc[note.matiere_id].push(note);
-      return acc;
-    }, {} as { [matiereId: number]: Note[] });
+  isNoteValide(note: number): boolean {
+    return note >= 0 && note <= 20;
   }
 }

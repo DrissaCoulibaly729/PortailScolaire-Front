@@ -1,231 +1,173 @@
-// ===== Note List Component =====
-import { Component, OnInit } from '@angular/core';
+// src/app/features/enseignant/notes/note-list/note-list.component.ts
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
-import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
-import { NoteService } from '../../../../core/services/note.service';
-import { NotificationService } from '../../../../core/services/notification.service';
-import { 
-  Note,
-  NoteFilters,
-  TypeEvaluation,
-  TYPES_EVALUATION,
-  getTypeEvaluationLabel,
-  getTypeEvaluationColor,
-  formatNote,
-  getMentionFromNote,
-  getMentionLabel,
-  getMentionColor
-} from '../../../../shared/models/note.model';
-import { Eleve, Enseignant } from '../../../../shared/models/user.model';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { EnseignantService } from '../../../../core/services/enseignant.service';
+import { Note, NoteFilters, TYPES_EVALUATION, PERIODES_TYPES } from '../../../../shared/models/note.model';
+import { Classe } from '../../../../shared/models/classe.model';
 import { Matiere } from '../../../../shared/models/matiere.model';
+import { User } from '../../../../shared/models/user.model';
+import { PaginatedResponse } from '../../../../shared/models/common.model';
 
 @Component({
   selector: 'app-note-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   template: `
-    <div class="min-h-screen bg-gray-50 p-6">
+    <div class="p-6 bg-gray-50 min-h-screen">
       <!-- Header -->
-      <div class="mb-8">
+      <div class="mb-6">
         <div class="flex justify-between items-center">
           <div>
-            <h1 class="text-3xl font-bold text-gray-900">Mes notes</h1>
-            <p class="text-gray-600 mt-2">Gérer les notes de vos élèves</p>
+            <h1 class="text-2xl font-bold text-gray-900">Gestion des notes</h1>
+            <p class="text-gray-600">Consultez et gérez toutes vos notes saisies</p>
           </div>
           <div class="flex space-x-3">
-            <button (click)="exportNotes()" 
-                    class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            <button (click)="router.navigate(['/enseignant/notes/batch'])" 
+                    class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
-              Exporter
+              Saisie en lot
             </button>
-            <button routerLink="/enseignant/notes/create" 
-                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+            <button (click)="router.navigate(['/enseignant/notes/new'])" 
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
               </svg>
-              Ajouter une note
+              Nouvelle note
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div class="bg-white rounded-lg shadow-sm border p-6">
-          <div class="flex items-center">
-            <div class="p-2 rounded-lg bg-blue-100">
-              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-              </svg>
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Total notes</p>
-              <p class="text-2xl font-bold text-gray-900">{{ totalNotes }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-sm border p-6">
-          <div class="flex items-center">
-            <div class="p-2 rounded-lg bg-green-100">
-              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-              </svg>
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Moyenne générale</p>
-              <p class="text-2xl font-bold text-gray-900">{{ moyenneGenerale | number:'1.2-2' }}/20</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-sm border p-6">
-          <div class="flex items-center">
-            <div class="p-2 rounded-lg bg-yellow-100">
-              <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Ce mois</p>
-              <p class="text-2xl font-bold text-gray-900">{{ notesCeMois }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-sm border p-6">
-          <div class="flex items-center">
-            <div class="p-2 rounded-lg bg-purple-100">
-              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-              </svg>
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Élèves notés</p>
-              <p class="text-2xl font-bold text-gray-900">{{ elevesNotes }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Filters -->
+      <!-- Filtres -->
       <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
-        <form [formGroup]="filterForm" class="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <!-- Search -->
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Filtres</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Recherche -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Recherche</label>
-            <div class="relative">
-              <input type="text" 
-                     formControlName="recherche"
-                     placeholder="Nom d'élève..."
-                     class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-            </div>
-          </div>
-
-          <!-- Matière -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Matière</label>
-            <select formControlName="matiere_id" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              <option value="">Toutes les matières</option>
-              <option *ngFor="let matiere of matieres" [value]="matiere.id">{{ matiere.nom }}</option>
-            </select>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Recherche</label>
+            <input type="text" 
+                   [(ngModel)]="searchTerm"
+                   (ngModelChange)="onSearchChange()"
+                   placeholder="Nom de l'élève..."
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
 
           <!-- Classe -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Classe</label>
-            <select formControlName="classe_id" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Classe</label>
+            <select [(ngModel)]="filters.classe_id" (ngModelChange)="applyFilters()"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">Toutes les classes</option>
               <option *ngFor="let classe of classes" [value]="classe.id">{{ classe.nom }}</option>
             </select>
           </div>
 
+          <!-- Matière -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Matière</label>
+            <select [(ngModel)]="filters.matiere_id" (ngModelChange)="applyFilters()"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Toutes les matières</option>
+              <option *ngFor="let matiere of matieres" [value]="matiere.id">{{ matiere.nom }}</option>
+            </select>
+          </div>
+
           <!-- Type d'évaluation -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
-            <select formControlName="type_evaluation" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <select [(ngModel)]="filters.type" (ngModelChange)="applyFilters()"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">Tous les types</option>
               <option *ngFor="let type of typesEvaluation" [value]="type.value">{{ type.label }}</option>
             </select>
           </div>
 
-          <!-- Per page -->
+          <!-- Période -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Par page</label>
-            <select formControlName="per_page" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              <option value="10">10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Période</label>
+            <select [(ngModel)]="filters.periode" (ngModelChange)="applyFilters()"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Toutes les périodes</option>
+              <option *ngFor="let periode of periodes" [value]="periode.value">{{ periode.label }}</option>
             </select>
           </div>
-        </form>
 
-        <!-- Reset Filters -->
-        <div class="mt-4 flex justify-end">
-          <button (click)="resetFilters()" 
-                  class="text-sm text-gray-600 hover:text-gray-900">
-            Réinitialiser les filtres
-          </button>
+          <!-- Date début -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Date début</label>
+            <input type="date" 
+                   [(ngModel)]="filters.date_debut" 
+                   (ngModelChange)="applyFilters()"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <!-- Date fin -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Date fin</label>
+            <input type="date" 
+                   [(ngModel)]="filters.date_fin" 
+                   (ngModelChange)="applyFilters()"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-end">
+            <button (click)="clearFilters()" 
+                    class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 w-full">
+              Réinitialiser
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- Loading State -->
-      <div *ngIf="isLoading" class="bg-white rounded-lg shadow-sm p-8">
-        <div class="flex justify-center items-center">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span class="ml-3 text-gray-600">Chargement des notes...</span>
-        </div>
+      <div *ngIf="isLoading" class="flex justify-center items-center py-12">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
 
-      <!-- Error State -->
-      <div *ngIf="error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-        <div class="flex">
-          <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-          </svg>
-          <p class="text-red-800">{{ error }}</p>
+      <!-- Liste des notes -->
+      <div *ngIf="!isLoading" class="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <!-- En-tête -->
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <div class="flex justify-between items-center">
+            <h3 class="text-lg font-medium text-gray-900">
+              Notes ({{ paginatedData?.total || 0 }})
+            </h3>
+            <div class="flex items-center space-x-4">
+              <!-- Tri -->
+              <select [(ngModel)]="sortBy" (ngModelChange)="applyFilters()"
+                      class="px-3 py-1 border border-gray-300 rounded text-sm">
+                <option value="date_evaluation:desc">Date (plus récent)</option>
+                <option value="date_evaluation:asc">Date (plus ancien)</option>
+                <option value="valeur:desc">Note (plus haute)</option>
+                <option value="valeur:asc">Note (plus basse)</option>
+                <option value="eleve.nom:asc">Élève (A-Z)</option>
+              </select>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Notes Table -->
-      <div *ngIf="!isLoading && !error" class="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <!-- Table -->
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
+          <table class="min-w-full divide-y divide-gray-200" *ngIf="notes.length > 0; else noNotes">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Élève
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Matière
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Note
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Coeff.
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Élève</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classe</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matière</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Note</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Période</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -233,94 +175,72 @@ import { Matiere } from '../../../../shared/models/matiere.model';
                 <!-- Élève -->
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
-                    <div class="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
-                      <span class="text-xs font-medium text-gray-700">
-                        {{ note.eleve?.nom?.charAt(0) || '' }}{{ note.eleve?.prenom?.charAt(0) || '' }}
+                    <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span class="text-xs font-medium text-blue-800">
+                        {{ note.eleve?.nom?.charAt(0) }}{{ note.eleve?.prenom?.charAt(0) }}
                       </span>
                     </div>
                     <div class="ml-3">
-                      <div class="text-sm font-medium text-gray-900">
-                        {{ note.eleve?.nom || 'N/A' }} {{ note.eleve?.prenom || 'N/A' }}
-                      </div>
-                      <div class="text-sm text-gray-500" *ngIf="note.eleve?.numero_etudiant">
-                        {{ note.eleve?.numero_etudiant }}
-                      </div>
+                      <p class="text-sm font-medium text-gray-900">
+                        {{ note.eleve?.nom }} {{ note.eleve?.prenom }}
+                      </p>
+                      <p class="text-xs text-gray-500" *ngIf="note.eleve?.numero_etudiant">
+                        {{ note.eleve.numero_etudiant }}
+                      </p>
                     </div>
                   </div>
                 </td>
 
-                <!-- Matière -->
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900">{{ note.matiere?.nom || 'N/A' }}</div>
-                  <div class="text-sm text-gray-500">{{ note.matiere?.code || '' }}</div>
+                <!-- Classe -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ getClasseName(note.classe_id) }}
                 </td>
 
-                <!-- Type -->
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span *ngIf="note.type_evaluation" 
-                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                        [ngClass]="'bg-' + getTypeEvaluationColor(note.type_evaluation) + '-100 text-' + getTypeEvaluationColor(note.type_evaluation) + '-800'">
-                    {{ getTypeEvaluationLabel(note.type_evaluation) }}
-                  </span>
-                  <span *ngIf="!note.type_evaluation" 
-                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                    N/A
-                  </span>
+                <!-- Matière -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ getMatiereName(note.matiere_id) }}
                 </td>
 
                 <!-- Note -->
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
-                    <span class="text-lg font-bold"
-                          [ngClass]="{
-                            'text-green-600': note.valeur >= 16,
-                            'text-blue-600': note.valeur >= 14 && note.valeur < 16,
-                            'text-yellow-600': note.valeur >= 12 && note.valeur < 14,
-                            'text-orange-600': note.valeur >= 10 && note.valeur < 12,
-                            'text-red-600': note.valeur < 10
-                          }">
-                      {{ formatNote(note.valeur) }}/20
+                    <span class="text-lg font-bold" [class]="getNoteColorClass(note.valeur)">
+                      {{ note.valeur }}/20
                     </span>
-                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                          [ngClass]="'bg-' + getMentionColor(getMentionFromNote(note.valeur)) + '-100 text-' + getMentionColor(getMentionFromNote(note.valeur)) + '-800'">
-                      {{ getMentionLabel(getMentionFromNote(note.valeur)) }}
+                    <span class="ml-2 px-2 py-1 text-xs rounded-full" [class]="getMentionClass(note.valeur)">
+                      {{ getMention(note.valeur) }}
                     </span>
                   </div>
                 </td>
 
-                <!-- Coefficient -->
+                <!-- Type -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 py-1 text-xs font-medium rounded-full" [class]="getTypeClass(note.type)">
+                    {{ getTypeLabel(note.type) }}
+                  </span>
+                </td>
+
+                <!-- Période -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ note.coefficient || 1 }}
+                  {{ getPeriodeLabel(note.periode) }}
                 </td>
 
                 <!-- Date -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {{ note.date_evaluation | date:'dd/MM/yyyy' }}
                 </td>
 
                 <!-- Actions -->
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div class="flex justify-end space-x-2">
-                    <button (click)="viewNote(note)" 
-                            class="text-blue-600 hover:text-blue-900" 
-                            title="Voir les détails">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                      </svg>
-                    </button>
-
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <div class="flex space-x-2">
                     <button (click)="editNote(note)" 
-                            class="text-indigo-600 hover:text-indigo-900" 
-                            title="Modifier">
+                            class="text-blue-600 hover:text-blue-900">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                       </svg>
                     </button>
-
                     <button (click)="deleteNote(note)" 
-                            class="text-red-600 hover:text-red-900" 
-                            title="Supprimer">
+                            class="text-red-600 hover:text-red-900">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                       </svg>
@@ -328,83 +248,47 @@ import { Matiere } from '../../../../shared/models/matiere.model';
                   </div>
                 </td>
               </tr>
-
-              <!-- Empty State -->
-              <tr *ngIf="notes.length === 0">
-                <td colspan="7" class="px-6 py-12 text-center">
-                  <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-                  </svg>
-                  <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune note trouvée</h3>
-                  <p class="text-gray-500 mb-6">Aucune note ne correspond aux critères de recherche.</p>
-                  <button routerLink="/enseignant/notes/create" 
-                          class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Ajouter la première note
-                  </button>
-                </td>
-              </tr>
             </tbody>
           </table>
+
+          <!-- No notes message -->
+          <ng-template #noNotes>
+            <div class="text-center py-12">
+              <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              </svg>
+              <h3 class="text-lg font-medium text-gray-900">Aucune note trouvée</h3>
+              <p class="text-gray-500 mt-1">Commencez par saisir des notes pour vos élèves.</p>
+              <button (click)="router.navigate(['/enseignant/notes/new'])" 
+                      class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                Ajouter une note
+              </button>
+            </div>
+          </ng-template>
         </div>
 
         <!-- Pagination -->
-        <div *ngIf="pagination" class="bg-white px-4 py-3 border-t border-gray-200">
-          <div class="flex items-center justify-between">
-            <div class="flex-1 flex justify-between sm:hidden">
-              <button [disabled]="!pagination.links.prev" 
-                      (click)="goToPage(pagination.meta.current_page - 1)"
-                      class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50" *ngIf="paginatedData && paginatedData.total > 0">
+          <div class="flex justify-between items-center">
+            <div class="text-sm text-gray-700">
+              Affichage de {{ ((currentPage - 1) * pageSize) + 1 }} à 
+              {{ Math.min(currentPage * pageSize, paginatedData.total) }} 
+              sur {{ paginatedData.total }} résultats
+            </div>
+            <div class="flex space-x-2">
+              <button (click)="previousPage()" 
+                      [disabled]="currentPage <= 1"
+                      class="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100">
                 Précédent
               </button>
-              <button [disabled]="!pagination.links.next" 
-                      (click)="goToPage(pagination.meta.current_page + 1)"
-                      class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+              <span class="px-3 py-1 text-sm">
+                Page {{ currentPage }} sur {{ totalPages }}
+              </span>
+              <button (click)="nextPage()" 
+                      [disabled]="currentPage >= totalPages"
+                      class="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100">
                 Suivant
               </button>
-            </div>
-            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p class="text-sm text-gray-700">
-                  Affichage de 
-                  <span class="font-medium">{{ pagination.meta.from }}</span>
-                  à 
-                  <span class="font-medium">{{ pagination.meta.to }}</span>
-                  sur 
-                  <span class="font-medium">{{ pagination.meta.total }}</span>
-                  résultats
-                </p>
-              </div>
-              <div>
-                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button [disabled]="!pagination.links.prev" 
-                          (click)="goToPage(pagination.meta.current_page - 1)"
-                          class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-
-                  <button *ngFor="let page of getPageNumbers()" 
-                          (click)="goToPage(page)"
-                          [class]="page === pagination.meta.current_page ? 
-                            'bg-blue-50 border-blue-500 text-blue-600' : 
-                            'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'"
-                          class="relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                    {{ page }}
-                  </button>
-
-                  <button [disabled]="!pagination.links.next" 
-                          (click)="goToPage(pagination.meta.current_page + 1)"
-                          class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                </nav>
-              </div>
             </div>
           </div>
         </div>
@@ -412,321 +296,235 @@ import { Matiere } from '../../../../shared/models/matiere.model';
     </div>
   `
 })
-export class NoteListComponent implements OnInit {
+export class NoteListComponent implements OnInit, OnDestroy {
+  currentUser: User | null = null;
   notes: Note[] = [];
-  pagination: any = null;
-  isLoading = false;
-  error: string | null = null;
-
-  // Form and filters
-  filterForm: FormGroup;
+  classes: Classe[] = [];
   matieres: Matiere[] = [];
-  classes: any[] = [];
+  
+  // Pagination
+  paginatedData: PaginatedResponse<Note> | null = null;
+  currentPage = 1;
+  pageSize = 20;
+  totalPages = 1;
+  
+  // Filtres
+  filters: NoteFilters = {};
+  searchTerm = '';
+  sortBy = 'date_evaluation:desc';
+  
+  // States
+  isLoading = false;
+  
+  // Constants
   typesEvaluation = TYPES_EVALUATION;
-
-  // Stats
-  totalNotes = 0;
-  moyenneGenerale = 0;
-  notesCeMois = 0;
-  elevesNotes = 0;
+  periodes = PERIODES_TYPES;
+  
+  private destroy$ = new Subject<void>();
+  private searchSubject = new Subject<string>();
 
   constructor(
-    private noteService: NoteService,
-    private notificationService: NotificationService,
-    private router: Router,
-    private fb: FormBuilder
+    private authService: AuthService,
+    private enseignantService: EnseignantService,
+    public router: Router
   ) {
-    this.filterForm = this.fb.group({
-      recherche: [''],
-      matiere_id: [''],
-      classe_id: [''],
-      type_evaluation: [''],
-      per_page: [25]
-    });
-  }
-
-  ngOnInit(): void {
-    this.initializeFilters();
-    this.loadFilterData();
-    this.loadNotes();
-    this.loadStats();
-  }
-
-  private initializeFilters(): void {
-    this.filterForm.valueChanges.pipe(
+    // Setup search debouncing
+    this.searchSubject.pipe(
       debounceTime(300),
-      distinctUntilChanged()
-    ).subscribe(() => {
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(searchTerm => {
+      this.filters.recherche = searchTerm;
+      this.currentPage = 1;
       this.loadNotes();
     });
   }
 
-  private loadFilterData(): void {
-    // Mock data avec toutes les propriétés requises
-    this.matieres = [
-      { 
-        id: 1, 
-        nom: 'Mathématiques',
-        code: 'MATH',
-        coefficient: 4,
-        active: true,
-        actif: true,
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z'
-      },
-      { 
-        id: 2, 
-        nom: 'Français',
-        code: 'FR',
-        coefficient: 3,
-        active: true,
-        actif: true,
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z'
-      },
-      { 
-        id: 3, 
-        nom: 'Physique',
-        code: 'PHY',
-        coefficient: 2,
-        active: true,
-        actif: true,
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z'
-      }
-    ];
-
-    this.classes = [
-      { id: 1, nom: '6ème A' },
-      { id: 2, nom: '5ème B' },
-      { id: 3, nom: 'Terminale C' }
-    ];
+  ngOnInit(): void {
+    this.loadCurrentUser();
+    this.loadInitialData();
   }
 
-  loadNotes(page: number = 1): void {
-    this.isLoading = true;
-    this.error = null;
-
-    // Mock data for demo
-    this.loadMockNotes();
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  private loadMockNotes(): void {
-    setTimeout(() => {
-      this.notes = [
-        {
-          id: 1,
-          valeur: 16.5,
-          coefficient: 2,
-          type: 'devoir' as TypeEvaluation,
-          type_evaluation: 'devoir' as TypeEvaluation,
-          periode: 'trimestre1',
-          date_evaluation: '2024-01-20',
-          commentaire: 'Très bon travail',
-          eleve_id: 1,
-          matiere_id: 1,
-          enseignant_id: 1,
-          classe_id: 1,
-          eleve: { 
-            id: 1, 
-            nom: 'Dupont', 
-            prenom: 'Pierre', 
-            numero_etudiant: 'ELE001',
-            email: 'pierre.dupont@email.com',
-            role: 'eleve',
-            actif: true,
-            classe_id: 1,
-            nom_parent: 'Dupont',
-            prenom_parent: 'Jean',
-            telephone_parent: '0123456789',
-            email_parent: 'jean.dupont@email.com',
-            created_at: '2024-01-01T00:00:00Z',
-            updated_at: '2024-01-01T00:00:00Z'
-          },
-          matiere: { 
-            id: 1, 
-            nom: 'Mathématiques', 
-            code: 'MATH', 
-            coefficient: 4,
-            active: true,
-            actif: true,
-            created_at: '2024-01-01T00:00:00Z',
-            updated_at: '2024-01-01T00:00:00Z'
-          },
-          created_at: '2024-01-20T10:00:00Z',
-          updated_at: '2024-01-20T10:00:00Z'
-        },
-        {
-          id: 2,
-          valeur: 14.0,
-          coefficient: 1,
-          type: 'controle' as TypeEvaluation,
-          type_evaluation: 'controle' as TypeEvaluation,
-          periode: 'trimestre1',
-          date_evaluation: '2024-01-18',
-          eleve_id: 2,
-          matiere_id: 1,
-          enseignant_id: 1,
-          classe_id: 1,
-          eleve: { 
-            id: 2, 
-            nom: 'Martin', 
-            prenom: 'Sophie', 
-            numero_etudiant: 'ELE002',
-            email: 'sophie.martin@email.com',
-            role: 'eleve',
-            actif: true,
-            classe_id: 1,
-            nom_parent: 'Martin',
-            prenom_parent: 'Claire',
-            telephone_parent: '0123456790',
-            email_parent: 'claire.martin@email.com',
-            created_at: '2024-01-01T00:00:00Z',
-            updated_at: '2024-01-01T00:00:00Z'
-          },
-          matiere: { 
-            id: 1, 
-            nom: 'Mathématiques', 
-            code: 'MATH', 
-            coefficient: 4,
-            active: true,
-            actif: true,
-            created_at: '2024-01-01T00:00:00Z',
-            updated_at: '2024-01-01T00:00:00Z'
-          },
-          created_at: '2024-01-18T14:30:00Z',
-          updated_at: '2024-01-18T14:30:00Z'
-        },
-        {
-          id: 3,
-          valeur: 12.5,
-          coefficient: 1,
-          type: 'examen' as TypeEvaluation,
-          type_evaluation: 'examen' as TypeEvaluation,
-          periode: 'trimestre1',
-          date_evaluation: '2024-01-15',
-          commentaire: 'Peut mieux faire',
-          eleve_id: 3,
-          matiere_id: 2,
-          enseignant_id: 1,
-          classe_id: 1,
-          eleve: { 
-            id: 3, 
-            nom: 'Durand', 
-            prenom: 'Lucas', 
-            numero_etudiant: 'ELE003',
-            email: 'lucas.durand@email.com',
-            role: 'eleve',
-            actif: true,
-            classe_id: 1,
-            nom_parent: 'Durand',
-            prenom_parent: 'Marie',
-            telephone_parent: '0123456791',
-            email_parent: 'marie.durand@email.com',
-            created_at: '2024-01-01T00:00:00Z',
-            updated_at: '2024-01-01T00:00:00Z'
-          },
-          matiere: { 
-            id: 2, 
-            nom: 'Français', 
-            code: 'FR', 
-            coefficient: 3,
-            active: true,
-            actif: true,
-            created_at: '2024-01-01T00:00:00Z',
-            updated_at: '2024-01-01T00:00:00Z'
-          },
-          created_at: '2024-01-15T16:00:00Z',
-          updated_at: '2024-01-15T16:00:00Z'
+  private loadCurrentUser(): void {
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.currentUser = user;
+        if (user?.id) {
+          this.filters.enseignant_id = user.id;
+          this.loadNotes();
         }
-      ];
-
-      this.pagination = {
-        meta: { current_page: 1, per_page: 25, total: 3, last_page: 1, from: 1, to: 3 },
-        links: { first: null, last: null, prev: null, next: null }
-      };
-
-      this.isLoading = false;
-    }, 1000);
+      });
   }
 
-  private loadStats(): void {
-    this.totalNotes = 145;
-    this.moyenneGenerale = 13.8;
-    this.notesCeMois = 23;
-    this.elevesNotes = 85;
+  private loadInitialData(): void {
+    if (!this.currentUser?.id) return;
+
+    // Charger classes et matières
+    this.enseignantService.classes$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(classes => this.classes = classes);
+
+    this.enseignantService.matieres$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(matieres => this.matieres = matieres);
+
+    // Si pas de données en cache, les charger
+    if (this.classes.length === 0 || this.matieres.length === 0) {
+      this.enseignantService.getClasses(this.currentUser.id).subscribe();
+      this.enseignantService.getMatieres(this.currentUser.id).subscribe();
+    }
   }
 
-  resetFilters(): void {
-    this.filterForm.reset({
-      recherche: '', matiere_id: '', classe_id: '', type_evaluation: '', per_page: 25
-    });
+  loadNotes(): void {
+    if (!this.currentUser?.id) return;
+
+    this.isLoading = true;
+    
+    // Préparer les filtres avec pagination et tri
+    const queryFilters: NoteFilters = {
+      ...this.filters,
+      page: this.currentPage,
+      per_page: this.pageSize
+    };
+
+    // Appliquer le tri
+    if (this.sortBy) {
+      const [field, direction] = this.sortBy.split(':');
+      queryFilters.sort_by = field;
+      queryFilters.sort_direction = direction as 'asc' | 'desc';
+    }
+
+    this.enseignantService.getNotes(this.currentUser.id, queryFilters)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.paginatedData = response;
+          this.notes = response.data;
+          this.totalPages = Math.ceil(response.total / this.pageSize);
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Erreur lors du chargement des notes:', error);
+          this.isLoading = false;
+        }
+      });
   }
 
-  // Helper methods for template - avec gestion des types optionnels
-  formatNote = formatNote;
-  
-  getTypeEvaluationLabel(type: TypeEvaluation | undefined): string {
-    if (!type) return 'N/A';
-    return getTypeEvaluationLabel(type);
-  }
-  
-  getTypeEvaluationColor(type: TypeEvaluation | undefined): string {
-    if (!type) return 'gray';
-    return getTypeEvaluationColor(type);
-  }
-  
-  getMentionFromNote = getMentionFromNote;
-  getMentionLabel = getMentionLabel;
-  getMentionColor = getMentionColor;
-
-  viewNote(note: Note): void {
-    console.log('View note:', note);
+  onSearchChange(): void {
+    this.searchSubject.next(this.searchTerm);
   }
 
+  applyFilters(): void {
+    this.currentPage = 1;
+    this.loadNotes();
+  }
+
+  clearFilters(): void {
+    this.filters = { enseignant_id: this.currentUser?.id };
+    this.searchTerm = '';
+    this.sortBy = 'date_evaluation:desc';
+    this.currentPage = 1;
+    this.loadNotes();
+  }
+
+  // Pagination
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.loadNotes();
+    }
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.loadNotes();
+    }
+  }
+
+  // Actions
   editNote(note: Note): void {
     this.router.navigate(['/enseignant/notes/edit', note.id]);
   }
 
   deleteNote(note: Note): void {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer cette note ?`)) {
-      this.noteService.deleteNote(note.id).subscribe({
-        next: () => {
-          this.notes = this.notes.filter(n => n.id !== note.id);
-          this.notificationService.success('Note supprimée', 'La note a été supprimée avec succès');
-        },
-        error: (error) => {
-          console.error('Erreur:', error);
-          this.notificationService.error('Erreur', 'Impossible de supprimer la note');
-        }
-      });
+    if (confirm(`Êtes-vous sûr de vouloir supprimer cette note (${note.valeur}/20) ?`)) {
+      this.enseignantService.deleteNote(note.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.loadNotes(); // Recharger la liste
+          },
+          error: (error) => {
+            console.error('Erreur lors de la suppression:', error);
+            alert('Erreur lors de la suppression de la note.');
+          }
+        });
     }
   }
 
-  exportNotes(): void {
-    console.log('Export notes');
+  // Utility methods
+  getClasseName(classeId: number): string {
+    const classe = this.classes.find(c => c.id === classeId);
+    return classe ? classe.nom : 'N/A';
   }
 
-  goToPage(page: number): void {
-    if (page >= 1 && page <= (this.pagination?.meta.last_page || 1)) {
-      this.loadNotes(page);
-    }
+  getMatiereName(matiereId: number): string {
+    const matiere = this.matieres.find(m => m.id === matiereId);
+    return matiere ? matiere.nom : 'N/A';
   }
 
-  getPageNumbers(): number[] {
-    if (!this.pagination) return [];
+  getTypeLabel(type: string): string {
+    const typeObj = this.typesEvaluation.find(t => t.value === type);
+    return typeObj ? typeObj.label : type;
+  }
+
+  getTypeClass(type: string): string {
+    const typeObj = this.typesEvaluation.find(t => t.value === type);
+    if (!typeObj) return 'bg-gray-100 text-gray-800';
     
-    const current = this.pagination.meta.current_page;
-    const last = this.pagination.meta.last_page;
-    const pages: number[] = [];
-    
-    const start = Math.max(1, current - 2);
-    const end = Math.min(last, current + 2);
-    
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-    
-    return pages;
+    const colorMap = {
+      'blue': 'bg-blue-100 text-blue-800',
+      'orange': 'bg-orange-100 text-orange-800',
+      'red': 'bg-red-100 text-red-800'
+    };
+    return colorMap[typeObj.color as keyof typeof colorMap] || 'bg-gray-100 text-gray-800';
+  }
+
+  getPeriodeLabel(periode: string): string {
+    const periodeObj = this.periodes.find(p => p.value === periode);
+    return periodeObj ? periodeObj.label : periode;
+  }
+
+  getNoteColorClass(note: number): string {
+    if (note >= 16) return 'text-green-600';
+    if (note >= 14) return 'text-blue-600';
+    if (note >= 12) return 'text-yellow-600';
+    if (note >= 10) return 'text-orange-600';
+    return 'text-red-600';
+  }
+
+  getMention(note: number): string {
+    if (note >= 16) return 'Excellent';
+    if (note >= 14) return 'Très Bien';
+    if (note >= 12) return 'Bien';
+    if (note >= 10) return 'Assez Bien';
+    if (note >= 8) return 'Passable';
+    return 'Insuffisant';
+  }
+
+  getMentionClass(note: number): string {
+    if (note >= 16) return 'bg-green-100 text-green-800';
+    if (note >= 14) return 'bg-blue-100 text-blue-800';
+    if (note >= 12) return 'bg-yellow-100 text-yellow-800';
+    if (note >= 10) return 'bg-orange-100 text-orange-800';
+    if (note >= 8) return 'bg-red-100 text-red-800';
+    return 'bg-red-200 text-red-900';
   }
 }
