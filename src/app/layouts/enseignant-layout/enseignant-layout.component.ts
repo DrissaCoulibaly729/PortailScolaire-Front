@@ -6,67 +6,120 @@ import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 
 import { AuthService } from '../../core/auth/auth.service';
-// CORRECTION 1: Utiliser le bon import pour User
-import { User } from '../../shared/models/auth.model'; // ou user.model selon votre structure
+import { User } from '../../shared/models/auth.model';
+
+interface NavigationItem {
+  label: string;
+  icon: string;
+  route: string;
+  active?: boolean;
+}
 
 @Component({
   selector: 'app-enseignant-layout',
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="min-h-screen bg-gray-50">
-      <!-- Header -->
-      <header class="bg-white shadow-sm border-b border-gray-200">
-        <div class="mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between items-center h-16">
-            <!-- Logo et Navigation -->
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <h1 class="text-xl font-bold text-blue-600">📚 Portail Enseignant</h1>
-              </div>
+    <div class="min-h-screen bg-gray-50 flex">
+      
+      <!-- Sidebar -->
+      <div class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0"
+           [class.translate-x-0]="isSidebarOpen"
+           [class.-translate-x-full]="!isSidebarOpen">
+        
+        <!-- Logo et titre -->
+        <div class="flex items-center justify-center h-16 px-4 border-b border-gray-200">
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-lg font-bold text-gray-900">Enseignant</h1>
+              <p class="text-xs text-gray-500">Portail Scolaire</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="mt-6 px-4">
+          <ul class="space-y-2">
+            <li *ngFor="let item of navigationItems">
+              <a [routerLink]="item.route" 
+                 routerLinkActive="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                 class="sidebar-link group">
+                <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="item.icon"></path>
+                </svg>
+                <span class="font-medium">{{ item.label }}</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <!-- Informations utilisateur dans la sidebar -->
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gray-50">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+              {{ getUserInitials() }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">
+                {{ getUserFullName() }}
+              </p>
+              <p class="text-xs text-gray-500">Enseignant</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overlay pour mobile -->
+      <div *ngIf="isSidebarOpen" 
+           class="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+           (click)="toggleSidebar()"></div>
+
+      <!-- Contenu principal -->
+      <div class="flex-1 flex flex-col min-w-0">
+        
+        <!-- Header/Navbar -->
+        <header class="bg-white shadow-sm border-b border-gray-200 lg:pl-0" 
+                [class.pl-0]="isSidebarOpen"
+                [class.pl-0]="!isSidebarOpen">
+          <div class="flex items-center justify-between h-16 px-4 lg:px-6">
+            
+            <!-- Bouton hamburger et titre -->
+            <div class="flex items-center space-x-4">
+              <button (click)="toggleSidebar()" 
+                      class="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 lg:hidden">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+              </button>
               
-              <!-- Navigation principale -->
-              <nav class="hidden md:ml-10 md:flex md:space-x-8">
-                <a routerLink="/enseignant/dashboard" 
-                   routerLinkActive="border-blue-500 text-blue-600"
-                   class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
-                  </svg>
-                  Tableau de bord
-                </a>
-                
-                <a routerLink="/enseignant/notes" 
-                   routerLinkActive="border-blue-500 text-blue-600"
-                   class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                  </svg>
-                  Gestion des notes
-                </a>
-                
-                <a routerLink="/enseignant/classes" 
-                   routerLinkActive="border-blue-500 text-blue-600"
-                   class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2z"></path>
-                  </svg>
-                  Mes classes
-                </a>
-                
-                <a routerLink="/enseignant/matieres" 
-                   routerLinkActive="border-blue-500 text-blue-600"
-                   class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                  </svg>
-                  Mes matières
-                </a>
-              </nav>
+              <!-- Breadcrumb ou titre de page -->
+              <div class="hidden lg:block">
+                <h2 class="text-xl font-semibold text-gray-900">
+                  {{ getPageTitle() }}
+                </h2>
+                <p class="text-sm text-gray-500">
+                  {{ getPageDescription() }}
+                </p>
+              </div>
             </div>
 
-            <!-- Actions utilisateur -->
+            <!-- Actions droite -->
             <div class="flex items-center space-x-4">
+              
+              <!-- Bouton Nouvelle note - Action rapide -->
+              <button (click)="router.navigate(['/enseignant/notes/new'])"
+                      class="hidden md:flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Nouvelle note
+              </button>
+              
               <!-- Notifications -->
               <button class="text-gray-400 hover:text-gray-500 relative">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,143 +128,111 @@ import { User } from '../../shared/models/auth.model'; // ou user.model selon vo
                 <span class="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">{{ notificationCount }}</span>
               </button>
 
-              <!-- Menu utilisateur -->
+              <!-- Menu profil -->
               <div class="relative">
-                <button (click)="toggleUserMenu()" 
-                        class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                  <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center" *ngIf="currentUser">
-                    <span class="text-sm font-medium text-blue-800">
-                      {{ currentUser.nom?.charAt(0) }}{{ currentUser.prenom?.charAt(0) }}
-                    </span>
+                <button (click)="toggleProfileMenu()" 
+                        class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    {{ getUserInitials() }}
                   </div>
-                  <div class="ml-2 text-left" *ngIf="currentUser">
-                    <p class="text-sm font-medium text-gray-900">{{ currentUser.nom }} {{ currentUser.prenom }}</p>
+                  <div class="hidden md:block text-left">
+                    <p class="text-sm font-medium text-gray-900">{{ getUserFullName() }}</p>
                     <p class="text-xs text-gray-500">Enseignant</p>
                   </div>
-                  <svg class="ml-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                   </svg>
                 </button>
 
-                <!-- Menu déroulant -->
-                <div *ngIf="showUserMenu" 
-                     class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border">
-                  <a routerLink="/auth/profile" 
-                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    Mon profil
+                <!-- Menu déroulant profil -->
+                <div *ngIf="isProfileMenuOpen" 
+                     class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  <a (click)="goToProfile()" 
+                     class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    Mon Profil
                   </a>
-                  <a routerLink="/auth/settings" 
-                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
                     Paramètres
                   </a>
-                  <div class="border-t border-gray-100"></div>
-                  <button (click)="logout()" 
-                          class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <hr class="my-1">
+                  <a (click)="logout()" 
+                     class="flex items-center px-4 py-2 text-sm text-red-700 hover:bg-red-50 cursor-pointer">
+                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
                     Se déconnecter
-                  </button>
+                  </a>
                 </div>
               </div>
             </div>
-
-            <!-- Menu mobile -->
-            <div class="md:hidden">
-              <button (click)="toggleMobileMenu()" 
-                      class="text-gray-400 hover:text-gray-500 focus:outline-none focus:text-gray-500">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-              </button>
-            </div>
           </div>
-        </div>
+        </header>
 
-        <!-- Navigation mobile -->
-        <div *ngIf="showMobileMenu" class="md:hidden bg-white border-t border-gray-200">
-          <div class="px-2 pt-2 pb-3 space-y-1">
-            <a routerLink="/enseignant/dashboard" 
-               class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
-              Tableau de bord
-            </a>
-            <a routerLink="/enseignant/notes" 
-               class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
-              Gestion des notes
-            </a>
-            <a routerLink="/enseignant/classes" 
-               class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
-              Mes classes
-            </a>
-            <a routerLink="/enseignant/matieres" 
-               class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
-               Mes matières
-            </a>
+        <!-- Zone de contenu -->
+        <main class="flex-1 overflow-auto">
+          <div class="container mx-auto px-4 lg:px-6 py-8">
+            <router-outlet></router-outlet>
           </div>
-        </div>
-      </header>
+        </main>
 
-      <!-- Fil d'Ariane -->
-      <div class="bg-white border-b border-gray-200" *ngIf="breadcrumbs.length > 0">
-        <div class="mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex items-center py-3 text-sm">
-            <nav class="flex" aria-label="Breadcrumb">
-              <ol class="flex items-center space-x-4">
-                <li *ngFor="let crumb of breadcrumbs; let last = last">
-                  <div class="flex items-center">
-                    <a *ngIf="!last" [routerLink]="crumb.url" 
-                       class="text-gray-500 hover:text-gray-700">{{ crumb.label }}</a>
-                    <span *ngIf="last" class="text-gray-900 font-medium">{{ crumb.label }}</span>
-                    <svg *ngIf="!last" class="flex-shrink-0 h-4 w-4 text-gray-300 mx-3" 
-                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                  </div>
-                </li>
-              </ol>
-            </nav>
-          </div>
-        </div>
       </div>
-
-      <!-- Contenu principal -->
-      <main class="flex-1">
-        <router-outlet></router-outlet>
-      </main>
-
-      <!-- Footer -->
-      <footer class="bg-white border-t border-gray-200 mt-auto">
-        <div class="mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div class="flex justify-between items-center">
-            <p class="text-sm text-gray-500">© 2025 Portail Scolaire. Tous droits réservés.</p>
-            <div class="flex space-x-4">
-              <a href="#" class="text-sm text-gray-500 hover:text-gray-700">Aide</a>
-              <a href="#" class="text-sm text-gray-500 hover:text-gray-700">Support</a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
+
+    <!-- Click outside handler pour fermer les menus -->
+    <div *ngIf="isProfileMenuOpen" 
+         class="fixed inset-0 z-30" 
+         (click)="closeProfileMenu()"></div>
   `,
   styleUrls: ['./enseignant-layout.component.css']
 })
 export class EnseignantLayoutComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
-  showUserMenu = false;
-  showMobileMenu = false;
+  isSidebarOpen = true;
+  isProfileMenuOpen = false;
   notificationCount = 3;
-  breadcrumbs: Array<{label: string, url: string}> = [];
+  
+  navigationItems: NavigationItem[] = [
+    {
+      label: 'Tableau de bord',
+      icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z',
+      route: '/enseignant/dashboard'
+    },
+    {
+      label: 'Gestion des notes',
+      icon: 'M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
+      route: '/enseignant/notes'
+    },
+    {
+      label: 'Mes classes',
+      icon: 'M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2zM9 7h6m-6 4h6m-6 4h4',
+      route: '/enseignant/classes'
+    },
+    {
+      label: 'Mes matières',
+      icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+      route: '/enseignant/matieres'
+    }
+  ];
   
   private destroy$ = new Subject<void>();
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    public router: Router
   ) {}
 
   ngOnInit(): void {
-    // CORRECTION 1: Charger l'utilisateur actuel avec gestion des types
+    // Charger l'utilisateur actuel
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
-        // Assurer la compatibilité des types
         this.currentUser = user ? {
           ...user,
           created_at: user.created_at || new Date().toISOString(),
@@ -219,71 +240,138 @@ export class EnseignantLayoutComponent implements OnInit, OnDestroy {
         } : null;
       });
 
-    // CORRECTION 2: Écouter les changements de route avec typage correct
+    // Écouter les changements de route pour fermer les menus
     this.router.events
       .pipe(
         filter((event: RouterEvent): event is NavigationEnd => event instanceof NavigationEnd),
         takeUntil(this.destroy$)
       )
-      .subscribe((event: NavigationEnd) => {
-        this.updateBreadcrumbs(event.url);
+      .subscribe(() => {
+        this.closeProfileMenu();
+        // Fermer la sidebar sur mobile après navigation
+        if (window.innerWidth < 1024) {
+          this.isSidebarOpen = false;
+        }
       });
-
-    // Fermer les menus au clic extérieur
-    document.addEventListener('click', this.closeMenus.bind(this));
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    document.removeEventListener('click', this.closeMenus.bind(this));
   }
 
-  toggleUserMenu(): void {
-    this.showUserMenu = !this.showUserMenu;
-    this.showMobileMenu = false;
+  /**
+   * Basculer l'état de la sidebar
+   */
+  toggleSidebar(): void {
+    this.isSidebarOpen = !this.isSidebarOpen;
   }
 
-  toggleMobileMenu(): void {
-    this.showMobileMenu = !this.showMobileMenu;
-    this.showUserMenu = false;
+  /**
+   * Basculer le menu profil
+   */
+  toggleProfileMenu(): void {
+    this.isProfileMenuOpen = !this.isProfileMenuOpen;
   }
 
+  /**
+   * Fermer le menu profil quand on clique ailleurs
+   */
+  closeProfileMenu(): void {
+    this.isProfileMenuOpen = false;
+  }
+
+  /**
+   * Obtenir les initiales de l'utilisateur
+   */
+  getUserInitials(): string {
+    if (!this.currentUser) return 'E';
+    
+    const firstInitial = this.currentUser.nom?.charAt(0) || '';
+    const lastInitial = this.currentUser.prenom?.charAt(0) || '';
+    return (firstInitial + lastInitial).toUpperCase() || 'E';
+  }
+
+  /**
+   * Obtenir le nom complet de l'utilisateur
+   */
+  getUserFullName(): string {
+    if (!this.currentUser) return 'Enseignant';
+    
+    return `${this.currentUser.nom || ''} ${this.currentUser.prenom || ''}`.trim() || 'Enseignant';
+  }
+
+  /**
+   * Naviguer vers le profil
+   */
+  goToProfile(): void {
+    this.router.navigate(['/auth/profile']);
+    this.closeProfileMenu();
+  }
+
+  /**
+   * Déconnexion
+   */
   logout(): void {
-    this.authService.logout().subscribe(() => {
-      this.router.navigate(['/auth/login']);
+    this.authService.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/auth/login']);
+      },
+      error: (error) => {
+        console.error('Erreur lors de la déconnexion:', error);
+      }
     });
+    this.closeProfileMenu();
   }
 
-  private closeMenus(event: Event): void {
-    if (!(event.target as Element).closest('.relative')) {
-      this.showUserMenu = false;
-      this.showMobileMenu = false;
-    }
-  }
-
-  private updateBreadcrumbs(url: string): void {
-    this.breadcrumbs = [];
+  /**
+   * Obtenir le titre de la page selon la route actuelle
+   */
+  getPageTitle(): string {
+    const url = this.router.url;
     
     if (url.includes('dashboard')) {
-      this.breadcrumbs = [
-        { label: 'Accueil', url: '/enseignant/dashboard' }
-      ];
+      return 'Tableau de bord';
     } else if (url.includes('notes')) {
-      this.breadcrumbs = [
-        { label: 'Accueil', url: '/enseignant/dashboard' },
-        { label: 'Gestion des notes', url: '/enseignant/notes' }
-      ];
+      if (url.includes('new')) return 'Nouvelle note';
+      if (url.includes('edit')) return 'Modifier la note';
+      if (url.includes('batch')) return 'Saisie en lot';
+      return 'Gestion des notes';
     } else if (url.includes('classes')) {
-      this.breadcrumbs = [
-        { label: 'Accueil', url: '/enseignant/dashboard' },
-        { label: 'Mes classes', url: '/enseignant/classes' }
-      ];
+      return 'Mes classes';
     } else if (url.includes('matieres')) {
-      this.breadcrumbs = [
-        { label: 'Accueil', url: '/enseignant/dashboard' },
-        { label: 'Mes matières', url: '/enseignant/matieres' }
-      ];
+      return 'Mes matières';
     }
+    
+    return 'Portail Enseignant';
+  }
+
+  /**
+   * Obtenir la description de la page selon la route actuelle
+   */
+  getPageDescription(): string {
+    const url = this.router.url;
+    
+    if (url.includes('dashboard')) {
+      return 'Vue d\'ensemble de vos activités';
+    } else if (url.includes('notes')) {
+      if (url.includes('new')) return 'Saisir une nouvelle note';
+      if (url.includes('edit')) return 'Modifier les informations de la note';
+      if (url.includes('batch')) return 'Saisir plusieurs notes à la fois';
+      return 'Consultez et gérez toutes vos notes';
+    } else if (url.includes('classes')) {
+      return 'Gérez vos classes et élèves';
+    } else if (url.includes('matieres')) {
+      return 'Consultez vos matières enseignées';
+    }
+    
+    return 'Gestion pédagogique et administrative';
+  }
+
+  /**
+   * Vérifier si une route est active
+   */
+  isRouteActive(route: string): boolean {
+    return this.router.url.startsWith(route);
   }
 }
