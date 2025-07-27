@@ -354,7 +354,7 @@ export class NoteListComponent implements OnInit, OnDestroy {
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
-        this.currentUser = user;
+        this.currentUser = user as User;
         if (user?.id) {
           this.filters.enseignant_id = user.id;
           this.loadNotes();

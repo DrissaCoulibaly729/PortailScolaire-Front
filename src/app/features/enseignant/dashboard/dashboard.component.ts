@@ -314,7 +314,7 @@ export class EnseignantDashboardComponent implements OnInit, OnDestroy {
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
-        this.currentUser = user;
+       this.currentUser = user as User;
         if (user && user.id) {
           this.loadDashboardData();
         }

@@ -3,7 +3,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
-import { takeUntil, switchMap } from 'rxjs/operators';
+import { takeUntil, switchMap, map } from 'rxjs/operators';
 
 import { AuthService } from '../../../../core/auth/auth.service';
 import { EnseignantService } from '../../../../core/services/enseignant.service';
@@ -410,46 +410,47 @@ export class MatiereDetailComponent implements OnInit, OnDestroy {
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
-        this.currentUser = user;
+       this.currentUser = user as User;
       });
   }
 
   private loadMatiereDetails(): void {
-    this.isLoading = true;
-    this.errorMessage = '';
+  this.isLoading = true;
+  this.errorMessage = '';
 
-    this.route.params.pipe(
-      takeUntil(this.destroy$),
-      switchMap(params => {
-        const matiereId = +params['id'];
-        
-        // Charger les détails de la matière depuis le cache ou l'API
-        const matieres = this.enseignantService.matieres$.getValue();
-        this.matiere = matieres.find(m => m.id === matiereId) || null;
-        
-        if (!this.matiere) {
-          throw new Error('Matière non trouvée');
-        }
-
-        // Charger les classes où cette matière est enseignée
-        return this.enseignantService.getClasses(this.currentUser!.id);
-      })
-    ).subscribe({
-      next: (classes) => {
-        // Filtrer les classes où cette matière est enseignée
-        // TODO: Implémenter la vraie logique côté API
-        this.classes = classes; // Pour l'instant, toutes les classes
-        this.calculateStats();
-        this.loadRecentNotes();
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Erreur lors du chargement:', error);
-        this.errorMessage = 'Impossible de charger les détails de la matière.';
-        this.isLoading = false;
-      }
-    });
-  }
+  this.route.params.pipe(
+    takeUntil(this.destroy$),
+    switchMap(params => {
+      const matiereId = +params['id'];
+      
+      // Obtenir les matières depuis l'observable
+      return this.enseignantService.matieres$.pipe(
+        map(matieres => {
+          this.matiere = matieres.find((m: Matiere) => m.id === matiereId) || null;
+          
+          if (!this.matiere) {
+            throw new Error('Matière non trouvée');
+          }
+          
+          return matiereId;
+        }),
+        switchMap(() => this.enseignantService.getClasses(this.currentUser!.id))
+      );
+    })
+  ).subscribe({
+    next: (classes) => {
+      this.classes = classes;
+      this.calculateStats();
+      this.loadRecentNotes();
+      this.isLoading = false;
+    },
+    error: (error) => {
+      console.error('Erreur lors du chargement:', error);
+      this.errorMessage = 'Impossible de charger les détails de la matière.';
+      this.isLoading = false;
+    }
+  });
+}
 
   private loadRecentNotes(): void {
     if (!this.matiere?.id || !this.currentUser?.id) return;
@@ -467,7 +468,7 @@ export class MatiereDetailComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           this.recentNotes = response.data;
-          this.totalNotes = response.total;
+         this.totalNotes = response.meta.total;
           this.calculateNotesStats();
         },
         error: (error) => {
