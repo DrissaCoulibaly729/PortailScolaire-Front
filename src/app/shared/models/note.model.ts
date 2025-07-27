@@ -9,6 +9,7 @@ export type TypeEvaluation = 'devoir' | 'controle' | 'examen';
 export type TypePeriode = 'trimestre1' | 'trimestre2' | 'trimestre3';
 export type Mention = 'excellent' | 'tres_bien' | 'bien' | 'assez_bien' | 'passable' | 'insuffisant';
 
+
 // ===== INTERFACE PRINCIPALE =====
 export interface Note {
   id: number;
@@ -239,6 +240,8 @@ export const PERIODES: Array<{
   { value: 'trimestre2', label: '2ème Trimestre', order: 2 },
   { value: 'trimestre3', label: '3ème Trimestre', order: 3 }
 ];
+
+export const PERIODES_TYPES = PERIODES;
 
 export const MENTIONS_BULLETIN: Array<{
   value: Mention;

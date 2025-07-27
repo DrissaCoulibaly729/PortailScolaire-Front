@@ -411,7 +411,7 @@ export class NoteFormComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private authService: AuthService,
     private enseignantService: EnseignantService,
-    private router: Router,
+    public router: Router,
     private route: ActivatedRoute
   ) {
     this.initializeForms();

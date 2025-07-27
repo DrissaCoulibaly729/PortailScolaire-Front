@@ -155,11 +155,12 @@ import { Matiere } from '../../../shared/models/matiere.model';
           </div>
         </div>
 
+        <!-- 🔧 CORRECTION 1-3 : Conditions sécurisées pour éviter les erreurs "undefined" -->
         <!-- Activité Récente -->
-        <div class="bg-white rounded-lg shadow-sm border p-6 mb-8" *ngIf="dashboardData.recentActivity?.length > 0">
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-8" *ngIf="hasRecentActivity()">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">Activité récente</h3>
           <div class="space-y-4">
-            <div *ngFor="let activity of dashboardData.recentActivity" 
+            <div *ngFor="let activity of getRecentActivity()" 
                  class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
               <div class="flex-shrink-0">
                 <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -195,8 +196,9 @@ import { Matiere } from '../../../shared/models/matiere.model';
               </div>
             </div>
             <div class="p-6">
-              <div class="space-y-3" *ngIf="dashboardData.classes?.length > 0; else noClasses">
-                <div *ngFor="let classe of dashboardData.classes" 
+              <!-- 🔧 CORRECTION 2 : Condition sécurisée pour les classes -->
+              <div class="space-y-3" *ngIf="hasClasses(); else noClasses">
+                <div *ngFor="let classe of getClasses()" 
                      class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                      (click)="router.navigate(['/enseignant/classes', classe.id])">
                   <div class="flex items-center">
@@ -236,8 +238,9 @@ import { Matiere } from '../../../shared/models/matiere.model';
               </div>
             </div>
             <div class="p-6">
-              <div class="space-y-3" *ngIf="dashboardData.matieres?.length > 0; else noMatieres">
-                <div *ngFor="let matiere of dashboardData.matieres" 
+              <!-- 🔧 CORRECTION 3 : Condition sécurisée pour les matières -->
+              <div class="space-y-3" *ngIf="hasMatieres(); else noMatieres">
+                <div *ngFor="let matiere of getMatieres()" 
                      class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                      (click)="router.navigate(['/enseignant/matieres', matiere.id])">
                   <div class="flex items-center">
@@ -276,6 +279,7 @@ import { Matiere } from '../../../shared/models/matiere.model';
           <div>
             <h3 class="text-sm font-medium text-red-800">Erreur de chargement</h3>
             <p class="text-sm text-red-700 mt-1">{{ errorMessage }}</p>
+            <!-- 🔧 CORRECTION 4 : Méthode publique au lieu de private -->
             <button (click)="loadDashboardData()" 
                     class="mt-2 text-sm text-red-800 underline hover:text-red-900">
               Réessayer
@@ -321,7 +325,8 @@ export class EnseignantDashboardComponent implements OnInit, OnDestroy {
       });
   }
 
-  private loadDashboardData(): void {
+  // 🔧 CORRECTION 4 : Changement de private à public pour résoudre l'erreur d'accessibilité
+  public loadDashboardData(): void {
     if (!this.currentUser?.id) return;
 
     this.isLoading = true;
@@ -347,5 +352,55 @@ export class EnseignantDashboardComponent implements OnInit, OnDestroy {
       this.enseignantService.refreshData(this.currentUser.id);
       this.loadDashboardData();
     }
+  }
+
+  // 🔧 CORRECTIONS 1-3 : Méthodes helper sécurisées pour éviter les erreurs "undefined"
+  
+  /**
+   * Vérifier si l'activité récente existe et n'est pas vide
+   */
+  hasRecentActivity(): boolean {
+    return this.dashboardData?.recentActivity !== undefined && 
+           this.dashboardData?.recentActivity !== null && 
+           this.dashboardData.recentActivity.length > 0;
+  }
+
+  /**
+   * Obtenir l'activité récente de manière sécurisée
+   */
+  getRecentActivity() {
+    return this.dashboardData?.recentActivity || [];
+  }
+
+  /**
+   * Vérifier si les classes existent et ne sont pas vides
+   */
+  hasClasses(): boolean {
+    return this.dashboardData?.classes !== undefined && 
+           this.dashboardData?.classes !== null && 
+           this.dashboardData.classes.length > 0;
+  }
+
+  /**
+   * Obtenir les classes de manière sécurisée
+   */
+  getClasses() {
+    return this.dashboardData?.classes || [];
+  }
+
+  /**
+   * Vérifier si les matières existent et ne sont pas vides
+   */
+  hasMatieres(): boolean {
+    return this.dashboardData?.matieres !== undefined && 
+           this.dashboardData?.matieres !== null && 
+           this.dashboardData.matieres.length > 0;
+  }
+
+  /**
+   * Obtenir les matières de manière sécurisée
+   */
+  getMatieres() {
+    return this.dashboardData?.matieres || [];
   }
 }

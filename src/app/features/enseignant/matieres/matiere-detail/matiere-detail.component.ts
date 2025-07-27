@@ -392,7 +392,7 @@ export class MatiereDetailComponent implements OnInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private enseignantService: EnseignantService,
-    private router: Router,
+    public router: Router,
     private route: ActivatedRoute
   ) {}
 

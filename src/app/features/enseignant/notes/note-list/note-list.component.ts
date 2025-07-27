@@ -139,7 +139,8 @@ import { PaginatedResponse } from '../../../../shared/models/common.model';
         <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <div class="flex justify-between items-center">
             <h3 class="text-lg font-medium text-gray-900">
-              Notes ({{ paginatedData?.total || 0 }})
+              <!-- 🔧 CORRECTION 1 & 5 : Utiliser paginatedData?.meta?.total -->
+              Notes ({{ getTotalNotes() }})
             </h3>
             <div class="flex items-center space-x-4">
               <!-- Tri -->
@@ -184,8 +185,9 @@ import { PaginatedResponse } from '../../../../shared/models/common.model';
                       <p class="text-sm font-medium text-gray-900">
                         {{ note.eleve?.nom }} {{ note.eleve?.prenom }}
                       </p>
+                      <!-- 🔧 CORRECTION 2 : Safe navigation pour numero_etudiant -->
                       <p class="text-xs text-gray-500" *ngIf="note.eleve?.numero_etudiant">
-                        {{ note.eleve.numero_etudiant }}
+                        {{ note.eleve?.numero_etudiant }}
                       </p>
                     </div>
                   </div>
@@ -268,12 +270,14 @@ import { PaginatedResponse } from '../../../../shared/models/common.model';
         </div>
 
         <!-- Pagination -->
-        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50" *ngIf="paginatedData && paginatedData.total > 0">
+        <!-- 🔧 CORRECTION 3 & 6 : Utiliser méthode helper pour vérifier les données de pagination -->
+        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50" *ngIf="hasPaginationData()">
           <div class="flex justify-between items-center">
             <div class="text-sm text-gray-700">
-              Affichage de {{ ((currentPage - 1) * pageSize) + 1 }} à 
-              {{ Math.min(currentPage * pageSize, paginatedData.total) }} 
-              sur {{ paginatedData.total }} résultats
+              Affichage de {{ getFromRecord() }} à 
+              <!-- 🔧 CORRECTION 4 : Utiliser this.mathMin au lieu de Math.min -->
+              {{ getToRecord() }} 
+              sur {{ getTotalNotes() }} résultats
             </div>
             <div class="flex space-x-2">
               <button (click)="previousPage()" 
@@ -320,6 +324,9 @@ export class NoteListComponent implements OnInit, OnDestroy {
   typesEvaluation = TYPES_EVALUATION;
   periodes = PERIODES_TYPES;
   
+  // 🔧 CORRECTION 4 : Ajouter Math comme propriété de classe
+  mathMin = Math.min;
+  
   private destroy$ = new Subject<void>();
   private searchSubject = new Subject<string>();
 
@@ -334,7 +341,8 @@ export class NoteListComponent implements OnInit, OnDestroy {
       distinctUntilChanged(),
       takeUntil(this.destroy$)
     ).subscribe(searchTerm => {
-      this.filters.recherche = searchTerm;
+      // 🔧 CORRECTION 7 : Utiliser 'search' au lieu de 'recherche'
+      this.filters.search = searchTerm;
       this.currentPage = 1;
       this.loadNotes();
     });
@@ -406,7 +414,8 @@ export class NoteListComponent implements OnInit, OnDestroy {
         next: (response) => {
           this.paginatedData = response;
           this.notes = response.data;
-          this.totalPages = Math.ceil(response.total / this.pageSize);
+          // 🔧 CORRECTION 8 : Utiliser meta.total pour le calcul des pages
+          this.totalPages = Math.ceil((response.meta?.total || 0) / this.pageSize);
           this.isLoading = false;
         },
         error: (error) => {
@@ -467,6 +476,40 @@ export class NoteListComponent implements OnInit, OnDestroy {
           }
         });
     }
+  }
+
+  // 🔧 CORRECTIONS 1, 3, 5, 6 : Méthodes helper pour la pagination sécurisée
+  
+  /**
+   * Obtenir le nombre total de notes
+   */
+  getTotalNotes(): number {
+    return this.paginatedData?.meta?.total || 0;
+  }
+
+  /**
+   * Vérifier si les données de pagination existent
+   */
+  hasPaginationData(): boolean {
+    return this.paginatedData !== null && 
+           this.paginatedData.meta !== undefined && 
+           this.paginatedData.meta.total > 0;
+  }
+
+  /**
+   * Obtenir l'index du premier enregistrement affiché
+   */
+  getFromRecord(): number {
+    return ((this.currentPage - 1) * this.pageSize) + 1;
+  }
+
+  /**
+   * Obtenir l'index du dernier enregistrement affiché
+   */
+  getToRecord(): number {
+    const total = this.getTotalNotes();
+    const maxRecord = this.currentPage * this.pageSize;
+    return Math.min(maxRecord, total);
   }
 
   // Utility methods
