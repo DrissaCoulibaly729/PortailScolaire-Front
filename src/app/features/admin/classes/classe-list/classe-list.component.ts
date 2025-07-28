@@ -513,24 +513,34 @@ export class ClasseListComponent implements OnInit {
    * Load statistics
    */
   loadStats(): void {
-    this.classeService.getClasseStatistiques().subscribe({
-      next: (stats) => {
-        this.totalClasses = stats.total_classes || 0;
-        this.totalEleves = stats.total_eleves || 0;
-        this.tauxOccupation = stats.taux_occupation || 0;
-        this.moyenneGenerale = stats.moyenne_generale || 0;
-      },
-      error: (error) => {
-        console.error('Erreur lors du chargement des statistiques:', error);
-        // Default values
-        this.totalClasses = 12;
-        this.totalEleves = 324;
-        this.tauxOccupation = 85;
-        this.moyenneGenerale = 13.2;
-      }
-    });
-  }
-
+  this.classeService.getClasseStatistiques().subscribe({
+    next: (response) => {
+      // Accéder aux statistiques dans la propriété 'statistiques'
+      const stats = response.statistiques;
+      
+      this.totalClasses = stats.total_classes || 0;
+      this.totalEleves = stats.effectif_total || 0; // ✅ Propriété corrigée
+      this.tauxOccupation = Math.round(stats.taux_occupation || 0); // ✅ Arrondir le pourcentage
+      
+      // ✅ Calculer la moyenne générale s'il n'y en a pas dans l'API
+      // Ou ajouter cette propriété dans votre API Laravel
+      this.moyenneGenerale = 0; // À implémenter côté API si nécessaire
+      
+      // ✅ Optionnel : Log des détails par niveau
+      // if (stats.niveaux && Array.isArray(stats.niveaux)) {
+      //   console.log('Détail par niveaux:', stats.niveaux);
+      // }
+    },
+    error: (error) => {
+      console.error('Erreur lors du chargement des statistiques:', error);
+      // Default values en cas d'erreur
+      this.totalClasses = 12;
+      this.totalEleves = 324;
+      this.tauxOccupation = 85;
+      this.moyenneGenerale = 13.2;
+    }
+  });
+}
   /**
    * Load mock data for demonstration
    */

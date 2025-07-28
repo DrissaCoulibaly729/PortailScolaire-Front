@@ -33,58 +33,97 @@ export type Mention = (typeof MENTIONS_BULLETIN)[number]['value'];
 // Interfaces "Dashboard"
 // -----------------------------
 export interface DashboardStats {
-  utilisateurs: {
-    total: number;
-    administrateurs: number;
-    enseignants: number;
-    eleves: number;
-    actifs: number;
-    inactifs: number;
-    nouveaux_ce_mois: number;
-    evolution_mensuelle: number;
-  };
+  message: string;
+  statut: string;
+  tableau_bord: {
+    // ✅ SECTION UTILISATEURS - Structure exacte de votre API
+    utilisateurs: {
+      total: number;
+      administrateurs: number;
+      enseignants: number;
+      eleves: number;
+      actifs: number;
+      inactifs: number;
+      nouveaux_ce_mois: number;
+      repartition_par_role: {
+        eleve: number;
+        enseignant: number;
+        administrateur: number;
+      };
+    };
 
-  classes: {
-    total: number;
-    actives: number;
-    inactives: number;
-    effectif_total: number;
-    effectif_moyen: number;
-    taux_occupation: number;
-    classe_la_plus_nombreuse: {
-      nom: string;
-      effectif: number;
+    // ✅ SECTION CLASSES - Structure exacte de votre API
+    classes: {
+      total: number;
+      actives: number;
+      inactives: number;
+      effectif_total: number;
+      capacite_totale: number;
+      taux_occupation: number;
+      repartition_par_niveau: Array<{
+        niveau: string;
+        nb_classes: number;
+        capacite: number;
+        eleves_count: number;
+      }>;
+      classes_pleines: number;
+    };
+
+    // ✅ SECTION MATIÈRES - Structure exacte de votre API
+    matieres: {
+      total: number;
+      actives: number;
+      inactives: number;
+      avec_enseignants: number;
+      sans_enseignants: number;
+      coefficient_moyen: number;
+      repartition_coefficients: Array<{
+        coefficient: string;
+        nombre: number;
+      }>;
+    };
+
+    // ✅ SECTION ACADÉMIQUE - Structure exacte de votre API
+    academique: {
+      moyennes_par_classe: any[]; // Type plus spécifique si nécessaire
+      moyenne_generale_ecole: number;
+      nb_notes_total: number;
+      notes_ce_mois: number;
+      eleves_en_difficulte: any[]; // Type plus spécifique si nécessaire
+      excellents_eleves: any[]; // Type plus spécifique si nécessaire
+    };
+
+    // ✅ SECTION BULLETINS - Structure exacte de votre API
+    bulletins: {
+      total_generes: number;
+      disponibles: number;
+      en_attente: number;
+      generes_ce_mois: number;
+      repartition_mentions: any[]; // Type plus spécifique si nécessaire
+    };
+
+    // ✅ SECTION ACTIVITÉ RÉCENTE - Structure exacte de votre API
+    activite_recente: {
+      derniers_utilisateurs: Array<{
+        id: number;
+        nom: string;
+        prenom: string;
+        role: string;
+        created_at: string;
+      }>;
+      dernieres_notes: any[]; // Type plus spécifique si nécessaire
+      derniers_bulletins: any[]; // Type plus spécifique si nécessaire
+      connexions_recentes: Array<{
+        id: number;
+        nom: string;
+        prenom: string;
+        role: string;
+        updated_at: string;
+      }>;
     };
   };
-
-  matieres: {
-    total: number;
-    actives: number;
-    inactives: number;
-    coefficient_moyen: number;
-    enseignants_affectes: number;
-    matiere_plus_enseignants: {
-      nom: string;
-      nombre_enseignants: number;
-    };
-  };
-
-  notes: {
-    total_notes: number;
-    moyenne_generale: number;
-    notes_ce_mois: number;
-    evolution_notes: number;
-    repartition_mentions: {
-      mention: Mention;
-      nombre: number;
-      pourcentage: number;
-    }[];
-  };
-
-  activite_recente: ActivityItem[];
-  eleves_en_difficulte: ElevePerformance[];
-  excellents_eleves: ElevePerformance[];
 }
+
 
 export interface ActivityItem {
   id: string;

@@ -1,0 +1,393 @@
+<!-- src/app/features/admin/users/enseignant-management/enseignant-management.component.html -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  
+  <!-- Header spécialisé enseignants -->
+  <div class="mb-8">
+    <div class="sm:flex sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">👨‍🏫 Gestion des Enseignants</h1>
+        <p class="mt-2 text-sm text-gray-600">
+          Gérez les enseignants, leurs matières et leurs classes assignées
+        </p>
+      </div>
+      
+      <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div class="flex space-x-3">
+          <button (click)="createEnseignant()" 
+                  class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Nouvel enseignant
+          </button>
+          
+          <button (click)="exportEnseignants()" 
+                  class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Exporter
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistiques rapides -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+              <span class="text-white text-sm">👨‍🏫</span>
+            </div>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">Total Enseignants</dt>
+              <dd class="text-lg font-medium text-gray-900">{{ enseignants.length }}</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+              <span class="text-white text-sm">✅</span>
+            </div>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">Actifs</dt>
+              <dd class="text-lg font-medium text-gray-900">{{ getActivesCount() }}</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+              <span class="text-white text-sm">📚</span>
+            </div>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">Matières couvertes</dt>
+              <dd class="text-lg font-medium text-gray-900">{{ getTotalMatieres() }}</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+      <div class="p-5">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
+              <span class="text-white text-sm">🏫</span>
+            </div>
+          </div>
+          <div class="ml-5 w-0 flex-1">
+            <dl>
+              <dt class="text-sm font-medium text-gray-500 truncate">Classes gérées</dt>
+              <dd class="text-lg font-medium text-gray-900">{{ getTotalClasses() }}</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtres spécialisés -->
+  <div class="bg-white shadow rounded-lg mb-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-medium text-gray-900">Recherche et Filtres</h3>
+    </div>
+    
+    <form [formGroup]="filterForm" class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        
+        <!-- Recherche -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Recherche</label>
+          <div class="relative">
+            <input type="text" 
+                   formControlName="recherche"
+                   placeholder="Nom, email..."
+                   class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 pl-10">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtre par matière -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Matière</label>
+          <select formControlName="matiere_id" 
+                  class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Toutes les matières</option>
+            <option *ngFor="let matiere of availableMatieres" [value]="matiere.id">
+              {{ matiere.nom }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Filtre par classe -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Classe</label>
+          <select formControlName="classe_id" 
+                  class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Toutes les classes</option>
+            <option *ngFor="let classe of availableClasses" [value]="classe.id">
+              {{ classe.nom }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Statut -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Statut</label>
+          <select formControlName="actif" 
+                  class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Tous</option>
+            <option value="true">Actifs</option>
+            <option value="false">Inactifs</option>
+          </select>
+        </div>
+
+        <!-- Spécialité -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Spécialité</label>
+          <input type="text" 
+                 formControlName="specialite"
+                 placeholder="Ex: Mathématiques"
+                 class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+      </div>
+
+      <div class="mt-4 flex justify-between items-center">
+        <div class="text-sm text-gray-500">
+          {{ enseignants.length }} enseignant(s) trouvé(s)
+        </div>
+        <div class="flex space-x-3">
+          <button type="button" 
+                  (click)="resetFilters()"
+                  class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="flex justify-center py-12">
+    <app-loading-spinner></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+    <div class="flex">
+      <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+      </svg>
+      <div>
+        <h3 class="text-sm font-medium text-red-800">Erreur</h3>
+        <p class="text-sm text-red-700 mt-1">{{ error }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Liste des enseignants -->
+  <div *ngIf="!loading" class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-medium text-gray-900">Liste des Enseignants</h3>
+    </div>
+
+    <!-- Vue en cartes pour les enseignants -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+      <div *ngFor="let enseignant of enseignants; trackBy: trackByEnseignantId" 
+           class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+        
+        <!-- Header de la carte -->
+        <div class="p-6 pb-4">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center">
+              <div class="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
+                {{ enseignant.prenom.charAt(0) }}{{ enseignant.nom.charAt(0) }}
+              </div>
+              <div class="ml-3">
+                <h4 class="text-lg font-medium text-gray-900">
+                  {{ enseignant.prenom }} {{ enseignant.nom }}
+                </h4>
+                <p class="text-sm text-gray-500">{{ enseignant.email }}</p>
+                <div class="flex items-center mt-1">
+                  <span [class]="getStatusClasses(enseignant.actif)" 
+                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium">
+                    <span class="w-2 h-2 rounded-full mr-1" 
+                          [class]="enseignant.actif ? 'bg-green-400' : 'bg-red-400'"></span>
+                    {{ enseignant.actif ? 'Actif' : 'Inactif' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Menu actions -->
+            <div class="relative">
+              <button (click)="toggleEnseignantMenu(enseignant.id)" 
+                      class="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-50">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                </svg>
+              </button>
+              
+              <!-- Menu déroulant -->
+              <div *ngIf="openEnseignantMenu === enseignant.id" 
+                   class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                <div class="py-1">
+                  <button (click)="viewEnseignantDetails(enseignant)" 
+                          class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    Voir détails
+                  </button>
+                  
+                  <button (click)="editEnseignant(enseignant)" 
+                          class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Modifier
+                  </button>
+                  
+                  <button (click)="manageAssignments(enseignant)" 
+                          class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    Gérer affectations
+                  </button>
+                  
+                  <div class="border-t border-gray-100 my-1"></div>
+                  
+                  <button (click)="generateReport(enseignant)" 
+                          class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Rapport
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Informations des matières et classes -->
+        <div class="px-6 pb-4">
+          <!-- Matières enseignées -->
+          <div class="mb-4">
+            <h5 class="text-sm font-medium text-gray-700 mb-2">Matières enseignées</h5>
+            <div class="flex flex-wrap gap-1">
+              <span *ngFor="let matiere of enseignant.matieres?.slice(0, 3)" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                {{ matiere.nom }}
+              </span>
+              <span *ngIf="(enseignant.matieres?.length || 0) > 3" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                +{{ (enseignant.matieres?.length || 0) - 3 }}
+              </span>
+              <span *ngIf="!enseignant.matieres || enseignant.matieres.length === 0" 
+                    class="text-xs text-gray-400">
+                Aucune matière assignée
+              </span>
+            </div>
+          </div>
+
+          <!-- Classes assignées -->
+          <div class="mb-4">
+            <h5 class="text-sm font-medium text-gray-700 mb-2">Classes assignées</h5>
+            <div class="flex flex-wrap gap-1">
+              <span *ngFor="let classe of enseignant.classes?.slice(0, 3)" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                {{ classe.nom }}
+              </span>
+              <span *ngIf="(enseignant.classes?.length || 0) > 3" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                +{{ (enseignant.classes?.length || 0) - 3 }}
+              </span>
+              <span *ngIf="!enseignant.classes || enseignant.classes.length === 0" 
+                    class="text-xs text-gray-400">
+                Aucune classe assignée
+              </span>
+            </div>
+          </div>
+
+          <!-- Statistiques rapides -->
+          <div *ngIf="enseignant.statistiques" class="grid grid-cols-2 gap-4 text-sm">
+            <div class="bg-gray-50 rounded p-2 text-center">
+              <div class="font-medium text-gray-900">{{ enseignant.statistiques.total_eleves }}</div>
+              <div class="text-gray-500 text-xs">Élèves</div>
+            </div>
+            <div class="bg-gray-50 rounded p-2 text-center">
+              <div class="font-medium text-gray-900">{{ enseignant.statistiques.notes_saisies }}</div>
+              <div class="text-gray-500 text-xs">Notes saisies</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="px-6 py-4 bg-gray-50 rounded-b-lg">
+          <div class="flex justify-between items-center">
+            <div class="text-xs text-gray-500">
+              Membre depuis {{ enseignant.created_at | date:'MMM yyyy' }}
+            </div>
+            <div class="flex space-x-2">
+              <button (click)="viewEnseignantDetails(enseignant)" 
+                      class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                Voir
+              </button>
+              <button (click)="editEnseignant(enseignant)" 
+                      class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                Modifier
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- État vide -->
+    <div *ngIf="enseignants.length === 0 && !loading" class="text-center py-12">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+      </svg>
+      <h3 class="mt-2 text-sm font-medium text-gray-900">Aucun enseignant trouvé</h3>
+      <p class="mt-1 text-sm text-gray-500">Commencez par créer un nouvel enseignant.</p>
+      <div class="mt-6">
+        <button (click)="createEnseignant()" 
+                class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          Créer un enseignant
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

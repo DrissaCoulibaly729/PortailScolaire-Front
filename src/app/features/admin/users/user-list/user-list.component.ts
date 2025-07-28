@@ -591,59 +591,71 @@ export class UserListComponent implements OnInit {
    */
   viewUser(user: User): void {
     // Navigate to user detail view
-    this.router.navigate(['/admin/users', user.id]);
+    this.router.navigate(['/admin/utilisateurs', user.id]);
   }
 
   editUser(user: User): void {
-    this.router.navigate(['/admin/users/edit', user.id]);
+    this.router.navigate(['/admin/utilisateurs/edit', user.id]);
   }
 
   toggleUserStatus(user: User): void {
-    const action = user.actif ? 'désactiver' : 'activer';
-    
-    if (confirm(`Êtes-vous sûr de vouloir ${action} cet utilisateur ?`)) {
-      this.userService.toggleUserStatus(user.id).subscribe({
-        next: () => {
-          user.actif = !user.actif;
-          console.log(`Utilisateur ${action} avec succès`);
-        },
-        error: (error) => {
-          console.error(`Erreur lors de la modification du statut:`, error);
-          alert(`Impossible de ${action} l'utilisateur`);
+  const action = user.actif ? 'désactiver' : 'activer';
+  
+  if (confirm(`Êtes-vous sûr de vouloir ${action} l'utilisateur ${user.prenom} ${user.nom} ?`)) {
+    this.userService.toggleUserStatus(user.id).subscribe({
+      next: (updatedUser) => {
+        // Mettre à jour l'utilisateur dans la liste locale
+        const index = this.users.findIndex(u => u.id === user.id);
+        if (index !== -1) {
+          this.users[index] = updatedUser;
         }
-      });
-    }
+        
+        console.log(`Utilisateur ${updatedUser.prenom} ${updatedUser.nom} ${updatedUser.actif ? 'activé' : 'désactivé'}`);
+        
+        // TODO: Afficher un message de succès
+        // this.notificationService.success(`Utilisateur ${action} avec succès`);
+      },
+      error: (error) => {
+        console.error('Erreur lors du changement de statut:', error);
+        // TODO: Afficher un message d'erreur
+        // this.notificationService.error(`Erreur lors du changement de statut`);
+      }
+    });
   }
+}
 
   resetPassword(user: User): void {
-    if (confirm(`Êtes-vous sûr de vouloir réinitialiser le mot de passe de ${user.nom} ${user.prenom} ?`)) {
-      this.userService.resetPassword(user.id).subscribe({
-        next: (response) => {
-          alert(`Nouveau mot de passe généré : ${response.nouveau_mot_de_passe}`);
-        },
-        error: (error) => {
-          console.error('Erreur lors de la réinitialisation du mot de passe:', error);
-          alert('Impossible de réinitialiser le mot de passe');
-        }
-      });
-    }
+  if (confirm(`Réinitialiser le mot de passe de ${user.prenom} ${user.nom} ?`)) {
+    this.userService.resetPassword(user.id).subscribe({
+      next: (result) => {
+        alert(`Nouveau mot de passe: ${result.nouveau_mot_de_passe}`);
+        console.log('Mot de passe réinitialisé pour:', user.email);
+        // TODO: Implémenter une meilleure UI pour afficher le nouveau mot de passe
+      },
+      error: (error) => {
+        console.error('Erreur lors de la réinitialisation:', error);
+        alert('Erreur lors de la réinitialisation du mot de passe');
+      }
+    });
   }
+}
 
   deleteUser(user: User): void {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer définitivement ${user.nom} ${user.prenom} ?`)) {
-      this.userService.deleteUser(user.id).subscribe({
-        next: () => {
-          this.users = this.users.filter(u => u.id !== user.id);
-          this.selectedUsers.delete(user.id);
-          console.log('Utilisateur supprimé avec succès');
-        },
-        error: (error) => {
-          console.error('Erreur lors de la suppression:', error);
-          alert('Impossible de supprimer l\'utilisateur');
-        }
-      });
-    }
+  if (confirm(`⚠️ ATTENTION: Supprimer définitivement l'utilisateur ${user.prenom} ${user.nom} ?\n\nCette action est irréversible.`)) {
+    this.userService.deleteUser(user.id).subscribe({
+      next: () => {
+        // Retirer l'utilisateur de la liste locale
+        this.users = this.users.filter(u => u.id !== user.id);
+        console.log('Utilisateur supprimé:', user.email);
+        // TODO: Afficher un message de succès
+      },
+      error: (error) => {
+        console.error('Erreur lors de la suppression:', error);
+        // TODO: Afficher un message d'erreur
+      }
+    });
   }
+}
 
   /**
    * Bulk actions
@@ -657,6 +669,13 @@ export class UserListComponent implements OnInit {
     }
   }
 
+  duplicateUser(user: User): void {
+  // Naviguer vers le formulaire de création avec les données pré-remplies
+  this.router.navigate(['/admin/utilisateurs/create'], {
+    queryParams: { duplicate: user.id }
+  });
+}
+
   bulkDeactivate(): void {
     if (confirm(`Désactiver ${this.selectedUsers.size} utilisateur(s) ?`)) {
       const userIds = Array.from(this.selectedUsers);
@@ -665,6 +684,66 @@ export class UserListComponent implements OnInit {
       this.selectedUsers.clear();
     }
   }
+
+  createUserWithRole(role: UserRole): void {
+  this.router.navigate(['/admin/utilisateurs/create'], {
+    queryParams: { role }
+  });
+}
+
+bulkToggleStatus(): void {
+  if (this.selectedUsers.size === 0) {
+    alert('Veuillez sélectionner au moins un utilisateur');
+    return;
+  }
+
+  const userIds = Array.from(this.selectedUsers);
+  const selectedUsersData = this.users.filter(u => userIds.includes(u.id));
+  const activeCount = selectedUsersData.filter(u => u.actif).length;
+  const inactiveCount = selectedUsersData.length - activeCount;
+  
+  const action = activeCount > inactiveCount ? 'désactiver' : 'activer';
+  
+  if (confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${selectedUsersData.length} utilisateur(s) sélectionné(s) ?`)) {
+    // TODO: Implémenter l'action en lot côté service
+    console.log(`Action en lot: ${action}`, userIds);
+    // this.userService.bulkToggleStatus(userIds).subscribe(...);
+  }
+}
+
+bulkDelete(): void {
+  if (this.selectedUsers.size === 0) {
+    alert('Veuillez sélectionner au moins un utilisateur');
+    return;
+  }
+
+  const userIds = Array.from(this.selectedUsers);
+  
+  if (confirm(`⚠️ ATTENTION: Supprimer définitivement ${userIds.length} utilisateur(s) ?\n\nCette action est irréversible.`)) {
+    // TODO: Implémenter la suppression en lot côté service
+    console.log('Suppression en lot:', userIds);
+    // this.userService.bulkDelete(userIds).subscribe(...);
+  }
+}
+
+onKeydown(event: KeyboardEvent): void {
+  // Ctrl+N pour nouveau utilisateur
+  if (event.ctrlKey && event.key === 'n') {
+    event.preventDefault();
+    this.router.navigate(['/admin/utilisateurs/create']);
+  }
+  
+  // Escape pour déselectionner tous
+  if (event.key === 'Escape') {
+    this.selectedUsers.clear();
+  }
+  
+  // Ctrl+A pour sélectionner tous
+  if (event.ctrlKey && event.key === 'a') {
+    event.preventDefault();
+    this.toggleAllSelection();
+  }
+}
 
   /**
    * Export users

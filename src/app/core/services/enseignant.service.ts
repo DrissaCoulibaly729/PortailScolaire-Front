@@ -41,6 +41,12 @@ export interface ActivityItem {
   };
 }
 
+export interface EnseignantDetails extends Enseignant {
+  matieres?: Matiere[];
+  classes?: ClasseWithEffectif[];
+  statistiques?: EnseignantStats;
+}
+
 export interface MoyenneClasse {
   classe_id: number;
   classe_nom: string;
@@ -66,6 +72,32 @@ export interface EnseignantStats {
 // CORRECTION : Extension de Classe pour ajouter la propriété effectif
 export interface ClasseWithEffectif extends Classe {
   effectif?: number;
+}
+
+// ============================================
+// 🆕 NOUVELLES INTERFACES POUR L'ADMIN (AJOUTÉES)
+// ============================================
+
+export interface EnseignantFilters {
+  recherche?: string;
+  matiere_id?: number;
+  classe_id?: number;
+  actif?: boolean;
+  specialite?: string;
+  date_embauche_min?: string;
+  date_embauche_max?: string;
+}
+
+export interface CreateEnseignantRequest {
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone?: string;
+  date_naissance?: string;
+  adresse?: string;
+  specialite?: string;
+  matieres_ids?: number[];
+  classes_ids?: number[];
 }
 
 @Injectable({
@@ -447,6 +479,393 @@ export class EnseignantService {
       );
   }
 
+  // ============================================
+  // 🆕 NOUVELLES MÉTHODES D'ADMINISTRATION (AJOUTÉES)
+  // ============================================
+
+  /**
+   * Récupérer tous les enseignants avec filtres (pour l'admin)
+   */
+getEnseignants(filters?: EnseignantFilters): Observable<EnseignantDetails[]> {
+  let params = new HttpParams();
+  params = params.set('role', 'enseignant');
+  
+  if (filters) {
+    Object.keys(filters).forEach(key => {
+      const value = (filters as any)[key];
+      if (value !== null && value !== undefined && value !== '') {
+        params = params.set(key, value.toString());
+      }
+    });
+  }
+
+  return this.http.get<any>(`${this.baseUrl}/admin/utilisateurs`, { params })
+    .pipe(
+      map(response => {
+        // ✅ CORRECTION: Votre API renvoie "statut" au lieu de "success"
+        if (response.statut !== 'succes') {
+          throw new Error(response.message || 'Erreur lors du chargement des enseignants');
+        }
+        // ✅ CORRECTION: Votre API renvoie "utilisateurs.data" au lieu de "data"
+        const allUsers = response.utilisateurs?.data || [];
+        return allUsers.filter((user: any) => user.role === 'enseignant') as EnseignantDetails[];
+      }),
+      catchError(error => {
+        console.error('Erreur récupération enseignants:', error);
+        return throwError(() => error);
+      })
+    );
+}
+
+  /**
+   * Récupérer les détails complets d'un enseignant (pour l'admin)
+   */
+ getEnseignantDetails(id: number): Observable<EnseignantDetails> {
+  return this.http.get<any>(`${this.baseUrl}/admin/utilisateurs/${id}`)
+    .pipe(
+      map(response => {
+        // ✅ CORRECTION: Adapter à votre structure d'API
+        if (response.statut !== 'succes') {
+          throw new Error(response.message || 'Erreur lors du chargement des détails');
+        }
+        // ✅ Supposer que pour un utilisateur unique, c'est dans "utilisateur" ou "data"
+        const userData = response.utilisateur || response.data || response;
+        return this.enrichEnseignantData(userData);
+      }),
+      catchError(error => {
+        console.error('Erreur détails enseignant:', error);
+        return throwError(() => error);
+      })
+    );
+}
+
+creerEnseignant(enseignantData: CreateEnseignantRequest): Observable<EnseignantDetails> {
+  const userData = {
+    ...enseignantData,
+    role: 'enseignant'
+  };
+
+  return this.http.post<any>(`${this.baseUrl}/admin/utilisateurs`, userData)
+    .pipe(
+      map(response => {
+        // ✅ CORRECTION: Adapter à votre structure d'API
+        if (response.statut !== 'succes') {
+          throw new Error(response.message || 'Erreur lors de la création de l\'enseignant');
+        }
+        return response.utilisateur || response.data || response;
+      }),
+      tap(() => this.invalidateCache()),
+      catchError(error => {
+        console.error('Erreur création enseignant:', error);
+        return throwError(() => error);
+      })
+    );
+}
+
+modifierEnseignant(id: number, enseignantData: Partial<CreateEnseignantRequest>): Observable<EnseignantDetails> {
+  return this.http.put<any>(`${this.baseUrl}/admin/utilisateurs/${id}`, enseignantData)
+    .pipe(
+      map(response => {
+        // ✅ CORRECTION: Adapter à votre structure d'API
+        if (response.statut !== 'succes') {
+          throw new Error(response.message || 'Erreur lors de la modification de l\'enseignant');
+        }
+        return response.utilisateur || response.data || response;
+      }),
+      tap(() => this.invalidateCache()),
+      catchError(error => {
+        console.error('Erreur modification enseignant:', error);
+        return throwError(() => error);
+      })
+    );
+}
+
+  /**
+   * Récupérer les matières disponibles pour assignation
+   */
+getMatieresDisponibles(): Observable<Matiere[]> {
+  return this.http.get<any>(`${this.baseUrl}/admin/matieres`)
+    .pipe(
+      map(response => {
+        // ✅ CORRECTION: Votre API renvoie "matieres.data"
+        if (response.statut !== 'succes') {
+          throw new Error(response.message || 'Erreur lors du chargement des matières disponibles');
+        }
+        return response.matieres?.data || response.matieres || response.data || [];
+      }),
+      catchError(error => {
+        console.error('Erreur matières disponibles:', error);
+        return of([]);
+      })
+    );
+}
+
+  /**
+   * Récupérer les classes disponibles pour assignation
+   */
+getClassesDisponibles(): Observable<ClasseWithEffectif[]> {
+  return this.http.get<any>(`${this.baseUrl}/admin/classes`)
+    .pipe(
+      map(response => {
+        // ✅ CORRECTION: Votre API renvoie "classes.data"
+        if (response.statut !== 'succes') {
+          throw new Error(response.message || 'Erreur lors du chargement des classes disponibles');
+        }
+        // ✅ Adapter les classes pour inclure effectif_actuel comme effectif
+        const classes = response.classes?.data || response.classes || response.data || [];
+        return classes.map((classe: any) => ({
+          ...classe,
+          effectif: classe.eleves_count || classe.effectif_actuel || 0,
+          actif: classe.active // ✅ Mapper 'active' vers 'actif' si nécessaire
+        }));
+      }),
+      catchError(error => {
+        console.error('Erreur classes disponibles:', error);
+        return of([]);
+      })
+    );
+}
+
+searchEnseignants(query: string): Observable<EnseignantDetails[]> {
+  const params = new HttpParams()
+    .set('search', query)
+    .set('role', 'enseignant')
+    .set('per_page', '10');
+
+  return this.http.get<any>(`${this.baseUrl}/admin/utilisateurs/search`, { params })
+    .pipe(
+      map(response => {
+        // ✅ CORRECTION: Adapter à votre structure d'API
+        if (response.statut !== 'succes') {
+          throw new Error(response.message || 'Erreur lors de la recherche');
+        }
+        return response.utilisateurs?.data || response.utilisateurs || response.data || [];
+      }),
+      catchError(error => {
+        console.error('Erreur recherche enseignants:', error);
+        return of([]);
+      })
+    );
+}
+
+  /**
+   * Activer/Désactiver un enseignant
+   */
+ toggleEnseignantStatus(id: number): Observable<EnseignantDetails> {
+  return this.http.patch<any>(`${this.baseUrl}/admin/utilisateurs/${id}/toggle-statut`, {})
+    .pipe(
+      map(response => {
+        // ✅ CORRECTION: Adapter à votre structure d'API
+        if (response.statut !== 'succes') {
+          throw new Error(response.message || 'Erreur lors du changement de statut');
+        }
+        return response.utilisateur || response.data || response;
+      }),
+      tap(() => this.invalidateCache()),
+      catchError(error => {
+        console.error('Erreur toggle statut enseignant:', error);
+        return throwError(() => error);
+      })
+    );
+}
+
+getEnseignantMatieres(enseignantId: number): Observable<Matiere[]> {
+  return this.http.get<any>(`${this.baseUrl}/admin/enseignants/${enseignantId}/matieres`)
+    .pipe(
+      map(response => {
+        // ✅ CORRECTION: Adapter à votre structure d'API
+        if (response.statut !== 'succes') {
+          throw new Error(response.message || 'Erreur lors du chargement des matières');
+        }
+        return response.matieres?.data || response.matieres || response.data || [];
+      }),
+      catchError(error => {
+        console.error('Erreur matières enseignant:', error);
+        return of([]);
+      })
+    );
+}
+
+getEnseignantClasses(enseignantId: number): Observable<ClasseWithEffectif[]> {
+  return this.http.get<any>(`${this.baseUrl}/admin/enseignants/${enseignantId}/classes`)
+    .pipe(
+      map(response => {
+        // ✅ CORRECTION: Adapter à votre structure d'API
+        if (response.statut !== 'succes') {
+          throw new Error(response.message || 'Erreur lors du chargement des classes');
+        }
+        return response.classes?.data || response.classes || response.data || [];
+      }),
+      catchError(error => {
+        console.error('Erreur classes enseignant:', error);
+        return of([]);
+      })
+    );
+}
+
+assignerMatiere(enseignantId: number, matiereId: number): Observable<void> {
+  return this.http.post<any>(`${this.baseUrl}/admin/enseignants/${enseignantId}/matieres`, {
+    matiere_id: matiereId
+  }).pipe(
+    map(response => {
+      // ✅ CORRECTION: Adapter à votre structure d'API
+      if (response.statut !== 'succes') {
+        throw new Error(response.message || 'Erreur lors de l\'assignation de la matière');
+      }
+      return;
+    }),
+    tap(() => this.invalidateCache()),
+    catchError(error => {
+      console.error('Erreur assignation matière:', error);
+      return throwError(() => error);
+    })
+  );
+}
+
+retirerClasse(enseignantId: number, classeId: number): Observable<void> {
+  return this.http.delete<any>(`${this.baseUrl}/admin/enseignants/${enseignantId}/classes/${classeId}`)
+    .pipe(
+      map(response => {
+        // ✅ CORRECTION: Adapter à votre structure d'API
+        if (response.statut !== 'succes') {
+          throw new Error(response.message || 'Erreur lors du retrait de la classe');
+        }
+        return;
+      }),
+      tap(() => this.invalidateCache()),
+      catchError(error => {
+        console.error('Erreur retrait classe:', error);
+        return throwError(() => error);
+      })
+    );
+}
+
+assignerClasse(enseignantId: number, classeId: number): Observable<void> {
+  return this.http.post<any>(`${this.baseUrl}/admin/enseignants/${enseignantId}/classes`, {
+    classe_id: classeId
+  }).pipe(
+    map(response => {
+      // ✅ CORRECTION: Adapter à votre structure d'API
+      if (response.statut !== 'succes') {
+        throw new Error(response.message || 'Erreur lors de l\'assignation de la classe');
+      }
+      return;
+    }),
+    tap(() => this.invalidateCache()),
+    catchError(error => {
+      console.error('Erreur assignation classe:', error);
+      return throwError(() => error);
+    })
+  );
+}
+  /**
+   * Réinitialiser le mot de passe d'un enseignant
+   */
+resetEnseignantPassword(enseignantId: number): Observable<{ nouveau_mot_de_passe: string }> {
+  return this.http.patch<any>(`${this.baseUrl}/admin/utilisateurs/${enseignantId}/reset-password`, {})
+    .pipe(
+      map(response => {
+        // ✅ CORRECTION: Adapter à votre structure d'API
+        if (response.statut !== 'succes') {
+          throw new Error(response.message || 'Erreur lors de la réinitialisation du mot de passe');
+        }
+        return response.data || response;
+      }),
+      catchError(error => {
+        console.error('Erreur reset password:', error);
+        return throwError(() => error);
+      })
+    );
+}
+
+getStatistiquesGlobalesEnseignants(): Observable<{
+  total_enseignants: number;
+  enseignants_actifs: number;
+  moyenne_notes_par_enseignant: number;
+  total_matieres_couvertes: number;
+  total_classes_gerees: number;
+  taux_occupation: number;
+}> {
+  return this.http.get<any>(`${this.baseUrl}/admin/enseignants/statistiques`)
+    .pipe(
+      map(response => {
+        // ✅ CORRECTION: Adapter à votre structure d'API
+        if (response.statut !== 'succes') {
+          throw new Error(response.message || 'Erreur lors du chargement des statistiques');
+        }
+        return response.statistiques || response.data || {
+          total_enseignants: 0,
+          enseignants_actifs: 0,
+          moyenne_notes_par_enseignant: 0,
+          total_matieres_couvertes: 0,
+          total_classes_gerees: 0,
+          taux_occupation: 0
+        };
+      }),
+      catchError(error => {
+        console.error('Erreur statistiques globales:', error);
+        return throwError(() => error);
+      })
+    );
+}
+
+  /**
+   * Exporter la liste des enseignants
+   */
+  exporterEnseignants(filters?: EnseignantFilters, format: 'csv' | 'excel' = 'csv'): Observable<Blob> {
+    let params = new HttpParams()
+      .set('role', 'enseignant')
+      .set('format', format);
+    
+    if (filters) {
+      Object.keys(filters).forEach(key => {
+        const value = (filters as any)[key];
+        if (value !== null && value !== undefined && value !== '') {
+          params = params.set(key, value.toString());
+        }
+      });
+    }
+
+    return this.http.get(`${this.baseUrl}/admin/utilisateurs/export`, {
+      params,
+      responseType: 'blob'
+    }).pipe(
+      catchError(error => {
+        console.error('Erreur export enseignants:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Générer un rapport pour un enseignant
+   */
+  genererRapportEnseignant(enseignantId: number, options?: {
+    periode?: string;
+    format?: 'pdf' | 'excel';
+    inclure_notes?: boolean;
+    inclure_statistiques?: boolean;
+  }): Observable<Blob> {
+    let params = new HttpParams();
+    
+    if (options) {
+      if (options.periode) params = params.set('periode', options.periode);
+      if (options.format) params = params.set('format', options.format);
+      if (options.inclure_notes) params = params.set('inclure_notes', '1');
+      if (options.inclure_statistiques) params = params.set('inclure_statistiques', '1');
+    }
+
+    return this.http.get(`${this.baseUrl}/admin/enseignants/${enseignantId}/rapport`, {
+      params,
+      responseType: 'blob'
+    }).pipe(
+      catchError(error => {
+        console.error('Erreur génération rapport:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
   /**
    * Rafraîchir les données
    */
@@ -519,6 +938,18 @@ export class EnseignantService {
   }
 
   /**
+   * Enrichir les données d'un enseignant avec ses relations
+   */
+  private enrichEnseignantData(enseignant: any): EnseignantDetails {
+    return {
+      ...enseignant,
+      matieres: enseignant.matieres || [],
+      classes: enseignant.classes || [],
+      statistiques: enseignant.statistiques || this.getDefaultStats()
+    } as EnseignantDetails;
+  }
+
+  /**
    * Fonctions utilitaires
    */
   private calculateTauxReussite(moyennes: MoyenneClasse[]): number {
@@ -529,7 +960,6 @@ export class EnseignantService {
   }
 
   private generateChartData(classes: ClasseWithEffectif[], matieres: Matiere[], activity: ActivityItem[]): ChartData {
-    // Génération des données pour les graphiques
     return {
       notesParMois: this.generateNotesParMois(activity),
       distributionMentions: this.generateDistributionMentions(),
@@ -555,7 +985,6 @@ export class EnseignantService {
   }
 
   private generateDistributionMentions(): Array<{ mention: string; nombre: number; couleur: string }> {
-    // Données simulées - à remplacer par de vraies données
     return [
       { mention: 'Excellent', nombre: 15, couleur: '#10B981' },
       { mention: 'Très Bien', nombre: 25, couleur: '#3B82F6' },
@@ -566,7 +995,6 @@ export class EnseignantService {
   }
 
   private generateEvolutionMoyennes(): Array<{ periode: string; moyenne: number }> {
-    // Données simulées - à remplacer par de vraies données
     return [
       { periode: '1er Trimestre', moyenne: 13.2 },
       { periode: '2ème Trimestre', moyenne: 13.8 },
@@ -613,7 +1041,6 @@ export class EnseignantService {
     };
   }
 
-  // CORRECTION 10 : Interface PaginatedResponse corrigée
   private getEmptyPaginatedResponse<T>(): PaginatedResponse<T> {
     return {
       data: [],

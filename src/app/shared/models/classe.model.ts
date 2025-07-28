@@ -71,6 +71,12 @@ export interface ClasseFilters {
 
 // ===== INTERFACE POUR LES STATISTIQUES =====
 export interface ClasseStatistiques {
+    message: string;
+  statut: string;
+  statistiques: Statistiques;
+}
+
+export interface Statistiques {
   total_classes: number;
   actives: number;
   inactives: number;

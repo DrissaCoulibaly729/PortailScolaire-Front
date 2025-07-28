@@ -1,0 +1,107 @@
+/* src/app/features/admin/users/user-detail/user-detail.component.css */
+
+/* Animation pour les transitions */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Améliorations visuelles pour les badges */
+.status-badge {
+  position: relative;
+  overflow: hidden;
+}
+
+.status-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s;
+}
+
+.status-badge:hover::before {
+  left: 100%;
+}
+
+/* Responsive design amélioré */
+@media (max-width: 640px) {
+  .grid-responsive {
+    grid-template-columns: 1fr;
+  }
+  
+  .actions-mobile {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .actions-mobile button {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Hover effects for cards */
+.card-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+}
+
+/* Loading spinner custom styling */
+.loading-overlay {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(2px);
+}
+
+/* Role-specific styling */
+.role-enseignant {
+  border-left: 4px solid #3B82F6;
+}
+
+.role-eleve {
+  border-left: 4px solid #10B981;
+}
+
+.role-administrateur {
+  border-left: 4px solid #8B5CF6;
+}
+
+/* Tag styles */
+.tag-matiere {
+  background: linear-gradient(135deg, #EBF4FF 0%, #DBEAFE 100%);
+  border: 1px solid #BFDBFE;
+}
+
+.tag-classe {
+  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+  border: 1px solid #A7F3D0;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-optimize {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+  }
+}
