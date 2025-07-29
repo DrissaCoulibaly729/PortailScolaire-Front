@@ -1,1 +1,280 @@
-<p>bulletin-list works!</p>
+<!-- src/app/features/eleve-parent/bulletins/bulletin-list/bulletin-list.component.html -->
+<div class="min-h-screen bg-gray-50 py-6">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- En-tête -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Mes Bulletins</h1>
+      <p class="mt-2 text-gray-600">Consultez vos bulletins scolaires et téléchargez-les en PDF</p>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+      <form [formGroup]="filterForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        
+        <!-- Filtre année scolaire -->
+        <div>
+          <label for="annee_scolaire" class="block text-sm font-medium text-gray-700 mb-2">
+            Année scolaire
+          </label>
+          <select 
+            id="annee_scolaire"
+            formControlName="annee_scolaire"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="">Toutes les années</option>
+            <option *ngFor="let annee of anneesDisponibles" [value]="annee">
+              {{ annee }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Filtre statut -->
+        <div>
+          <label for="statut" class="block text-sm font-medium text-gray-700 mb-2">
+            Statut
+          </label>
+          <select 
+            id="statut"
+            formControlName="statut"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option *ngFor="let statut of statutsDisponibles" [value]="statut.value">
+              {{ statut.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Recherche -->
+        <div>
+          <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
+            Rechercher
+          </label>
+          <input 
+            type="text"
+            id="search"
+            formControlName="search"
+            placeholder="Rechercher période, classe..."
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-end space-x-2">
+          <button 
+            type="button"
+            (click)="resetFilters()"
+            class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+            Réinitialiser
+          </button>
+          <button 
+            type="button"
+            (click)="refresh()"
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+            Actualiser
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- État de chargement -->
+    <div *ngIf="isLoading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="mt-2 text-gray-600">Chargement des bulletins...</p>
+    </div>
+
+    <!-- Message d'erreur -->
+    <div *ngIf="error && !isLoading" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div class="flex">
+        <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">Erreur</h3>
+          <p class="mt-1 text-sm text-red-700">{{ error }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Liste des bulletins -->
+    <div *ngIf="!isLoading && !error">
+      
+      <!-- Message si aucun bulletin -->
+      <div *ngIf="filteredBulletins.length === 0" class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">Aucun bulletin trouvé</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          Aucun bulletin ne correspond à vos critères de recherche.
+        </p>
+      </div>
+
+      <!-- Grille des bulletins -->
+      <div *ngIf="filteredBulletins.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <div 
+          *ngFor="let bulletin of filteredBulletins" 
+          class="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow cursor-pointer"
+          (click)="viewBulletin(bulletin)">
+          
+          <!-- En-tête de la carte -->
+          <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900">
+                  {{ bulletin.periode?.nom || 'Période' }}
+                </h3>
+                <p class="text-sm text-gray-600">
+                  {{ bulletin.classe?.nom || 'Classe' }} • {{ bulletin.annee_scolaire }}
+                </p>
+              </div>
+              
+              <!-- Statut -->
+              <span [class]="getStatusClass(bulletin.statut)" 
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
+                {{ getStatusLabel(bulletin.statut) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Contenu de la carte -->
+          <div class="p-6">
+            
+            <!-- Moyennes -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div class="text-center">
+                <p class="text-2xl font-bold text-gray-900">
+                  {{ formatMoyenne(bulletin.moyenne_generale) }}
+                </p>
+                <p class="text-xs text-gray-600">Moyenne générale</p>
+              </div>
+              
+              <div class="text-center" *ngIf="bulletin.rang_classe">
+                <p class="text-2xl font-bold text-gray-900">
+                  {{ bulletin.rang_classe }}{{ bulletin.total_eleves ? '/' + bulletin.total_eleves : '' }}
+                </p>
+                <p class="text-xs text-gray-600">Rang classe</p>
+              </div>
+            </div>
+
+            <!-- Mention -->
+            <div class="text-center mb-4" *ngIf="bulletin.mention">
+              <span [class]="getMentionColor(bulletin.mention)" 
+                    class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100">
+                {{ bulletin.mention }}
+              </span>
+            </div>
+
+            <!-- Informations supplémentaires -->
+            <div class="space-y-2 text-sm text-gray-600">
+              <div *ngIf="bulletin.date_conseil" class="flex items-center">
+                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                Conseil de classe : {{ bulletin.date_conseil | date:'dd/MM/yyyy' }}
+              </div>
+              
+              <div *ngIf="bulletin.absences_justifiees || bulletin.absences_non_justifiees" class="flex items-center">
+                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Absences : {{ (bulletin.absences_justifiees || 0) + (bulletin.absences_non_justifiees || 0) }}
+              </div>
+            </div>
+
+            <!-- Distinctions -->
+            <div *ngIf="bulletin.felicitations || bulletin.encouragements" class="mt-4 pt-4 border-t border-gray-200">
+              <div class="flex flex-wrap gap-2">
+                <span *ngIf="bulletin.felicitations" 
+                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  🏆 Félicitations
+                </span>
+                <span *ngIf="bulletin.encouragements" 
+                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  👏 Encouragements
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+            <div class="flex items-center justify-between">
+              
+              <!-- Informations -->
+              <div class="text-xs text-gray-500">
+                <span *ngIf="bulletin.created_at">
+                  Généré le {{ bulletin.created_at | date:'dd/MM/yyyy' }}
+                </span>
+              </div>
+
+              <!-- Boutons d'action -->
+              <div class="flex space-x-2">
+                
+                <!-- Voir les détails -->
+                <button 
+                  *ngIf="bulletin.statut === 'publie'"
+                  [routerLink]="['/eleve/bulletins', bulletin.id]"
+                  class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                  (click)="$event.stopPropagation()">
+                  <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                  Détails
+                </button>
+
+                <!-- Télécharger PDF -->
+                <button 
+                  *ngIf="bulletin.statut === 'publie'"
+                  (click)="downloadBulletin(bulletin, $event)"
+                  class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                  <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                  PDF
+                </button>
+
+                <!-- Statut non publié -->
+                <span *ngIf="bulletin.statut !== 'publie'" 
+                      class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-500">
+                  <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  En attente
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div *ngIf="!isLoading && !error && bulletins.length > 0" class="mt-8 bg-white rounded-lg shadow-sm border p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Résumé</h3>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="text-center">
+          <p class="text-2xl font-bold text-gray-900">{{ bulletins.length }}</p>
+          <p class="text-sm text-gray-600">Total bulletins</p>
+        </div>
+        <div class="text-center">
+          <p class="text-2xl font-bold text-green-600">
+            {{ (bulletins | filter:'statut':'publie').length }}
+          </p>
+          <p class="text-sm text-gray-600">Publiés</p>
+        </div>
+        <div class="text-center" *ngIf="bulletins.length > 0">
+          <p class="text-2xl font-bold text-blue-600">
+            {{ (bulletins.map(b => b.moyenne_generale).reduce((a, b) => a + b, 0) / bulletins.length).toFixed(2) }}
+          </p>
+          <p class="text-sm text-gray-600">Moyenne générale</p>
+        </div>
+        <div class="text-center">
+          <p class="text-2xl font-bold text-purple-600">
+            {{ anneesDisponibles.length }}
+          </p>
+          <p class="text-sm text-gray-600">Années couvertes</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

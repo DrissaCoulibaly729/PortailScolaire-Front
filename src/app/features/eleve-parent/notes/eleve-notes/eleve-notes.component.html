@@ -1,0 +1,333 @@
+<!-- src/app/features/eleve-parent/notes/eleve-notes.component.html -->
+<div class="min-h-screen bg-gray-50 py-6">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- En-tête -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Mes Notes</h1>
+      <p class="mt-2 text-gray-600">Consultez vos notes par matière et suivez votre progression</p>
+    </div>
+
+    <!-- Statistiques générales -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+      <div class="bg-white rounded-lg shadow-sm border p-6">
+        <div class="flex items-center">
+          <div class="p-2 rounded-lg bg-blue-100">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Moyenne générale</p>
+            <p class="text-2xl font-bold" [class]="getNoteColor(moyenneGenerale)">
+              {{ formatNote(moyenneGenerale) }}/20
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-sm border p-6">
+        <div class="flex items-center">
+          <div class="p-2 rounded-lg bg-green-100">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Total des notes</p>
+            <p class="text-2xl font-bold text-gray-900">{{ nombreTotalNotes }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-sm border p-6">
+        <div class="flex items-center">
+          <div class="p-2 rounded-lg bg-yellow-100">
+            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Meilleure note</p>
+            <p class="text-2xl font-bold text-green-600">{{ formatNote(meilleureNote) }}</p>
+            <p class="text-xs text-gray-500">{{ meilleureMatiere }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-sm border p-6">
+        <div class="flex items-center">
+          <div class="p-2 rounded-lg bg-purple-100">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Matières</p>
+            <p class="text-2xl font-bold text-gray-900">{{ notesByMatiere.length }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+      <form [formGroup]="filterForm" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+        
+        <!-- Filtre matière -->
+        <div>
+          <label for="matiere_id" class="block text-sm font-medium text-gray-700 mb-2">
+            Matière
+          </label>
+          <select 
+            id="matiere_id"
+            formControlName="matiere_id"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="">Toutes les matières</option>
+            <option *ngFor="let matiere of getMatieresDisponibles()" [value]="matiere.id">
+              {{ matiere.nom }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Filtre type évaluation -->
+        <div>
+          <label for="type_evaluation" class="block text-sm font-medium text-gray-700 mb-2">
+            Type d'évaluation
+          </label>
+          <select 
+            id="type_evaluation"
+            formControlName="type_evaluation"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option *ngFor="let type of typesEvaluation" [value]="type.value">
+              {{ type.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Note minimum -->
+        <div>
+          <label for="note_min" class="block text-sm font-medium text-gray-700 mb-2">
+            Note min
+          </label>
+          <input 
+            type="number"
+            id="note_min"
+            formControlName="note_min"
+            min="0"
+            max="20"
+            step="0.5"
+            placeholder="0"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+
+        <!-- Note maximum -->
+        <div>
+          <label for="note_max" class="block text-sm font-medium text-gray-700 mb-2">
+            Note max
+          </label>
+          <input 
+            type="number"
+            id="note_max"
+            formControlName="note_max"
+            min="0"
+            max="20"
+            step="0.5"
+            placeholder="20"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+
+        <!-- Recherche -->
+        <div>
+          <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
+            Rechercher
+          </label>
+          <input 
+            type="text"
+            id="search"
+            formControlName="search"
+            placeholder="Rechercher..."
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-end space-x-2">
+          <button 
+            type="button"
+            (click)="resetFilters()"
+            class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+            Reset
+          </button>
+          <button 
+            type="button"
+            (click)="refresh()"
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+            ↻
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- État de chargement -->
+    <div *ngIf="isLoading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="mt-2 text-gray-600">Chargement des notes...</p>
+    </div>
+
+    <!-- Message d'erreur -->
+    <div *ngIf="error && !isLoading" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div class="flex">
+        <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">Erreur</h3>
+          <p class="mt-1 text-sm text-red-700">{{ error }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes par matière -->
+    <div *ngIf="!isLoading && !error">
+      
+      <!-- Message si aucune note -->
+      <div *ngIf="filteredNotes.length === 0" class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">Aucune note trouvée</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          Aucune note ne correspond à vos critères de recherche.
+        </p>
+      </div>
+
+      <!-- Liste des matières avec notes -->
+      <div *ngIf="filteredNotes.length > 0" class="space-y-6">
+        
+        <div *ngFor="let matiereData of filteredNotes" class="bg-white rounded-lg shadow-sm border">
+          
+          <!-- En-tête de la matière -->
+          <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-xl font-semibold text-gray-900">{{ matiereData.matiere.nom }}</h2>
+                <p class="text-sm text-gray-600">
+                  Coefficient: {{ matiereData.matiere.coefficient || 1 }} • 
+                  {{ matiereData.nombreNotes }} note(s)
+                </p>
+              </div>
+              
+              <div class="text-right">
+                <div class="text-2xl font-bold" [class]="getNoteColor(matiereData.moyenne)">
+                  {{ formatNote(matiereData.moyenne) }}/20
+                </div>
+                <div class="text-sm" [class]="getNoteColor(matiereData.moyenne)">
+                  {{ getMention(matiereData.moyenne) }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Barre de progression de la matière -->
+            <div class="mt-4">
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  class="h-2 rounded-full transition-all duration-300"
+                  [class]="matiereData.moyenne >= 10 ? 'bg-green-500' : 'bg-red-500'"
+                  [style.width.%]="getNotePercentage(matiereData.moyenne)">
+                </div>
+              </div>
+              <div class="flex justify-between text-xs text-gray-500 mt-1">
+                <span>0</span>
+                <span>10</span>
+                <span>20</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notes individuelles -->
+          <div class="p-6">
+            <div class="space-y-3">
+              <div *ngFor="let note of matiereData.notes" 
+                   class="flex items-center justify-between p-4 border rounded-lg"
+                   [class]="getNoteBgColor(note.valeur / (note.note_sur || 20) * 20)">
+                
+                <div class="flex-1">
+                  <div class="flex items-center space-x-3">
+                    <div>
+                      <p class="font-medium text-gray-900">
+                        {{ note.type_evaluation || 'Évaluation' }}
+                        <span *ngIf="isRecentNote(note)" class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Nouvelle
+                        </span>
+                      </p>
+                      <p class="text-sm text-gray-600">
+                        {{ note.date_evaluation | date:'dd/MM/yyyy' || (note.created_at | date:'dd/MM/yyyy') }}
+                        <span *ngIf="note.coefficient && note.coefficient > 1" class="ml-2 text-xs text-gray-500">
+                          Coef. {{ note.coefficient }}
+                        </span>
+                      </p>
+                    </div>
+
+                    <!-- Indicateur d'évolution -->
+                    <div *ngIf="getNoteEvolution(note, matiereData.notes) as evolution" class="ml-4">
+                      <span *ngIf="evolution === 'progression'" class="text-green-500" title="Progression">
+                        ↗️
+                      </span>
+                      <span *ngIf="evolution === 'regression'" class="text-red-500" title="Baisse">
+                        ↘️
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Commentaire/appréciation -->
+                  <div *ngIf="note.commentaire" class="mt-2">
+                    <p class="text-sm text-gray-600 italic bg-gray-50 p-2 rounded">
+                      {{ note.commentaire }}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Note -->
+                <div class="text-right ml-4">
+                  <div class="text-2xl font-bold" [class]="getNoteColor(note.valeur / (note.note_sur || 20) * 20)">
+                    {{ formatNote(note.valeur) }}/{{ note.note_sur || 20 }}
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    {{ formatNote(note.valeur / (note.note_sur || 20) * 20) }}/20
+                  </div>
+                </div>
+              </div>
+
+              <!-- Message si aucune note pour la matière filtrée -->
+              <div *ngIf="matiereData.notes.length === 0" class="text-center py-8 text-gray-500">
+                Aucune note pour les critères sélectionnés
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Résumé final -->
+    <div *ngIf="!isLoading && !error && notesByMatiere.length > 0" class="mt-8 bg-white rounded-lg shadow-sm border p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Résumé par matière</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div *ngFor="let matiereData of notesByMatiere" 
+             class="flex items-center justify-between p-3 border rounded-lg">
+          <div>
+            <p class="font-medium text-gray-900">{{ matiereData.matiere.nom }}</p>
+            <p class="text-sm text-gray-600">{{ matiereData.nombreNotes }} note(s)</p>
+          </div>
+          <div class="text-right">
+            <p class="font-bold" [class]="getNoteColor(matiereData.moyenne)">
+              {{ formatNote(matiereData.moyenne) }}
+            </p>
+            <p class="text-xs" [class]="getNoteColor(matiereData.moyenne)">
+              {{ getMention(matiereData.moyenne) }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

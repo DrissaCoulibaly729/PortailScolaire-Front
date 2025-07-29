@@ -1,1 +1,328 @@
-<p>bulletin-detail works!</p>
+<!-- src/app/features/eleve-parent/bulletins/bulletin-detail/bulletin-detail.component.html -->
+<div class="min-h-screen bg-gray-50 py-6">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Navigation breadcrumb -->
+    <nav class="flex mb-6" aria-label="Breadcrumb">
+      <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+          <a routerLink="/eleve/dashboard" class="text-gray-500 hover:text-gray-700">
+            Tableau de bord
+          </a>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+            </svg>
+            <a routerLink="/eleve/bulletins" class="ml-1 text-gray-500 hover:text-gray-700 md:ml-2">Bulletins</a>
+          </div>
+        </li>
+        <li aria-current="page">
+          <div class="flex items-center">
+            <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+            </svg>
+            <span class="ml-1 text-gray-900 md:ml-2">Détails du bulletin</span>
+          </div>
+        </li>
+      </ol>
+    </nav>
+
+    <!-- État de chargement -->
+    <div *ngIf="isLoading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="mt-2 text-gray-600">Chargement du bulletin...</p>
+    </div>
+
+    <!-- Message d'erreur -->
+    <div *ngIf="error && !isLoading" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div class="flex">
+        <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">Erreur</h3>
+          <p class="mt-1 text-sm text-red-700">{{ error }}</p>
+        </div>
+      </div>
+      <div class="mt-4">
+        <button 
+          (click)="goBack()"
+          class="bg-red-100 hover:bg-red-200 text-red-800 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+          Retour aux bulletins
+        </button>
+      </div>
+    </div>
+
+    <!-- Contenu du bulletin -->
+    <div *ngIf="!isLoading && !error && bulletin">
+
+      <!-- En-tête du bulletin -->
+      <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">
+              Bulletin - {{ bulletin.periode?.nom }}
+            </h1>
+            <p class="mt-2 text-lg text-gray-600">
+              {{ bulletin.classe?.nom }} • {{ bulletin.annee_scolaire }}
+            </p>
+            <div class="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+              <span *ngIf="bulletin.date_conseil">
+                Conseil de classe : {{ bulletin.date_conseil | date:'dd/MM/yyyy' }}
+              </span>
+              <span *ngIf="bulletin.created_at">
+                Généré le {{ bulletin.created_at | date:'dd/MM/yyyy' }}
+              </span>
+            </div>
+          </div>
+          
+          <div class="flex space-x-3">
+            <button 
+              (click)="goBack()"
+              class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+              Retour
+            </button>
+            <button 
+              (click)="downloadPdf()"
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+              <svg class="h-4 w-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              Télécharger PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Résumé général -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        
+        <!-- Moyenne générale -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 text-center">
+          <div class="text-3xl font-bold" [class]="getNoteColor(moyenneGenerale)">
+            {{ formatNote(moyenneGenerale) }}/20
+          </div>
+          <p class="text-sm text-gray-600 mt-1">Moyenne générale</p>
+          <div class="mt-2">
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100" 
+                  [class]="getNoteColor(moyenneGenerale)">
+              {{ getMention(moyenneGenerale) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Rang -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 text-center" *ngIf="bulletin.rang_classe">
+          <div class="text-3xl font-bold text-purple-600">
+            {{ bulletin.rang_classe }}{{ bulletin.total_eleves ? '/' + bulletin.total_eleves : '' }}
+          </div>
+          <p class="text-sm text-gray-600 mt-1">Rang de classe</p>
+        </div>
+
+        <!-- Nombre de matières -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 text-center">
+          <div class="text-3xl font-bold text-blue-600">
+            {{ nombreMatieres }}
+          </div>
+          <p class="text-sm text-gray-600 mt-1">Matières évaluées</p>
+        </div>
+
+        <!-- Meilleure note -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 text-center" *ngIf="meilleureNote > 0">
+          <div class="text-3xl font-bold text-green-600">
+            {{ formatNote(meilleureNote) }}
+          </div>
+          <p class="text-sm text-gray-600 mt-1">{{ matiereMeilleure }}</p>
+          <p class="text-xs text-gray-500">Meilleure note</p>
+        </div>
+      </div>
+
+      <!-- Distinctions et appréciations -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        
+        <!-- Distinctions -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Distinctions</h3>
+          
+          <div *ngIf="!bulletin.felicitations && !bulletin.encouragements && !bulletin.avertissement_travail && !bulletin.avertissement_conduite" 
+               class="text-gray-500 text-center py-4">
+            Aucune distinction particulière
+          </div>
+
+          <div class="space-y-3">
+            <div *ngIf="bulletin.felicitations" class="flex items-center p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <span class="text-2xl mr-3">🏆</span>
+              <div>
+                <p class="font-medium text-yellow-800">Félicitations du conseil de classe</p>
+                <p class="text-sm text-yellow-600">Excellent travail et comportement</p>
+              </div>
+            </div>
+
+            <div *ngIf="bulletin.encouragements" class="flex items-center p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <span class="text-2xl mr-3">👏</span>
+              <div>
+                <p class="font-medium text-blue-800">Encouragements</p>
+                <p class="text-sm text-blue-600">Efforts reconnus par l'équipe pédagogique</p>
+              </div>
+            </div>
+
+            <div *ngIf="bulletin.avertissement_travail" class="flex items-center p-3 bg-orange-50 border border-orange-200 rounded-lg">
+              <span class="text-2xl mr-3">⚠️</span>
+              <div>
+                <p class="font-medium text-orange-800">Avertissement travail</p>
+                <p class="text-sm text-orange-600">Travail insuffisant</p>
+              </div>
+            </div>
+
+            <div *ngIf="bulletin.avertissement_conduite" class="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg">
+              <span class="text-2xl mr-3">🚨</span>
+              <div>
+                <p class="font-medium text-red-800">Avertissement conduite</p>
+                <p class="text-sm text-red-600">Comportement inadapté</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vie scolaire -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Vie scolaire</h3>
+          
+          <div class="space-y-4">
+            <!-- Absences -->
+            <div class="flex items-center justify-between py-2 border-b border-gray-200">
+              <span class="text-gray-600">Absences justifiées</span>
+              <span class="font-medium">{{ bulletin.absences_justifiees || 0 }}</span>
+            </div>
+            
+            <div class="flex items-center justify-between py-2 border-b border-gray-200">
+              <span class="text-gray-600">Absences non justifiées</span>
+              <span class="font-medium" [class]="(bulletin.absences_non_justifiees || 0) > 0 ? 'text-red-600' : ''">
+                {{ bulletin.absences_non_justifiees || 0 }}
+              </span>
+            </div>
+            
+            <div class="flex items-center justify-between py-2 border-b border-gray-200">
+              <span class="text-gray-600">Retards</span>
+              <span class="font-medium" [class]="(bulletin.retards || 0) > 0 ? 'text-orange-600' : ''">
+                {{ bulletin.retards || 0 }}
+              </span>
+            </div>
+
+            <!-- Sanctions -->
+            <div *ngIf="bulletin.sanctions" class="pt-4">
+              <p class="text-sm font-medium text-gray-900 mb-2">Sanctions</p>
+              <p class="text-sm text-red-600 bg-red-50 p-2 rounded">{{ bulletin.sanctions }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes par matière -->
+      <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6">Détail des notes par matière</h3>
+        
+        <div *ngIf="notesBulletin.length === 0" class="text-center py-8 text-gray-500">
+          Aucune note disponible pour cette période
+        </div>
+
+        <div *ngIf="notesBulletin.length > 0" class="space-y-4">
+          <div *ngFor="let noteBulletin of notesBulletin" 
+               class="border rounded-lg p-4" 
+               [class]="getNoteBgColor(noteBulletin.moyenne)">
+            
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h4 class="font-semibold text-gray-900">{{ noteBulletin.matiere_nom }}</h4>
+                <p class="text-sm text-gray-600">
+                  Coefficient: {{ noteBulletin.coefficient }}
+                  <span *ngIf="noteBulletin.rang"> • Rang: {{ noteBulletin.rang }}</span>
+                </p>
+              </div>
+              
+              <div class="text-right">
+                <div class="text-2xl font-bold" [class]="getNoteColor(noteBulletin.moyenne)">
+                  {{ formatNote(noteBulletin.moyenne) }}/20
+                </div>
+                <div class="text-xs" [class]="getNoteColor(noteBulletin.moyenne)">
+                  {{ getMention(noteBulletin.moyenne) }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Barre de progression -->
+            <div class="mb-3">
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  class="h-2 rounded-full transition-all duration-300"
+                  [class]="noteBulletin.moyenne >= 10 ? 'bg-green-500' : 'bg-red-500'"
+                  [style.width.%]="getNotePercentage(noteBulletin.moyenne)">
+                </div>
+              </div>
+            </div>
+
+            <!-- Appréciation -->
+            <div *ngIf="noteBulletin.appreciation" class="mt-3">
+              <p class="text-sm font-medium text-gray-700 mb-1">Appréciation :</p>
+              <p class="text-sm text-gray-600 italic bg-white bg-opacity-50 p-2 rounded">
+                {{ noteBulletin.appreciation }}
+              </p>
+            </div>
+
+            <!-- Détail des notes individuelles -->
+            <div *ngIf="noteBulletin.notes && noteBulletin.notes.length > 0" class="mt-3">
+              <details class="group">
+                <summary class="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-800">
+                  Voir le détail des notes ({{ noteBulletin.notes.length }})
+                </summary>
+                <div class="mt-2 space-y-2">
+                  <div *ngFor="let note of noteBulletin.notes" 
+                       class="flex items-center justify-between text-sm bg-white bg-opacity-50 p-2 rounded">
+                    <div>
+                      <span class="font-medium">{{ note.type_evaluation || 'Évaluation' }}</span>
+                      <span *ngIf="note.date_evaluation" class="text-gray-500 ml-2">
+                        ({{ note.date_evaluation | date:'dd/MM' }})
+                      </span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <span class="font-bold" [class]="getNoteColor(note.valeur)">
+                        {{ formatNote(note.valeur) }}/{{ note.note_sur || 20 }}
+                      </span>
+                      <span *ngIf="note.coefficient > 1" class="text-xs text-gray-500">
+                        (coef. {{ note.coefficient }})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Appréciations générales -->
+      <div *ngIf="bulletin.observations_generales || bulletin.appreciation_conseil" 
+           class="bg-white rounded-lg shadow-sm border p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Appréciations</h3>
+        
+        <div class="space-y-4">
+          <div *ngIf="bulletin.observations_generales">
+            <h4 class="font-medium text-gray-900 mb-2">Observations générales</h4>
+            <p class="text-gray-700 bg-gray-50 p-3 rounded italic">
+              {{ bulletin.observations_generales }}
+            </p>
+          </div>
+
+          <div *ngIf="bulletin.appreciation_conseil">
+            <h4 class="font-medium text-gray-900 mb-2">Appréciation du conseil de classe</h4>
+            <p class="text-gray-700 bg-blue-50 p-3 rounded italic">
+              {{ bulletin.appreciation_conseil }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

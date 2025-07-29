@@ -1,0 +1,343 @@
+<!-- src/app/features/eleve-parent/profile/eleve-detail.component.html -->
+<div class="min-h-screen bg-gray-50 py-6">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Navigation breadcrumb -->
+    <nav class="flex mb-6" aria-label="Breadcrumb">
+      <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+          <a routerLink="/eleve/dashboard" class="text-gray-500 hover:text-gray-700">
+            Tableau de bord
+          </a>
+        </li>
+        <li aria-current="page">
+          <div class="flex items-center">
+            <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+            </svg>
+            <span class="ml-1 text-gray-900 md:ml-2">Mon Profil</span>
+          </div>
+        </li>
+      </ol>
+    </nav>
+
+    <!-- État de chargement -->
+    <div *ngIf="isLoading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="mt-2 text-gray-600">Chargement du profil...</p>
+    </div>
+
+    <!-- Message d'erreur -->
+    <div *ngIf="error && !isLoading" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div class="flex">
+        <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">Erreur</h3>
+          <p class="mt-1 text-sm text-red-700">{{ error }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenu du profil -->
+    <div *ngIf="!isLoading && !error && eleve">
+
+      <!-- En-tête du profil -->
+      <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-6">
+            
+            <!-- Photo de profil -->
+            <div class="relative">
+              <div *ngIf="!hasPhoto()" 
+                   class="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+                {{ getUserInitials() }}
+              </div>
+              <img *ngIf="hasPhoto()" 
+                   [src]="getPhotoUrl()" 
+                   [alt]="eleve.prenom + ' ' + eleve.nom"
+                   class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg">
+              
+              <!-- Statut en ligne -->
+              <div class="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></div>
+            </div>
+
+            <!-- Informations principales -->
+            <div>
+              <h1 class="text-3xl font-bold text-gray-900">
+                {{ eleve.prenom }} {{ eleve.nom }}
+              </h1>
+              <p class="text-lg text-gray-600 mt-1">
+                {{ eleve.classe?.nom || 'Classe non assignée' }}
+              </p>
+              <div class="flex items-center mt-2 space-x-4">
+                <span [class]="getStatutColor()" 
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
+                  {{ getStatutEleve() }}
+                </span>
+                <span class="text-sm text-gray-500">
+                  N° étudiant: {{ eleve.numero_etudiant || 'Non assigné' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex space-x-3">
+            <button 
+              (click)="refresh()"
+              class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+              <svg class="h-4 w-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              Actualiser
+            </button>
+            <button 
+              *ngIf="canModify"
+              routerLink="/eleve/profile/edit"
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+              <svg class="h-4 w-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+              Modifier
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grille d'informations -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Informations personnelles -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <svg class="h-5 w-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            Informations personnelles
+          </h2>
+
+          <div class="space-y-4">
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-600 font-medium">Nom complet</span>
+              <span class="text-gray-900">{{ eleve.prenom }} {{ eleve.nom }}</span>
+            </div>
+
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-600 font-medium">Date de naissance</span>
+              <span class="text-gray-900">
+                {{ formatDateNaissance() }}
+                <span *ngIf="calculateAge()" class="text-sm text-gray-500 ml-2">
+                  ({{ calculateAge() }} ans)
+                </span>
+              </span>
+            </div>
+
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-600 font-medium">Email</span>
+              <span class="text-gray-900">{{ eleve.email || 'Non renseigné' }}</span>
+            </div>
+
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-600 font-medium">Téléphone</span>
+              <span class="text-gray-900">{{ eleve.telephone || 'Non renseigné' }}</span>
+            </div>
+
+            <div class="flex justify-between items-start py-2">
+              <span class="text-gray-600 font-medium">Adresse</span>
+              <span class="text-gray-900 text-right">
+                {{ eleve.adresse || 'Non renseignée' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Informations scolaires -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <svg class="h-5 w-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+            </svg>
+            Informations scolaires
+          </h2>
+
+          <div class="space-y-4">
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-600 font-medium">Classe</span>
+              <span class="text-gray-900">{{ eleve.classe?.nom || 'Non assignée' }}</span>
+            </div>
+
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-600 font-medium">Niveau</span>
+              <span class="text-gray-900">{{ eleve.classe?.niveau || 'Non défini' }}</span>
+            </div>
+
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-600 font-medium">Numéro étudiant</span>
+              <span class="text-gray-900 font-mono">{{ eleve.numero_etudiant || 'Non assigné' }}</span>
+            </div>
+
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-600 font-medium">Moyenne générale</span>
+              <span class="text-gray-900 font-bold">
+                {{ eleve.moyenne_generale ? (eleve.moyenne_generale.toFixed(2) + '/20') : 'Non calculée' }}
+              </span>
+            </div>
+
+            <div class="flex justify-between items-center py-2">
+              <span class="text-gray-600 font-medium">Rang classe</span>
+              <span class="text-gray-900">{{ eleve.rang_classe || 'Non classé' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Informations du responsable légal -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <svg class="h-5 w-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+            Responsable légal
+          </h2>
+
+          <div *ngIf="!hasParentContact()" class="text-center py-8 text-gray-500">
+            <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p class="text-sm">Informations de contact non renseignées</p>
+          </div>
+
+          <div *ngIf="hasParentContact()" class="space-y-4">
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-600 font-medium">Nom du parent</span>
+              <span class="text-gray-900">
+                {{ eleve.prenom_parent }} {{ eleve.nom_parent }}
+              </span>
+            </div>
+
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-600 font-medium">Email</span>
+              <span class="text-gray-900">
+                <a *ngIf="eleve.email_parent" 
+                   [href]="'mailto:' + eleve.email_parent"
+                   class="text-blue-600 hover:text-blue-800">
+                  {{ eleve.email_parent }}
+                </a>
+                <span *ngIf="!eleve.email_parent" class="text-gray-400">Non renseigné</span>
+              </span>
+            </div>
+
+            <div class="flex justify-between items-center py-2">
+              <span class="text-gray-600 font-medium">Téléphone</span>
+              <span class="text-gray-900">
+                <a *ngIf="eleve.telephone_parent" 
+                   [href]="'tel:' + eleve.telephone_parent"
+                   class="text-blue-600 hover:text-blue-800">
+                  {{ eleve.telephone_parent }}
+                </a>
+                <span *ngIf="!eleve.telephone_parent" class="text-gray-400">Non renseigné</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistiques académiques -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <svg class="h-5 w-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            Statistiques académiques
+          </h2>
+
+          <div class="space-y-4">
+            <!-- Moyenne générale avec barre de progression -->
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-600 font-medium">Moyenne générale</span>
+                <span class="text-gray-900 font-bold">
+                  {{ eleve.moyenne_generale ? (eleve.moyenne_generale.toFixed(2) + '/20') : 'N/A' }}
+                </span>
+              </div>
+              <div *ngIf="eleve.moyenne_generale" class="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  class="h-2 rounded-full transition-all duration-300"
+                  [class]="eleve.moyenne_generale >= 10 ? 'bg-green-500' : 'bg-red-500'"
+                  [style.width.%]="(eleve.moyenne_generale / 20) * 100">
+                </div>
+              </div>
+            </div>
+
+            <!-- Rang et effectif -->
+            <div *ngIf="eleve.rang_classe" class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-600 font-medium">Classement</span>
+              <span class="text-gray-900">
+                <span class="font-bold">{{ eleve.rang_classe }}</span>
+                <span class="text-gray-500 text-sm">e</span>
+                <span *ngIf="eleve.classe?.effectif" class="text-gray-500 text-sm">
+                  / {{ eleve.classe.effectif }}
+                </span>
+              </span>
+            </div>
+
+            <!-- Données d'inscription -->
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-600 font-medium">Inscrit depuis</span>
+              <span class="text-gray-900">
+                {{ eleve.created_at | date:'dd/MM/yyyy' }}
+              </span>
+            </div>
+
+            <div class="flex justify-between items-center py-2">
+              <span class="text-gray-600 font-medium">Dernière modification</span>
+              <span class="text-gray-900">
+                {{ eleve.updated_at | date:'dd/MM/yyyy' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions rapides -->
+      <div class="mt-6 bg-white rounded-lg shadow-sm border p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          
+          <a routerLink="/eleve/notes" 
+             class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <svg class="h-8 w-8 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <div>
+              <p class="font-medium text-gray-900">Mes Notes</p>
+              <p class="text-sm text-gray-600">Consulter mes résultats</p>
+            </div>
+          </a>
+
+          <a routerLink="/eleve/bulletins" 
+             class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <svg class="h-8 w-8 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+            </svg>
+            <div>
+              <p class="font-medium text-gray-900">Mes Bulletins</p>
+              <p class="text-sm text-gray-600">Télécharger mes bulletins</p>
+            </div>
+          </a>
+
+          <a routerLink="/eleve/planning" 
+             class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <svg class="h-8 w-8 text-purple-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <div>
+              <p class="font-medium text-gray-900">Mon Planning</p>
+              <p class="text-sm text-gray-600">Emploi du temps</p>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
