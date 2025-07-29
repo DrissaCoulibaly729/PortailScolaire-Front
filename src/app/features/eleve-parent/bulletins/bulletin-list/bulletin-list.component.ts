@@ -1,17 +1,17 @@
-// src/app/features/eleve-parent/bulletins/bulletin-list/bulletin-list.component.ts
+// src/app/features/eleve-parent/bulletins/bulletin-list/bulletin-list.component.ts (FINAL CORRIGÉ)
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
-import { EleveParentService } from '../../../../core/services/eleve-parent.service';
+import { EleveParentService, SecureDataResponse } from '../../../../core/services/eleve-parent.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { AuthService } from '../../../../core/auth/auth.service';
 
 import { Bulletin, StatutBulletin, BulletinFilters } from '../../../../shared/models/bulletin.model';
-import { User } from '../../../../shared/models/user.model'; // ✅ CORRIGÉ: Import unique depuis user.model
+import { User } from '../../../../shared/models/user.model';
 
 @Component({
   selector: 'app-bulletin-list',
@@ -46,7 +46,8 @@ export class BulletinListComponent implements OnInit, OnDestroy {
     private eleveParentService: EleveParentService,
     private notificationService: NotificationService,
     private authService: AuthService,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private router: Router
   ) {
     this.filterForm = this.formBuilder.group({
       annee_scolaire: [''],
@@ -67,44 +68,14 @@ export class BulletinListComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Charger les bulletins de l'élève
-   */
-  private loadBulletins(): void {
-    this.isLoading = true;
-    this.error = '';
-
-    this.eleveParentService.getBulletinsEleve()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          if (response.allowed && response.data) {
-            this.bulletins = response.data;
-            this.filteredBulletins = [...this.bulletins];
-            this.extractAnneesDisponibles();
-            this.applyFilters();
-          } else {
-            this.error = response.reason || 'Accès non autorisé aux bulletins';
-          }
-          this.isLoading = false;
-        },
-        error: (error) => {
-          console.error('Erreur lors du chargement des bulletins:', error);
-          this.error = 'Erreur lors du chargement des bulletins';
-          this.isLoading = false;
-          this.notificationService.error('Erreur', 'Impossible de charger les bulletins');
-        }
-      });
-  }
-
-  /**
    * Configurer les filtres
    */
   private setupFilters(): void {
     this.filterForm.valueChanges
       .pipe(
+        takeUntil(this.destroy$),
         debounceTime(300),
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
+        distinctUntilChanged()
       )
       .subscribe(() => {
         this.applyFilters();
@@ -112,11 +83,40 @@ export class BulletinListComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * ✅ CORRIGÉ: Charger la liste des bulletins avec le bon nom de méthode
+   */
+  private loadBulletins(): void {
+    this.isLoading = true;
+    this.error = '';
+
+    // ✅ CORRIGÉ: Utilise getBulletins au lieu de getBulletinsEleve
+    this.eleveParentService.getBulletins()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: SecureDataResponse<Bulletin[]>) => {
+          if (response.allowed && response.data) {
+            this.bulletins = response.data;
+            this.extractAnneesDisponibles();
+            this.applyFilters();
+          } else {
+            this.error = response.reason || 'Accès non autorisé aux bulletins';
+          }
+          this.isLoading = false;
+        },
+        error: (error: any) => {
+          console.error('Erreur lors du chargement des bulletins:', error);
+          this.error = 'Impossible de charger les bulletins';
+          this.isLoading = false;
+        }
+      });
+  }
+
+  /**
    * Extraire les années disponibles
    */
   private extractAnneesDisponibles(): void {
-    const annees = [...new Set(this.bulletins.map(b => b.annee_scolaire))];
-    this.anneesDisponibles = annees.sort().reverse();
+    const annees = new Set(this.bulletins.map(b => b.annee_scolaire));
+    this.anneesDisponibles = Array.from(annees).sort().reverse();
   }
 
   /**
@@ -155,15 +155,36 @@ export class BulletinListComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Voir les détails d'un bulletin
+   * Voir les détails d'un bulletin (méthode générale)
    */
   viewBulletin(bulletin: Bulletin): void {
     if (bulletin.statut === 'publie') {
-      // Navigation vers les détails
-      // this.router.navigate(['/eleve/bulletins', bulletin.id]);
+      this.router.navigate(['/eleve/bulletins', bulletin.id]);
     } else {
       this.notificationService.warning('Information', 'Ce bulletin n\'est pas encore disponible');
     }
+  }
+
+  /**
+   * ✅ Action spécifique pour voir les détails (avec stopPropagation)
+   */
+  voirDetails(bulletin: Bulletin, event: Event): void {
+    event.stopPropagation();
+    this.viewBulletin(bulletin);
+  }
+
+  /**
+   * ✅ Action spécifique pour modifier (si autorisé)
+   */
+  modifierBulletin(bulletin: Bulletin, event: Event): void {
+    event.stopPropagation();
+    
+    if (this.currentUser?.role === 'eleve') {
+      this.notificationService.info('Information', 'Vous ne pouvez pas modifier ce bulletin');
+      return;
+    }
+    
+    this.router.navigate(['/eleve/bulletins', bulletin.id, 'edit']);
   }
 
   /**
@@ -180,7 +201,7 @@ export class BulletinListComponent implements OnInit, OnDestroy {
     this.eleveParentService.downloadBulletinPdf(bulletin.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
+        next: (response: SecureDataResponse<Blob>) => {
           if (response.allowed && response.data) {
             this.downloadFile(response.data, `bulletin-${bulletin.periode?.nom || 'bulletin'}.pdf`);
             this.notificationService.success('Succès', 'Bulletin téléchargé avec succès');
@@ -188,7 +209,7 @@ export class BulletinListComponent implements OnInit, OnDestroy {
             this.notificationService.error('Erreur', response.reason || 'Impossible de télécharger le bulletin');
           }
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Erreur téléchargement:', error);
           this.notificationService.error('Erreur', 'Échec du téléchargement');
         }
@@ -221,6 +242,8 @@ export class BulletinListComponent implements OnInit, OnDestroy {
     this.loadBulletins();
   }
 
+  // ==================== MÉTHODES D'AFFICHAGE ====================
+
   /**
    * Obtenir la classe CSS pour le statut
    */
@@ -246,7 +269,7 @@ export class BulletinListComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * ✅ CORRIGÉ: Obtenir la couleur de la mention avec signature d'index
+   * Obtenir la couleur de la mention
    */
   getMentionColor(mention: string): string {
     const colors: Record<string, string> = {
@@ -267,7 +290,7 @@ export class BulletinListComponent implements OnInit, OnDestroy {
     return moyenne ? moyenne.toFixed(2) : '-';
   }
 
-  // ✅ AJOUTÉ: Méthodes pour remplacer les pipes et expressions complexes dans le template
+  // ==================== MÉTHODES DE CALCUL POUR LE TEMPLATE ====================
 
   /**
    * Filtrer les bulletins par statut (remplace le pipe filter)
@@ -292,5 +315,35 @@ export class BulletinListComponent implements OnInit, OnDestroy {
    */
   getNombreBulletinsPublies(): number {
     return this.bulletins.filter(b => b.statut === 'publie').length;
+  }
+
+  /**
+   * Obtenir le nombre total de bulletins
+   */
+  getNombreTotalBulletins(): number {
+    return this.bulletins.length;
+  }
+
+  /**
+   * Obtenir le nombre d'années couvertes
+   */
+  getNombreAnneesDisponibles(): number {
+    return this.anneesDisponibles.length;
+  }
+
+  // ==================== MÉTHODES DE VÉRIFICATION ====================
+
+  /**
+   * Vérifier si l'utilisateur peut voir les détails
+   */
+  peutVoirDetails(bulletin: Bulletin): boolean {
+    return bulletin.statut === 'publie';
+  }
+
+  /**
+   * Vérifier si l'utilisateur peut modifier
+   */
+  peutModifier(bulletin: Bulletin): boolean {
+    return this.currentUser?.role !== 'eleve' && bulletin.statut !== 'archive';
   }
 }

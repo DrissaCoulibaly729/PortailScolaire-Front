@@ -1,17 +1,15 @@
-// src/app/features/eleve-parent/eleve-parent-routing.module.ts
+// src/app/features/eleve-parent/eleve-parent-routing.module.ts (CORRIGÉ)
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { EleveLayoutComponent } from '../../layouts/eleve-layout/eleve-layout.component';
 
-// Import des composants (à créer/compléter)
+// Import des composants
 import { EleveDashboardComponent } from './dashboard/dashboard.component';
 import { BulletinListComponent } from './bulletins/bulletin-list/bulletin-list.component';
 import { BulletinDetailComponent } from './bulletins/bulletin-detail/bulletin-detail.component';
 import { EleveNotesComponent } from './notes/eleve-notes/eleve-notes.component';
 import { EleveDetailComponent } from './profile/eleve-detail/eleve-detail.component';
 import { EleveEditComponent } from './profile/eleve-edit/eleve-edit.component';
-// import { EleveAbsencesComponent } from './absences/eleve-absences.component';
-// import { ElevePlanningComponent } from './planning/eleve-planning.component';
 
 const routes: Routes = [
   {
@@ -23,27 +21,47 @@ const routes: Routes = [
       // 📊 Dashboard
       { path: 'dashboard', component: EleveDashboardComponent },
       
-      // 📋 Bulletins
+      // 📋 Bulletins - ROUTES CORRIGÉES
       { path: 'bulletins', component: BulletinListComponent },
-      { path: 'bulletins/:id', component: BulletinDetailComponent },
-      { path: 'bulletins/:id/download', component: BulletinDetailComponent }, // Pour téléchargement
+      { 
+        path: 'bulletins/:id', 
+        component: BulletinDetailComponent,
+        data: { title: 'Détail du bulletin' }
+      },
+      { 
+        path: 'bulletins/:id/edit', 
+        component: BulletinDetailComponent, // Ou un composant d'édition séparé
+        data: { title: 'Modifier le bulletin', mode: 'edit' }
+      },
+      { 
+        path: 'bulletins/:id/download', 
+        component: BulletinDetailComponent,
+        data: { title: 'Télécharger le bulletin', mode: 'download' }
+      },
       
       // 📝 Notes
       { path: 'notes', component: EleveNotesComponent },
-      { path: 'notes/:matiereId', component: EleveNotesComponent }, // Notes par matière
+      { path: 'notes/:matiereId', component: EleveNotesComponent },
       
       // 👤 Profil élève/parent
       { path: 'profile', component: EleveDetailComponent },
       { path: 'profile/edit', component: EleveEditComponent },
       
-      // 📅 Planning et absences
-      // { path: 'planning', component: ElevePlanningComponent },
-      // { path: 'absences', component: EleveAbsencesComponent },
+      // 📧 Communications (chargement paresseux)
+      { 
+        path: 'communications', 
+        loadChildren: () => import('./communications/communications.module')
+          .then(m => m.CommunicationsModule)
+          .catch(() => {
+            console.warn('Module communications non trouvé, redirection vers dashboard');
+            return import('./dashboard/dashboard.component').then(c => ({
+              default: c.EleveDashboardComponent
+            }));
+          })
+      },
       
-      // 📧 Communications (si nécessaire)
-      { path: 'communications', loadChildren: () => import('./communications/communications.module').then(m => m.CommunicationsModule) },
-      
-      // 🔄 Redirections pour les anciennes routes
+      // 🔄 Redirections pour les anciennes routes et erreurs
+      { path: 'bulletin/:id', redirectTo: 'bulletins/:id' }, // Ancienne route
       { path: '**', redirectTo: 'dashboard' }
     ]
   }
@@ -54,3 +72,4 @@ const routes: Routes = [
   exports: [RouterModule]
 })
 export class EleveParentRoutingModule {}
+

@@ -1,42 +1,32 @@
-<!-- src/app/features/eleve-parent/bulletins/bulletin-list/bulletin-list.component.html -->
+<!-- src/app/features/eleve-parent/bulletins/bulletin-list/bulletin-list.component.html (CORRIGÉ) -->
 <div class="min-h-screen bg-gray-50 py-6">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    
+
     <!-- En-tête -->
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900">Mes Bulletins</h1>
-      <p class="mt-2 text-gray-600">Consultez vos bulletins scolaires et téléchargez-les en PDF</p>
+      <p class="mt-2 text-gray-600">Consultez vos bulletins de notes et téléchargez-les</p>
     </div>
 
     <!-- Filtres -->
     <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
-      <form [formGroup]="filterForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <form [formGroup]="filterForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         
-        <!-- Filtre année scolaire -->
+        <!-- Filtre par année -->
         <div>
-          <label for="annee_scolaire" class="block text-sm font-medium text-gray-700 mb-2">
-            Année scolaire
-          </label>
-          <select 
-            id="annee_scolaire"
-            formControlName="annee_scolaire"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Année scolaire</label>
+          <select formControlName="annee_scolaire" 
+                  class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
             <option value="">Toutes les années</option>
-            <option *ngFor="let annee of anneesDisponibles" [value]="annee">
-              {{ annee }}
-            </option>
+            <option *ngFor="let annee of anneesDisponibles" [value]="annee">{{ annee }}</option>
           </select>
         </div>
 
-        <!-- Filtre statut -->
+        <!-- Filtre par statut -->
         <div>
-          <label for="statut" class="block text-sm font-medium text-gray-700 mb-2">
-            Statut
-          </label>
-          <select 
-            id="statut"
-            formControlName="statut"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Statut</label>
+          <select formControlName="statut" 
+                  class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
             <option *ngFor="let statut of statutsDisponibles" [value]="statut.value">
               {{ statut.label }}
             </option>
@@ -45,33 +35,25 @@
 
         <!-- Recherche -->
         <div>
-          <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
-            Rechercher
-          </label>
-          <input 
-            type="text"
-            id="search"
-            formControlName="search"
-            placeholder="Rechercher période, classe..."
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-        </div>
-
-        <!-- Actions -->
-        <div class="flex items-end space-x-2">
-          <button 
-            type="button"
-            (click)="resetFilters()"
-            class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
-            Réinitialiser
-          </button>
-          <button 
-            type="button"
-            (click)="refresh()"
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-            Actualiser
-          </button>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Recherche</label>
+          <input type="text" 
+                 formControlName="search"
+                 placeholder="Rechercher une période..."
+                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
         </div>
       </form>
+
+      <!-- Actions -->
+      <div class="mt-4 flex justify-end space-x-3">
+        <button (click)="resetFilters()" 
+                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+          Réinitialiser
+        </button>
+        <button (click)="refresh()" 
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+          Actualiser
+        </button>
+      </div>
     </div>
 
     <!-- État de chargement -->
@@ -110,10 +92,8 @@
       <!-- Grille des bulletins -->
       <div *ngIf="filteredBulletins.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
-        <div 
-          *ngFor="let bulletin of filteredBulletins" 
-          class="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow cursor-pointer"
-          (click)="viewBulletin(bulletin)">
+        <div *ngFor="let bulletin of filteredBulletins" 
+             class="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
           
           <!-- En-tête de la carte -->
           <div class="p-6 border-b border-gray-200">
@@ -151,33 +131,16 @@
                 <p class="text-2xl font-bold text-gray-900">
                   {{ bulletin.rang_classe }}{{ bulletin.total_eleves ? '/' + bulletin.total_eleves : '' }}
                 </p>
-                <p class="text-xs text-gray-600">Rang classe</p>
+                <p class="text-xs text-gray-600">Rang</p>
               </div>
             </div>
 
             <!-- Mention -->
-            <div class="text-center mb-4" *ngIf="bulletin.mention">
+            <div class="text-center mb-4">
               <span [class]="getMentionColor(bulletin.mention)" 
-                    class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100">
-                {{ bulletin.mention }}
+                    class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium">
+                {{ bulletin.mention || 'Non définie' }}
               </span>
-            </div>
-
-            <!-- Informations supplémentaires -->
-            <div class="space-y-2 text-sm text-gray-600">
-              <div *ngIf="bulletin.date_conseil" class="flex items-center">
-                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-                Conseil de classe : {{ bulletin.date_conseil | date:'dd/MM/yyyy' }}
-              </div>
-              
-              <div *ngIf="bulletin.absences_justifiees || bulletin.absences_non_justifiees" class="flex items-center">
-                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                Absences : {{ (bulletin.absences_justifiees || 0) + (bulletin.absences_non_justifiees || 0) }}
-              </div>
             </div>
 
             <!-- Distinctions -->
@@ -195,7 +158,7 @@
             </div>
           </div>
 
-          <!-- Actions -->
+          <!-- Actions CORRIGÉES -->
           <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
             <div class="flex items-center justify-between">
               
@@ -206,15 +169,15 @@
                 </span>
               </div>
 
-              <!-- Boutons d'action -->
+              <!-- Boutons d'action CORRIGÉS -->
               <div class="flex space-x-2">
                 
-                <!-- Voir les détails -->
+                <!-- ✅ CORRIGÉ: Voir les détails avec navigation appropriée -->
                 <button 
-                  *ngIf="bulletin.statut === 'publie'"
-                  [routerLink]="['/eleve/bulletins', bulletin.id]"
+                  *ngIf="peutVoirDetails(bulletin)"
+                  (click)="voirDetails(bulletin, $event)"
                   class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                  (click)="$event.stopPropagation()">
+                  title="Voir les détails">
                   <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -222,18 +185,31 @@
                   Détails
                 </button>
 
+                <!-- ✅ CORRIGÉ: Modifier (si autorisé) -->
+                <button 
+                  *ngIf="peutModifier(bulletin)"
+                  (click)="modifierBulletin(bulletin, $event)"
+                  class="inline-flex items-center px-3 py-1.5 border border-blue-300 text-xs font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                  title="Modifier">
+                  <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+                  Modifier
+                </button>
+
                 <!-- Télécharger PDF -->
                 <button 
                   *ngIf="bulletin.statut === 'publie'"
                   (click)="downloadBulletin(bulletin, $event)"
-                  class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                  class="inline-flex items-center px-3 py-1.5 border border-green-300 text-xs font-medium rounded text-green-700 bg-green-50 hover:bg-green-100 transition-colors"
+                  title="Télécharger PDF">
                   <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                   </svg>
                   PDF
                 </button>
 
-                <!-- Statut non publié -->
+                <!-- Statut en attente -->
                 <span *ngIf="bulletin.statut !== 'publie'" 
                       class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-500">
                   <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,29 +224,32 @@
       </div>
     </div>
 
-    <!-- Statistiques rapides -->
+    <!-- ✅ CORRIGÉ: Statistiques rapides avec méthodes du composant -->
     <div *ngIf="!isLoading && !error && bulletins.length > 0" class="mt-8 bg-white rounded-lg shadow-sm border p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-4">Résumé</h3>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="text-center">
-          <p class="text-2xl font-bold text-gray-900">{{ bulletins.length }}</p>
+          <p class="text-2xl font-bold text-gray-900">{{ getNombreTotalBulletins() }}</p>
           <p class="text-sm text-gray-600">Total bulletins</p>
         </div>
         <div class="text-center">
+          <!-- ✅ CORRIGÉ: Utilise la méthode du composant au lieu du pipe filter -->
           <p class="text-2xl font-bold text-green-600">
-            {{ (bulletins | filter:'statut':'publie').length }}
+            {{ getNombreBulletinsPublies() }}
           </p>
           <p class="text-sm text-gray-600">Publiés</p>
         </div>
         <div class="text-center" *ngIf="bulletins.length > 0">
+          <!-- ✅ CORRIGÉ: Utilise la méthode du composant au lieu de l'expression complexe -->
           <p class="text-2xl font-bold text-blue-600">
-            {{ (bulletins.map(b => b.moyenne_generale).reduce((a, b) => a + b, 0) / bulletins.length).toFixed(2) }}
+            {{ calculerMoyenneGenerale() }}
           </p>
           <p class="text-sm text-gray-600">Moyenne générale</p>
         </div>
         <div class="text-center">
+          <!-- ✅ CORRIGÉ: Utilise la méthode du composant -->
           <p class="text-2xl font-bold text-purple-600">
-            {{ anneesDisponibles.length }}
+            {{ getNombreAnneesDisponibles() }}
           </p>
           <p class="text-sm text-gray-600">Années couvertes</p>
         </div>
