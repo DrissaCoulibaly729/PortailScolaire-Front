@@ -1,16 +1,15 @@
-// src/app/features/eleve-parent/profile/eleve-detail.component.ts
+// src/app/features/eleve-parent/profile/eleve-detail/eleve-detail.component.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import { EleveParentService } from '../../../core/services/eleve-parent.service';
-import { AuthService } from '../../../core/auth/auth.service';
-import { NotificationService } from '../../../core/services/notification.service';
+import { EleveParentService } from '../../../../core/services/eleve-parent.service';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 
-import { Eleve, User } from '../../../shared/models/user.model';
-import { Classe } from '../../../shared/models/classe.model';
+import { Eleve } from '../../../../shared/models/user.model';
 
 @Component({
   selector: 'app-eleve-detail',
@@ -24,21 +23,17 @@ export class EleveDetailComponent implements OnInit, OnDestroy {
 
   // État du composant
   eleve: Eleve | null = null;
-  currentUser: User | null = null;
   isLoading = true;
   error = '';
-
-  // Permissions
-  canModify = false;
 
   constructor(
     private eleveParentService: EleveParentService,
     private authService: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
-    this.currentUser = this.authService.getCurrentUser();
     this.loadEleveDetails();
   }
 
@@ -60,37 +55,84 @@ export class EleveDetailComponent implements OnInit, OnDestroy {
         next: (response) => {
           if (response.allowed && response.data) {
             this.eleve = response.data;
-            this.checkPermissions();
           } else {
-            this.error = response.reason || 'Accès non autorisé aux informations de l\'élève';
+            this.error = response.reason || 'Impossible de charger vos informations';
           }
           this.isLoading = false;
         },
         error: (error) => {
-          console.error('Erreur lors du chargement des détails élève:', error);
-          this.error = 'Erreur lors du chargement des informations';
+          console.error('Erreur lors du chargement des détails:', error);
+          this.error = 'Erreur lors du chargement de vos informations';
           this.isLoading = false;
-          this.notificationService.error('Erreur', 'Impossible de charger les informations de l\'élève');
         }
       });
   }
 
   /**
-   * Vérifier les permissions de modification
+   * ✅ CORRIGÉ: Navigation sécurisée vers les notes
    */
-  private checkPermissions(): void {
-    if (!this.eleve) return;
-
-    this.eleveParentService.canModifyData(this.eleve.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (canModify) => {
-          this.canModify = canModify;
-        },
-        error: (error) => {
-          console.error('Erreur vérification permissions:', error);
-          this.canModify = false;
+  naviguerVersNotes(): void {
+    this.router.navigate(['/eleve/notes'])
+      .then(success => {
+        if (!success) {
+          console.error('Erreur de navigation vers les notes');
+          this.notificationService.error('Erreur', 'Impossible d\'accéder aux notes');
         }
+      })
+      .catch(error => {
+        console.error('Erreur de navigation:', error);
+        this.notificationService.error('Erreur', 'Erreur de navigation');
+      });
+  }
+
+  /**
+   * ✅ CORRIGÉ: Navigation sécurisée vers les bulletins
+   */
+  naviguerVersBulletins(): void {
+    this.router.navigate(['/eleve/bulletins'])
+      .then(success => {
+        if (!success) {
+          console.error('Erreur de navigation vers les bulletins');
+          this.notificationService.error('Erreur', 'Impossible d\'accéder aux bulletins');
+        }
+      })
+      .catch(error => {
+        console.error('Erreur de navigation:', error);
+        this.notificationService.error('Erreur', 'Erreur de navigation');
+      });
+  }
+
+  /**
+   * ✅ CORRIGÉ: Navigation sécurisée vers le planning
+   */
+  naviguerVersPlanning(): void {
+    this.router.navigate(['/eleve/planning'])
+      .then(success => {
+        if (!success) {
+          console.error('Erreur de navigation vers le planning');
+          this.notificationService.warning('Information', 'Le planning n\'est pas encore disponible');
+        }
+      })
+      .catch(error => {
+        console.error('Erreur de navigation:', error);
+        this.notificationService.error('Erreur', 'Erreur de navigation');
+      });
+  }
+
+  /**
+   * ✅ CORRIGÉ: Navigation sécurisée vers l'édition
+   */
+  naviguerVersEdition(): void {
+    this.router.navigate(['/eleve/profile/edit'])
+      .then(success => {
+        if (!success) {
+          console.error('Erreur de navigation vers l\'édition du profil');
+          this.notificationService.error('Erreur', 'Impossible d\'accéder à la modification');
+        }
+      })
+      .catch(error => {
+        console.error('Erreur de navigation:', error);
+        this.notificationService.error('Erreur', 'Erreur de navigation');
       });
   }
 
@@ -101,31 +143,46 @@ export class EleveDetailComponent implements OnInit, OnDestroy {
     this.loadEleveDetails();
   }
 
+  // ==================== MÉTHODES UTILITAIRES ====================
+
   /**
-   * Obtenir les initiales de l'utilisateur
+   * Vérifier si les informations de contact parent sont disponibles
    */
-  getUserInitials(): string {
+  hasParentContact(): boolean {
+    return !!(this.eleve?.nom_parent && this.eleve?.prenom_parent);
+  }
+
+  /**
+   * Vérifier si les informations de contact complets sont disponibles
+   */
+  hasCompleteContact(): boolean {
+    return !!(this.eleve?.email_parent || this.eleve?.telephone_parent);
+  }
+
+  /**
+   * Obtenir le nom complet du parent
+   */
+  getParentFullName(): string {
     if (!this.eleve) return '';
-    const firstInitial = this.eleve.prenom?.charAt(0).toUpperCase() || '';
-    const lastInitial = this.eleve.nom?.charAt(0).toUpperCase() || '';
-    return `${firstInitial}${lastInitial}`;
+    return `${this.eleve.prenom_parent || ''} ${this.eleve.nom_parent || ''}`.trim();
   }
 
   /**
-   * Formater la date de naissance
+   * Obtenir le nom complet de l'élève
    */
-  formatDateNaissance(): string {
-    if (!this.eleve?.date_naissance) return 'Non renseignée';
-    return new Date(this.eleve.date_naissance).toLocaleDateString('fr-FR');
+  getEleveFullName(): string {
+    if (!this.eleve) return '';
+    return `${this.eleve.prenom} ${this.eleve.nom}`;
   }
 
   /**
-   * Calculer l'âge
+   * Calculer l'âge de l'élève
    */
-  calculateAge(): number | null {
+  getAge(): number | null {
     if (!this.eleve?.date_naissance) return null;
-    const today = new Date();
+    
     const birthDate = new Date(this.eleve.date_naissance);
+    const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
     
@@ -137,47 +194,29 @@ export class EleveDetailComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Vérifier si les informations de contact parent sont disponibles
+   * Formater la moyenne
    */
-  hasParentContact(): boolean {
-    return !!(this.eleve?.email_parent || this.eleve?.telephone_parent);
+  formatMoyenne(moyenne: number | undefined): string {
+    return moyenne ? moyenne.toFixed(2) + '/20' : 'Non calculée';
   }
 
   /**
-   * Obtenir le statut de l'élève
+   * Obtenir la couleur de la moyenne
    */
-  getStatutEleve(): string {
-    // Logique pour déterminer le statut (actif, suspendu, etc.)
-    // À adapter selon votre modèle de données
-    return 'Actif';
+  getMoyenneColor(moyenne: number | undefined): string {
+    if (!moyenne) return 'text-gray-600';
+    
+    if (moyenne >= 15) return 'text-green-600';
+    if (moyenne >= 12) return 'text-blue-600';
+    if (moyenne >= 10) return 'text-yellow-600';
+    return 'text-red-600';
   }
 
   /**
-   * Obtenir la couleur du statut
+   * Vérifier si l'utilisateur peut modifier ses informations
    */
-  getStatutColor(): string {
-    const statut = this.getStatutEleve();
-    switch (statut) {
-      case 'Actif': return 'text-green-600 bg-green-100';
-      case 'Suspendu': return 'text-red-600 bg-red-100';
-      case 'En attente': return 'text-yellow-600 bg-yellow-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  }
-
-  /**
-   * Vérifier si l'élève a une photo
-   */
-  hasPhoto(): boolean {
-    // À implémenter selon votre système de gestion des photos
-    return false;
-  }
-
-  /**
-   * Obtenir l'URL de la photo
-   */
-  getPhotoUrl(): string {
-    // À implémenter selon votre système de gestion des photos
-    return '/assets/images/default-avatar.png';
+  canEditProfile(): boolean {
+    // L'élève peut toujours modifier certaines informations
+    return true;
   }
 }

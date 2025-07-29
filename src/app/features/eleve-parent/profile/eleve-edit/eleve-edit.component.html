@@ -1,4 +1,4 @@
-<!-- src/app/features/eleve-parent/profile/eleve-edit.component.html -->
+<!-- src/app/features/eleve-parent/profile/eleve-edit/eleve-edit.component.html -->
 <div class="min-h-screen bg-gray-50 py-6">
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -31,8 +31,22 @@
 
     <!-- En-tête -->
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">Modifier mon profil</h1>
-      <p class="mt-2 text-gray-600">Mettez à jour vos informations personnelles et de contact</p>
+      <div class="flex justify-between items-start">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Modifier mon profil</h1>
+          <p class="mt-2 text-gray-600">Mettez à jour vos informations personnelles et de contact</p>
+        </div>
+        
+        <div class="flex space-x-3">
+          <button (click)="refresh()" 
+                  class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Actualiser
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- État de chargement -->
@@ -55,253 +69,267 @@
     </div>
 
     <!-- Formulaire de modification -->
-    <div *ngIf="!isLoading && !error">
+    <div *ngIf="!isLoading && !error && eleve">
       <form [formGroup]="editForm" (ngSubmit)="onSubmit()" class="space-y-8">
 
         <!-- Informations personnelles -->
-        <div class="bg-white rounded-lg shadow-sm border p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-            <svg class="h-5 w-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-            </svg>
-            Informations personnelles
-          </h2>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            <!-- Nom (non modifiable) -->
-            <div>
-              <label for="nom" class="block text-sm font-medium text-gray-700 mb-2">
-                Nom de famille
-              </label>
-              <input 
-                type="text"
-                id="nom"
-                formControlName="nom"
-                disabled
-                class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed">
-              <p class="mt-1 text-xs text-gray-500">
-                Ce champ ne peut pas être modifié
-              </p>
-            </div>
-
-            <!-- Prénom (non modifiable) -->
-            <div>
-              <label for="prenom" class="block text-sm font-medium text-gray-700 mb-2">
-                Prénom
-              </label>
-              <input 
-                type="text"
-                id="prenom"
-                formControlName="prenom"
-                disabled
-                class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed">
-              <p class="mt-1 text-xs text-gray-500">
-                Ce champ ne peut pas être modifié
-              </p>
-            </div>
-
-            <!-- Email élève -->
-            <div>
-              <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                Email personnel
-              </label>
-              <input 
-                type="email"
-                id="email"
-                formControlName="email"
-                (blur)="validateEmail('email')"
-                placeholder="votre.email@exemple.com"
-                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                [class.border-red-300]="hasFieldError('email')"
-                [class.border-gray-300]="!hasFieldError('email')">
-              <p *ngIf="hasFieldError('email')" class="mt-1 text-sm text-red-600">
-                {{ getFieldError('email') }}
-              </p>
-            </div>
-
-            <!-- Téléphone élève -->
-            <div>
-              <label for="telephone" class="block text-sm font-medium text-gray-700 mb-2">
-                Téléphone personnel
-              </label>
-              <input 
-                type="tel"
-                id="telephone"
-                formControlName="telephone"
-                (input)="formatPhoneNumber($event, 'telephone')"
-                placeholder="01 23 45 67 89"
-                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                [class.border-red-300]="hasFieldError('telephone')"
-                [class.border-gray-300]="!hasFieldError('telephone')">
-              <p *ngIf="hasFieldError('telephone')" class="mt-1 text-sm text-red-600">
-                {{ getFieldError('telephone') }}
-              </p>
-            </div>
-
-            <!-- Adresse -->
-            <div class="md:col-span-2">
-              <label for="adresse" class="block text-sm font-medium text-gray-700 mb-2">
-                Adresse
-              </label>
-              <textarea 
-                id="adresse"
-                formControlName="adresse"
-                rows="3"
-                placeholder="Votre adresse complète"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none">
-              </textarea>
-            </div>
+        <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+              <svg class="h-5 w-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+              Informations personnelles
+              <span class="ml-2 text-sm text-gray-500">(certains champs non modifiables)</span>
+            </h2>
           </div>
-        </div>
 
-        <!-- Informations du responsable légal -->
-        <div class="bg-white rounded-lg shadow-sm border p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-            <svg class="h-5 w-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-            </svg>
-            Informations du responsable légal
-          </h2>
+          <div class="px-6 py-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              <!-- Nom (non modifiable) -->
+              <div>
+                <label for="nom" class="block text-sm font-medium text-gray-700 mb-2">
+                  Nom
+                  <span *ngIf="isFieldRequired('nom')" class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       id="nom" 
+                       formControlName="nom"
+                       [class]="getFieldClass('nom')"
+                       readonly
+                       class="bg-gray-50 cursor-not-allowed">
+                <p class="mt-1 text-xs text-gray-500">Ce champ ne peut pas être modifié</p>
+              </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            <!-- Nom parent -->
-            <div>
-              <label for="nom_parent" class="block text-sm font-medium text-gray-700 mb-2">
-                Nom du responsable <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="text"
-                id="nom_parent"
-                formControlName="nom_parent"
-                placeholder="Nom du responsable légal"
-                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                [class.border-red-300]="hasFieldError('nom_parent')"
-                [class.border-gray-300]="!hasFieldError('nom_parent')">
-              <p *ngIf="hasFieldError('nom_parent')" class="mt-1 text-sm text-red-600">
-                {{ getFieldError('nom_parent') }}
-              </p>
-            </div>
+              <!-- Prénom (non modifiable) -->
+              <div>
+                <label for="prenom" class="block text-sm font-medium text-gray-700 mb-2">
+                  Prénom
+                  <span *ngIf="isFieldRequired('prenom')" class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       id="prenom" 
+                       formControlName="prenom"
+                       [class]="getFieldClass('prenom')"
+                       readonly
+                       class="bg-gray-50 cursor-not-allowed">
+                <p class="mt-1 text-xs text-gray-500">Ce champ ne peut pas être modifié</p>
+              </div>
 
-            <!-- Prénom parent -->
-            <div>
-              <label for="prenom_parent" class="block text-sm font-medium text-gray-700 mb-2">
-                Prénom du responsable <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="text"
-                id="prenom_parent"
-                formControlName="prenom_parent"
-                placeholder="Prénom du responsable légal"
-                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                [class.border-red-300]="hasFieldError('prenom_parent')"
-                [class.border-gray-300]="!hasFieldError('prenom_parent')">
-              <p *ngIf="hasFieldError('prenom_parent')" class="mt-1 text-sm text-red-600">
-                {{ getFieldError('prenom_parent') }}
-              </p>
-            </div>
+              <!-- Email personnel -->
+              <div>
+                <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                  Email personnel
+                  <span *ngIf="isFieldRequired('email')" class="text-red-500">*</span>
+                </label>
+                <input type="email" 
+                       id="email" 
+                       formControlName="email"
+                       (blur)="validateEmail('email')"
+                       [class]="getFieldClass('email')"
+                       placeholder="votre.email@exemple.com">
+                <div *ngIf="hasFieldError('email')" class="mt-1 text-sm text-red-600">
+                  {{ getFieldError('email') }}
+                </div>
+              </div>
 
-            <!-- Email parent -->
-            <div>
-              <label for="email_parent" class="block text-sm font-medium text-gray-700 mb-2">
-                Email du responsable <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="email"
-                id="email_parent"
-                formControlName="email_parent"
-                (blur)="validateEmail('email_parent')"
-                placeholder="email.parent@exemple.com"
-                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                [class.border-red-300]="hasFieldError('email_parent')"
-                [class.border-gray-300]="!hasFieldError('email_parent')">
-              <p *ngIf="hasFieldError('email_parent')" class="mt-1 text-sm text-red-600">
-                {{ getFieldError('email_parent') }}
-              </p>
-            </div>
+              <!-- Téléphone personnel -->
+              <div>
+                <label for="telephone" class="block text-sm font-medium text-gray-700 mb-2">
+                  Téléphone personnel
+                  <span *ngIf="isFieldRequired('telephone')" class="text-red-500">*</span>
+                </label>
+                <input type="tel" 
+                       id="telephone" 
+                       formControlName="telephone"
+                       (input)="formatPhoneNumber($event, 'telephone')"
+                       [class]="getFieldClass('telephone')"
+                       placeholder="01 23 45 67 89">
+                <div *ngIf="hasFieldError('telephone')" class="mt-1 text-sm text-red-600">
+                  {{ getFieldError('telephone') }}
+                </div>
+              </div>
 
-            <!-- Téléphone parent -->
-            <div>
-              <label for="telephone_parent" class="block text-sm font-medium text-gray-700 mb-2">
-                Téléphone du responsable <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="tel"
-                id="telephone_parent"
-                formControlName="telephone_parent"
-                (input)="formatPhoneNumber($event, 'telephone_parent')"
-                placeholder="01 23 45 67 89"
-                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                [class.border-red-300]="hasFieldError('telephone_parent')"
-                [class.border-gray-300]="!hasFieldError('telephone_parent')">
-              <p *ngIf="hasFieldError('telephone_parent')" class="mt-1 text-sm text-red-600">
-                {{ getFieldError('telephone_parent') }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Informations importantes -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div class="flex">
-            <svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <div class="ml-3">
-              <h3 class="text-sm font-medium text-blue-800">Informations importantes</h3>
-              <div class="mt-2 text-sm text-blue-700">
-                <ul class="list-disc pl-5 space-y-1">
-                  <li>Les champs marqués d'un astérisque (<span class="text-red-500">*</span>) sont obligatoires</li>
-                  <li>Vos nom et prénom ne peuvent pas être modifiés depuis cette interface</li>
-                  <li>Les informations du responsable légal sont importantes pour les communications officielles</li>
-                  <li>Assurez-vous que l'email et le téléphone du responsable sont corrects</li>
-                </ul>
+              <!-- Adresse (span sur 2 colonnes) -->
+              <div class="md:col-span-2">
+                <label for="adresse" class="block text-sm font-medium text-gray-700 mb-2">
+                  Adresse
+                  <span *ngIf="isFieldRequired('adresse')" class="text-red-500">*</span>
+                </label>
+                <textarea id="adresse" 
+                          formControlName="adresse"
+                          rows="3"
+                          [class]="getFieldClass('adresse')"
+                          placeholder="Votre adresse complète"></textarea>
+                <div *ngIf="hasFieldError('adresse')" class="mt-1 text-sm text-red-600">
+                  {{ getFieldError('adresse') }}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Actions du formulaire -->
-        <div class="flex items-center justify-between pt-6 border-t border-gray-200">
-          <div class="flex space-x-3">
-            <button 
-              type="button"
-              (click)="resetForm()"
-              class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
-              <svg class="h-4 w-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        <!-- Informations du responsable légal -->
+        <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+              <svg class="h-5 w-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
               </svg>
-              Réinitialiser
+              Responsable légal
+            </h2>
+          </div>
+
+          <div class="px-6 py-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              <!-- Nom parent -->
+              <div>
+                <label for="nom_parent" class="block text-sm font-medium text-gray-700 mb-2">
+                  Nom du parent/responsable
+                  <span *ngIf="isFieldRequired('nom_parent')" class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       id="nom_parent" 
+                       formControlName="nom_parent"
+                       (blur)="validateField('nom_parent')"
+                       [class]="getFieldClass('nom_parent')"
+                       placeholder="Nom du responsable">
+                <div *ngIf="hasFieldError('nom_parent')" class="mt-1 text-sm text-red-600">
+                  {{ getFieldError('nom_parent') }}
+                </div>
+              </div>
+
+              <!-- Prénom parent -->
+              <div>
+                <label for="prenom_parent" class="block text-sm font-medium text-gray-700 mb-2">
+                  Prénom du parent/responsable
+                  <span *ngIf="isFieldRequired('prenom_parent')" class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       id="prenom_parent" 
+                       formControlName="prenom_parent"
+                       (blur)="validateField('prenom_parent')"
+                       [class]="getFieldClass('prenom_parent')"
+                       placeholder="Prénom du responsable">
+                <div *ngIf="hasFieldError('prenom_parent')" class="mt-1 text-sm text-red-600">
+                  {{ getFieldError('prenom_parent') }}
+                </div>
+              </div>
+
+              <!-- Email parent -->
+              <div>
+                <label for="email_parent" class="block text-sm font-medium text-gray-700 mb-2">
+                  Email du parent/responsable
+                  <span *ngIf="isFieldRequired('email_parent')" class="text-red-500">*</span>
+                </label>
+                <input type="email" 
+                       id="email_parent" 
+                       formControlName="email_parent"
+                       (blur)="validateEmail('email_parent')"
+                       [class]="getFieldClass('email_parent')"
+                       placeholder="email.parent@exemple.com">
+                <div *ngIf="hasFieldError('email_parent')" class="mt-1 text-sm text-red-600">
+                  {{ getFieldError('email_parent') }}
+                </div>
+              </div>
+
+              <!-- Téléphone parent -->
+              <div>
+                <label for="telephone_parent" class="block text-sm font-medium text-gray-700 mb-2">
+                  Téléphone du parent/responsable
+                  <span *ngIf="isFieldRequired('telephone_parent')" class="text-red-500">*</span>
+                </label>
+                <input type="tel" 
+                       id="telephone_parent" 
+                       formControlName="telephone_parent"
+                       (input)="formatPhoneNumber($event, 'telephone_parent')"
+                       [class]="getFieldClass('telephone_parent')"
+                       placeholder="01 23 45 67 89">
+                <div *ngIf="hasFieldError('telephone_parent')" class="mt-1 text-sm text-red-600">
+                  {{ getFieldError('telephone_parent') }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+          <div class="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0 sm:space-x-4">
+            
+            <!-- Boutons principaux -->
+            <div class="flex space-x-3">
+              <!-- Bouton Annuler -->
+              <button type="button" 
+                      (click)="onCancel()"
+                      class="inline-flex items-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                Annuler
+              </button>
+
+              <!-- Bouton Réinitialiser -->
+              <button type="button" 
+                      (click)="resetForm()"
+                      [disabled]="isLoading || isSaving"
+                      class="inline-flex items-center px-6 py-2 border border-yellow-300 text-sm font-medium rounded-md text-yellow-700 bg-yellow-50 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Réinitialiser
+              </button>
+            </div>
+
+            <!-- Bouton Sauvegarder -->
+            <button type="submit" 
+                    [disabled]="!canSubmit()"
+                    class="inline-flex items-center px-8 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+              
+              <!-- Spinner de chargement -->
+              <svg *ngIf="isSaving" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+
+              <!-- Icône normale -->
+              <svg *ngIf="!isSaving" class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+
+              {{ isSaving ? 'Sauvegarde...' : 'Sauvegarder les modifications' }}
             </button>
           </div>
 
-          <div class="flex space-x-3">
-            <button 
-              type="button"
-              (click)="onCancel()"
-              class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
-              Annuler
-            </button>
-            
-            <button 
-              type="submit"
-              [disabled]="!canSubmit()"
-              class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-              <span *ngIf="isSaving" class="inline-flex items-center">
-                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Sauvegarde...
-              </span>
-              <span *ngIf="!isSaving" class="inline-flex items-center">
+          <!-- Indicateur de statut du formulaire -->
+          <div class="mt-4 pt-4 border-t border-gray-200">
+            <div class="flex items-center text-sm">
+              <!-- Formulaire valide -->
+              <div *ngIf="editForm.valid && editForm.dirty" class="flex items-center text-green-600">
                 <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
-                Enregistrer
-              </span>
-            </button>
+                Formulaire prêt à être sauvegardé
+              </div>
+
+              <!-- Formulaire invalide -->
+              <div *ngIf="editForm.invalid && editForm.dirty" class="flex items-center text-red-600">
+                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Veuillez corriger les erreurs avant de sauvegarder
+              </div>
+
+              <!-- Formulaire non modifié -->
+              <div *ngIf="!editForm.dirty" class="flex items-center text-gray-600">
+                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Aucune modification détectée
+              </div>
+            </div>
           </div>
         </div>
       </form>

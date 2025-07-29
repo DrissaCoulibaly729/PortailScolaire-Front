@@ -1,4 +1,4 @@
-// src/app/features/eleve-parent/profile/eleve-edit.component.ts
+// src/app/features/eleve-parent/profile/eleve-edit/eleve-edit.component.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -6,11 +6,12 @@ import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import { EleveParentService } from '../../../core/services/eleve-parent.service';
-import { AuthService } from '../../../core/auth/auth.service';
-import { NotificationService } from '../../../core/services/notification.service';
+// ✅ CORRIGÉ: Chemins d'import corrects (4 niveaux vers le haut)
+import { EleveParentService, SecureDataResponse } from '../../../../core/services/eleve-parent.service';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 
-import { Eleve } from '../../../shared/models/user.model';
+import { Eleve } from '../../../../shared/models/user.model';
 
 @Component({
   selector: 'app-eleve-edit',
@@ -73,7 +74,7 @@ export class EleveEditComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Charger les détails de l'élève
+   * ✅ CORRIGÉ: Charger les détails de l'élève avec types explicites
    */
   private loadEleveDetails(): void {
     this.isLoading = true;
@@ -82,7 +83,7 @@ export class EleveEditComponent implements OnInit, OnDestroy {
     this.eleveParentService.getEleveDetails()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
+        next: (response: SecureDataResponse<Eleve>) => {
           if (response.allowed && response.data) {
             this.eleve = response.data;
             this.populateForm();
@@ -91,7 +92,7 @@ export class EleveEditComponent implements OnInit, OnDestroy {
           }
           this.isLoading = false;
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Erreur lors du chargement:', error);
           this.error = 'Erreur lors du chargement des informations';
           this.isLoading = false;
@@ -123,7 +124,7 @@ export class EleveEditComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Soumettre le formulaire
+   * ✅ CORRIGÉ: Soumettre le formulaire avec types explicites
    */
   onSubmit(): void {
     if (this.editForm.invalid || !this.eleve) {
@@ -135,7 +136,7 @@ export class EleveEditComponent implements OnInit, OnDestroy {
     const formData = this.editForm.value;
 
     // Préparer seulement les données que le parent peut modifier
-    const updateData = {
+    const updateData: Partial<Eleve> = {
       email: formData.email,
       telephone: formData.telephone,
       adresse: formData.adresse,
@@ -148,12 +149,12 @@ export class EleveEditComponent implements OnInit, OnDestroy {
     this.eleveParentService.updateInformationsParent(this.eleve.id, updateData)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (updatedEleve) => {
+        next: (updatedEleve: Eleve) => {
           this.eleve = updatedEleve;
           this.notificationService.success('Succès', 'Informations mises à jour avec succès');
           this.router.navigate(['/eleve/profile']);
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Erreur lors de la sauvegarde:', error);
           this.notificationService.error('Erreur', 'Échec de la mise à jour des informations');
         },
@@ -164,16 +165,33 @@ export class EleveEditComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Annuler les modifications
+   * ✅ CORRIGÉ: Annuler les modifications avec navigation sécurisée
    */
   onCancel(): void {
     if (this.editForm.dirty) {
       if (confirm('Voulez-vous vraiment annuler vos modifications ?')) {
-        this.router.navigate(['/eleve/profile']);
+        this.navigateToProfile();
       }
     } else {
-      this.router.navigate(['/eleve/profile']);
+      this.navigateToProfile();
     }
+  }
+
+  /**
+   * ✅ AJOUTÉ: Navigation sécurisée vers le profil
+   */
+  private navigateToProfile(): void {
+    this.router.navigate(['/eleve/profile'])
+      .then(success => {
+        if (!success) {
+          console.error('Erreur de navigation vers le profil');
+          this.notificationService.error('Erreur', 'Impossible de revenir au profil');
+        }
+      })
+      .catch(error => {
+        console.error('Erreur de navigation:', error);
+        this.notificationService.error('Erreur', 'Erreur de navigation');
+      });
   }
 
   /**
@@ -234,10 +252,13 @@ export class EleveEditComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Formater le numéro de téléphone en temps réel
+   * ✅ CORRIGÉ: Formater le numéro de téléphone avec types explicites
    */
-  formatPhoneNumber(event: any, fieldName: string): void {
-    let value = event.target.value.replace(/\D/g, '');
+  formatPhoneNumber(event: Event, fieldName: string): void {
+    const target = event.target as HTMLInputElement;
+    if (!target) return;
+
+    let value = target.value.replace(/\D/g, '');
     
     if (value.startsWith('33')) {
       value = '+' + value;
@@ -260,5 +281,68 @@ export class EleveEditComponent implements OnInit, OnDestroy {
         emailField.setErrors({ 'email': true });
       }
     }
+  }
+
+  /**
+   * ✅ AJOUTÉ: Obtenir le nom complet de l'élève
+   */
+  getEleveFullName(): string {
+    if (!this.eleve) return '';
+    return `${this.eleve.prenom} ${this.eleve.nom}`;
+  }
+
+  /**
+   * ✅ AJOUTÉ: Vérifier si les informations parent sont complètes
+   */
+  hasCompleteParentInfo(): boolean {
+    return !!(this.eleve?.nom_parent && this.eleve?.prenom_parent && this.eleve?.email_parent);
+  }
+
+  /**
+   * ✅ AJOUTÉ: Actualiser les données
+   */
+  refresh(): void {
+    this.loadEleveDetails();
+  }
+
+  /**
+   * ✅ AJOUTÉ: Valider un champ spécifique
+   */
+  validateField(fieldName: string): void {
+    const field = this.editForm.get(fieldName);
+    if (field) {
+      field.markAsTouched();
+      field.updateValueAndValidity();
+    }
+  }
+
+  /**
+   * ✅ AJOUTÉ: Vérifier si un champ est requis
+   */
+  isFieldRequired(fieldName: string): boolean {
+    const field = this.editForm.get(fieldName);
+    if (field && field.validator) {
+      const validator = field.validator({} as any);
+      return validator && validator['required'];
+    }
+    return false;
+  }
+
+  /**
+   * ✅ AJOUTÉ: Obtenir la classe CSS pour un champ
+   */
+  getFieldClass(fieldName: string): string {
+    const baseClass = 'block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500';
+    
+    if (this.hasFieldError(fieldName)) {
+      return baseClass + ' border-red-300 focus:border-red-500 focus:ring-red-500';
+    }
+    
+    const field = this.editForm.get(fieldName);
+    if (field && field.valid && field.dirty) {
+      return baseClass + ' border-green-300 focus:border-green-500 focus:ring-green-500';
+    }
+    
+    return baseClass;
   }
 }

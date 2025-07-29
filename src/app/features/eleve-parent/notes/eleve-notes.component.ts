@@ -160,7 +160,7 @@ export class EleveNotesComponent implements OnInit, OnDestroy {
 
       matiereData.notes.forEach(note => {
         const coefficient = note.coefficient || 1;
-        const noteNormalisee = (note.valeur / (note.note_sur || 20)) * 20;
+        const noteNormalisee = (note.valeur / ( 20)) * 20;
         totalPoints += noteNormalisee * coefficient;
         totalCoefficients += coefficient;
       });
@@ -363,8 +363,8 @@ export class EleveNotesComponent implements OnInit, OnDestroy {
     }
 
     const previousNote = notes[currentIndex + 1];
-    const currentNormalized = (note.valeur / (note.note_sur || 20)) * 20;
-    const previousNormalized = (previousNote.valeur / (previousNote.note_sur || 20)) * 20;
+    const currentNormalized = (note.valeur / (20)) * 20;
+    const previousNormalized = (previousNote.valeur / (20)) * 20;
     
     const diff = currentNormalized - previousNormalized;
     

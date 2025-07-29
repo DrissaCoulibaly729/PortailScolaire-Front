@@ -143,6 +143,13 @@ export class EleveParentService {
   // ==================== GESTION BULLETINS ====================
 
   /**
+   * ✅ AJOUTÉ: Méthode getBulletins() - Alias pour getBulletinsEleve()
+   */
+  getBulletins(eleveId?: number, filters?: BulletinFilters): Observable<SecureDataResponse<Bulletin[]>> {
+    return this.getBulletinsEleve(eleveId, filters);
+  }
+
+  /**
    * Obtenir les bulletins d'un élève
    */
   getBulletinsEleve(eleveId?: number, filters?: BulletinFilters): Observable<SecureDataResponse<Bulletin[]>> {
@@ -539,7 +546,7 @@ export class EleveParentService {
       adresse: '123 Rue de la Paix, 75001 Paris',
       numero_etudiant: 'E2024001',
       role: 'eleve',
-      actif: true, // ✅ AJOUTÉ: Propriété manquante
+      actif: true,
       
       // Informations scolaires
       classe_id: 1,

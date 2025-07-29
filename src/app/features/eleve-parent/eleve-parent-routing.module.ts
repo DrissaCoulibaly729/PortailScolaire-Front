@@ -7,7 +7,7 @@ import { EleveLayoutComponent } from '../../layouts/eleve-layout/eleve-layout.co
 import { EleveDashboardComponent } from './dashboard/dashboard.component';
 import { BulletinListComponent } from './bulletins/bulletin-list/bulletin-list.component';
 import { BulletinDetailComponent } from './bulletins/bulletin-detail/bulletin-detail.component';
-import { EleveNotesComponent } from './notes/eleve-notes/eleve-notes.component';
+import { EleveNotesComponent } from './notes/eleve-notes.component';
 import { EleveDetailComponent } from './profile/eleve-detail/eleve-detail.component';
 import { EleveEditComponent } from './profile/eleve-edit/eleve-edit.component';
 
