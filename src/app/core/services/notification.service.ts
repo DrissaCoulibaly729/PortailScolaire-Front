@@ -1,28 +1,16 @@
 // src/app/core/services/notification.service.ts
 import { Injectable } from '@angular/core';
-
-export type NotificationType = 'success' | 'error' | 'warning' | 'info';
-
-export interface NotificationOptions {
-  duration?: number;
-  closable?: boolean;
-  action?: {
-    label: string;
-    handler: () => void;
-  };
-}
+import { BehaviorSubject, Observable } from 'rxjs';
 
 export interface Notification {
   id: string;
-  type: NotificationType;
+  type: 'success' | 'error' | 'warning' | 'info';
   title: string;
   message: string;
-  timestamp: Date;
-  duration: number;
-  closable: boolean;
+  duration?: number;
   action?: {
     label: string;
-    handler: () => void;
+    callback: () => void;
   };
 }
 
@@ -30,124 +18,208 @@ export interface Notification {
   providedIn: 'root'
 })
 export class NotificationService {
-  private notifications: Notification[] = [];
-  private notificationId = 0;
+  private notifications$ = new BehaviorSubject<Notification[]>([]);
+  private autoCloseDelay = 5000; // 5 secondes par défaut
 
   constructor() {}
 
   /**
-   * Afficher une notification de succès
+   * Obtenir la liste des notifications actives
    */
-  success(title: string, message: string, options?: NotificationOptions): void {
-    this.showNotification('success', title, message, options);
-  }
-
-   showSuccess(message: string, options?: NotificationOptions): void {
-    this.success('Succès', message, options);
-  }
-
-  showError(message: string, options?: NotificationOptions): void {
-    this.error('Erreur', message, options);
-  }
-  /**
-   * Afficher une notification d'erreur
-   */
-  error(title: string, message: string, options?: NotificationOptions): void {
-    this.showNotification('error', title, message, options);
+  getNotifications(): Observable<Notification[]> {
+    return this.notifications$.asObservable();
   }
 
   /**
-   * Afficher une notification d'avertissement
+   * Ajouter une notification de succès
    */
-  warning(title: string, message: string, options?: NotificationOptions): void {
-    this.showNotification('warning', title, message, options);
-  }
-
-  /**
-   * Afficher une notification d'information
-   */
-  info(title: string, message: string, options?: NotificationOptions): void {
-    this.showNotification('info', title, message, options);
-  }
-
-  /**
-   * Afficher une notification
-   */
-  private showNotification(
-    type: NotificationType, 
-    title: string, 
-    message: string, 
-    options?: NotificationOptions
-  ): void {
-    const notification: Notification = {
-      id: `notification-${++this.notificationId}`,
-      type,
+  success(title: string, message?: string, duration?: number): void {
+    this.addNotification({
+      id: this.generateId(),
+      type: 'success',
       title,
-      message,
-      timestamp: new Date(),
-      duration: options?.duration || (type === 'error' ? 0 : 5000),
-      closable: options?.closable !== false,
-      action: options?.action
-    };
+      message: message || '',
+      duration: duration || this.autoCloseDelay
+    });
+  }
 
-    this.notifications.unshift(notification);
+  /**
+   * Ajouter une notification d'erreur
+   */
+  error(title: string, message?: string, duration?: number): void {
+    this.addNotification({
+      id: this.generateId(),
+      type: 'error',
+      title,
+      message: message || '',
+      duration: duration || this.autoCloseDelay
+    });
+  }
+
+  /**
+   * Ajouter une notification d'avertissement
+   */
+  warning(title: string, message?: string, duration?: number): void {
+    this.addNotification({
+      id: this.generateId(),
+      type: 'warning',
+      title,
+      message: message || '',
+      duration: duration || this.autoCloseDelay
+    });
+  }
+
+  /**
+   * Ajouter une notification d'information
+   */
+  info(title: string, message?: string, duration?: number): void {
+    this.addNotification({
+      id: this.generateId(),
+      type: 'info',
+      title,
+      message: message || '',
+      duration: duration || this.autoCloseDelay
+    });
+  }
+
+  /**
+   * Ajouter une notification personnalisée
+   */
+  addNotification(notification: Notification): void {
+    const currentNotifications = this.notifications$.value;
+    const newNotifications = [...currentNotifications, notification];
+    this.notifications$.next(newNotifications);
 
     // Auto-remove après la durée spécifiée
-    if (notification.duration > 0) {
+    if (notification.duration && notification.duration > 0) {
       setTimeout(() => {
-        this.remove(notification.id);
+        this.removeNotification(notification.id);
       }, notification.duration);
     }
-
-    // Log dans la console pour le développement
-    console.log(`[${type.toUpperCase()}] ${title}: ${message}`);
   }
 
   /**
    * Supprimer une notification
    */
-  remove(id: string): void {
-    const index = this.notifications.findIndex(n => n.id === id);
-    if (index > -1) {
-      this.notifications.splice(index, 1);
-    }
+  removeNotification(id: string): void {
+    const currentNotifications = this.notifications$.value;
+    const filteredNotifications = currentNotifications.filter(n => n.id !== id);
+    this.notifications$.next(filteredNotifications);
   }
 
   /**
    * Supprimer toutes les notifications
    */
-  clear(): void {
-    this.notifications = [];
+  clearAll(): void {
+    this.notifications$.next([]);
   }
 
   /**
-   * Obtenir toutes les notifications actives
+   * Générer un ID unique pour les notifications
    */
-  getNotifications(): Notification[] {
-    return this.notifications;
+  private generateId(): string {
+    return `notification_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
   /**
-   * Vérifier s'il y a des notifications
+   * Méthodes utilitaires pour les cas d'usage courants
    */
-  hasNotifications(): boolean {
-    return this.notifications.length > 0;
-  }
-
-  /**
-   * Obtenir le nombre de notifications
-   */
-  getCount(): number {
-    return this.notifications.length;
-  }
-
-  /**
-   * Obtenir les notifications par type
-   */
-  getByType(type: NotificationType): Notification[] {
-    return this.notifications.filter(n => n.type === type);
-  }
-
   
-  
+  /**
+   * Notification de succès pour création d'entité
+   */
+  successCreate(entityName: string): void {
+    this.success(
+      'Création réussie',
+      `${entityName} a été créé(e) avec succès`
+    );
+  }
+
+  /**
+   * Notification de succès pour mise à jour d'entité
+   */
+  successUpdate(entityName: string): void {
+    this.success(
+      'Modification réussie',
+      `${entityName} a été modifié(e) avec succès`
+    );
+  }
+
+  /**
+   * Notification de succès pour suppression d'entité
+   */
+  successDelete(entityName: string): void {
+    this.success(
+      'Suppression réussie',
+      `${entityName} a été supprimé(e) avec succès`
+    );
+  }
+
+  /**
+   * Notification d'erreur pour échec de création
+   */
+  errorCreate(entityName: string, error?: string): void {
+    this.error(
+      'Échec de création',
+      `Impossible de créer ${entityName}. ${error || ''}`
+    );
+  }
+
+  /**
+   * Notification d'erreur pour échec de mise à jour
+   */
+  errorUpdate(entityName: string, error?: string): void {
+    this.error(
+      'Échec de modification',
+      `Impossible de modifier ${entityName}. ${error || ''}`
+    );
+  }
+
+  /**
+   * Notification d'erreur pour échec de suppression
+   */
+  errorDelete(entityName: string, error?: string): void {
+    this.error(
+      'Échec de suppression',
+      `Impossible de supprimer ${entityName}. ${error || ''}`
+    );
+  }
+
+  /**
+   * Notification d'erreur de validation
+   */
+  validationError(message: string = 'Veuillez corriger les erreurs dans le formulaire'): void {
+    this.warning(
+      'Erreurs de validation',
+      message
+    );
+  }
+
+  /**
+   * Notification d'erreur de permission
+   */
+  permissionError(): void {
+    this.error(
+      'Accès refusé',
+      'Vous n\'avez pas les permissions nécessaires pour effectuer cette action'
+    );
+  }
+
+  /**
+   * Notification d'erreur de connexion
+   */
+  connectionError(): void {
+    this.error(
+      'Erreur de connexion',
+      'Impossible de contacter le serveur. Vérifiez votre connexion internet'
+    );
+  }
+
+  showSuccess(message: string, duration?: number): void {
+    this.success('Succès', message, duration);
+  }
+
+  showError(message: string, duration?: number): void {
+    this.error('Erreur', message, duration);
+  }
 }

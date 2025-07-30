@@ -5,6 +5,8 @@ import { Observable, BehaviorSubject, combineLatest, of, throwError } from 'rxjs
 import { map, tap, catchError, shareReplay, finalize } from 'rxjs/operators';
 
 import { environment } from '../../../environments/environment';
+import { ApiService } from './api.service'; // ✅ AJOUT
+import { API_ENDPOINTS } from '../constants/api-endpoints'; // ✅ AJOUT
 import { ApiResponse } from '../../shared/models/api-response.model';
 import { PaginatedResponse } from '../../shared/models/common.model';
 import { Enseignant, Eleve } from '../../shared/models/user.model';
@@ -126,10 +128,13 @@ export class EnseignantService {
   private cacheExpiry = new Map<string, number>();
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private apiService: ApiService // ✅ AJOUT
+  ) {}
 
   /**
-   * Charger les données complètes du dashboard enseignant
+   * ✅ CORRIGÉ - Charger les données complètes du dashboard enseignant
    */
   loadDashboardData(enseignantId: number, forceRefresh = false): Observable<EnseignantDashboardData> {
     const cacheKey = `dashboard_${enseignantId}`;
@@ -188,7 +193,7 @@ export class EnseignantService {
   }
 
   /**
-   * Obtenir les classes d'un enseignant
+   * ✅ CORRIGÉ - Obtenir les classes d'un enseignant (utilise API_ENDPOINTS)
    */
   getClasses(enseignantId: number, forceRefresh = false): Observable<ClasseWithEffectif[]> {
     const cacheKey = `classes_${enseignantId}`;
@@ -200,13 +205,17 @@ export class EnseignantService {
       return of(cachedData);
     }
 
-    return this.http.get<ApiResponse<ClasseWithEffectif[]>>(`${this.apiUrl}/${enseignantId}/classes`)
+    // ✅ CORRIGÉ : Utilise le vrai endpoint dashboard enseignant
+    return this.apiService.get<any>(API_ENDPOINTS.ENSEIGNANT.DASHBOARD)
       .pipe(
         map(response => {
-          if (!response.success) {
-            throw new Error(response.message || 'Erreur lors du chargement des classes');
-          }
-          return response.data || [];
+          console.log('🏫 Classes enseignant:', response);
+          // Adapter selon votre format de réponse Laravel
+          const classes = response.classes || response.data?.classes || [];
+          return classes.map((classe: any) => ({
+            ...classe,
+            effectif: classe.eleves_count || classe.effectif_actuel || classe.effectif || 0
+          })) as ClasseWithEffectif[];
         }),
         tap(classes => {
           this.classesSubject.next(classes);
@@ -222,7 +231,7 @@ export class EnseignantService {
   }
 
   /**
-   * Obtenir les matières d'un enseignant
+   * ✅ CORRIGÉ - Obtenir les matières d'un enseignant (utilise API_ENDPOINTS)
    */
   getMatieres(enseignantId: number, forceRefresh = false): Observable<Matiere[]> {
     const cacheKey = `matieres_${enseignantId}`;
@@ -234,13 +243,13 @@ export class EnseignantService {
       return of(cachedData);
     }
 
-    return this.http.get<ApiResponse<Matiere[]>>(`${this.apiUrl}/${enseignantId}/matieres`)
+    // ✅ CORRIGÉ : Utilise mes-classes-matieres endpoint
+    return this.apiService.get<any>(API_ENDPOINTS.ENSEIGNANT.NOTES.MES_CLASSES_MATIERES)
       .pipe(
         map(response => {
-          if (!response.success) {
-            throw new Error(response.message || 'Erreur lors du chargement des matières');
-          }
-          return response.data || [];
+          console.log('📚 Matières enseignant:', response);
+          // Adapter selon votre format de réponse Laravel
+          return response.matieres || response.data?.matieres || [];
         }),
         tap(matieres => {
           this.matieresSubject.next(matieres);
@@ -256,7 +265,7 @@ export class EnseignantService {
   }
 
   /**
-   * Obtenir les statistiques d'un enseignant
+   * ✅ CORRIGÉ - Obtenir les statistiques d'un enseignant (utilise API_ENDPOINTS)
    */
   getStats(enseignantId: number): Observable<EnseignantStats> {
     const cacheKey = `stats_${enseignantId}`;
@@ -266,13 +275,20 @@ export class EnseignantService {
       return of(this.getFromCache<EnseignantStats>(cacheKey));
     }
 
-    return this.http.get<ApiResponse<EnseignantStats>>(`${this.apiUrl}/${enseignantId}/stats`)
+    // ✅ CORRIGÉ : Utilise le dashboard endpoint
+    return this.apiService.get<any>(API_ENDPOINTS.ENSEIGNANT.DASHBOARD)
       .pipe(
         map(response => {
-          if (!response.success) {
-            throw new Error(response.message || 'Erreur lors du chargement des statistiques');
-          }
-          return response.data || this.getDefaultStats();
+          console.log('📊 Stats enseignant:', response);
+          // Adapter selon votre format de réponse Laravel
+          const stats = response.stats || response.statistiques || this.getDefaultStats();
+          return {
+            notes_saisies: stats.notes_saisies || stats.notesSaisies || 0,
+            moyenne_generale: stats.moyenne_generale || stats.moyenneGenerale || 0,
+            total_eleves: stats.total_eleves || stats.totalEleves || 0,
+            classes_actives: stats.classes_actives || stats.totalClasses || 0,
+            matieres_enseignees: stats.matieres_enseignees || stats.totalMatieres || 0
+          } as EnseignantStats;
         }),
         tap(stats => this.setToCache(cacheKey, stats)),
         catchError(error => {
@@ -284,7 +300,7 @@ export class EnseignantService {
   }
 
   /**
-   * Obtenir l'activité récente d'un enseignant
+   * ✅ CORRIGÉ - Obtenir l'activité récente d'un enseignant (utilise API_ENDPOINTS)
    */
   getRecentActivity(enseignantId: number): Observable<ActivityItem[]> {
     const cacheKey = `activity_${enseignantId}`;
@@ -294,13 +310,14 @@ export class EnseignantService {
       return of(this.getFromCache<ActivityItem[]>(cacheKey));
     }
 
-    return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/${enseignantId}/activity`)
+    // ✅ CORRIGÉ : Utilise le dashboard endpoint
+    return this.apiService.get<any>(API_ENDPOINTS.ENSEIGNANT.DASHBOARD)
       .pipe(
         map(response => {
-          if (!response.success) {
-            throw new Error(response.message || 'Erreur lors du chargement de l\'activité');
-          }
-          return this.mapToActivityItems(response.data || []);
+          console.log('🔄 Activité enseignant:', response);
+          // Adapter selon votre format de réponse Laravel
+          const rawActivity = response.activite_recente || response.recentActivity || [];
+          return this.mapToActivityItems(rawActivity);
         }),
         tap(activity => this.setToCache(cacheKey, activity)),
         catchError(error => {
@@ -312,7 +329,7 @@ export class EnseignantService {
   }
 
   /**
-   * Obtenir les élèves d'une classe
+   * ✅ CORRIGÉ - Obtenir les élèves d'une classe (utilise API_ENDPOINTS)
    */
   getElevesClasse(classeId: number): Observable<Eleve[]> {
     const cacheKey = `eleves_classe_${classeId}`;
@@ -322,13 +339,13 @@ export class EnseignantService {
       return of(this.getFromCache<Eleve[]>(cacheKey));
     }
 
-    return this.http.get<ApiResponse<Eleve[]>>(`${this.baseUrl}/classes/${classeId}/eleves`)
+    // ✅ CORRIGÉ : Utilise l'endpoint admin classes
+    return this.apiService.get<any>(API_ENDPOINTS.CLASSES.BY_ID(classeId))
       .pipe(
         map(response => {
-          if (!response.success) {
-            throw new Error(response.message || 'Erreur lors du chargement des élèves');
-          }
-          return response.data || [];
+          console.log('👨‍🎓 Élèves classe:', response);
+          // Adapter selon votre format de réponse Laravel
+          return response.eleves || response.classe?.eleves || response.data?.eleves || [];
         }),
         tap(eleves => this.setToCache(cacheKey, eleves)),
         catchError(error => {
@@ -340,29 +357,39 @@ export class EnseignantService {
   }
 
   /**
-   * Obtenir les notes avec filtres
+   * ✅ CORRIGÉ - Obtenir les notes avec filtres (utilise API_ENDPOINTS)
    */
   getNotes(enseignantId: number, filters?: NoteFilters): Observable<PaginatedResponse<Note>> {
-    let params = new HttpParams();
-    params = params.set('enseignant_id', enseignantId.toString());
+    let params = new URLSearchParams();
+    params.set('enseignant_id', enseignantId.toString());
     
     if (filters) {
       Object.keys(filters).forEach(key => {
         const value = (filters as any)[key];
         if (value !== null && value !== undefined && value !== '') {
-          params = params.set(key, value.toString());
+          params.set(key, value.toString());
         }
       });
     }
 
-    return this.http.get<ApiResponse<PaginatedResponse<Note>>>(`${this.baseUrl}/notes`, { params })
+    const endpoint = params.toString() 
+      ? `${API_ENDPOINTS.ENSEIGNANT.NOTES.LIST}?${params.toString()}`
+      : API_ENDPOINTS.ENSEIGNANT.NOTES.LIST;
+
+    return this.apiService.get<any>(endpoint)
       .pipe(
         // CORRECTION 8 : Typage explicite du map
-        map((response: ApiResponse<PaginatedResponse<Note>>) => {
-          if (!response.success) {
-            throw new Error(response.message || 'Erreur lors du chargement des notes');
+        map((response: any) => {
+          console.log('📝 Notes enseignant:', response);
+          // Adapter selon votre format de réponse Laravel
+          if (response.notes) {
+            return {
+              data: response.notes.data || [],
+              meta: response.notes.meta || this.getEmptyPaginatedResponse<Note>().meta,
+              links: response.notes.links || this.getEmptyPaginatedResponse<Note>().links
+            } as PaginatedResponse<Note>;
           }
-          return response.data || this.getEmptyPaginatedResponse<Note>();
+          return this.getEmptyPaginatedResponse<Note>();
         }),
         catchError(error => {
           console.error('Erreur notes:', error);
@@ -372,16 +399,15 @@ export class EnseignantService {
   }
 
   /**
-   * Créer une note
+   * ✅ CORRIGÉ - Créer une note (utilise API_ENDPOINTS)
    */
   createNote(note: CreateNoteRequest): Observable<Note> {
-    return this.http.post<ApiResponse<Note>>(`${this.baseUrl}/notes`, note)
+    return this.apiService.post<any>(API_ENDPOINTS.ENSEIGNANT.NOTES.SAISIR, note)
       .pipe(
         map(response => {
-          if (!response.success) {
-            throw new Error(response.message || 'Erreur lors de la création de la note');
-          }
-          return response.data!;
+          console.log('✅ Note créée:', response);
+          // Adapter selon votre format de réponse Laravel
+          return response.note || response.data || response;
         }),
         tap(() => this.invalidateCache()),
         catchError(error => {
@@ -392,16 +418,15 @@ export class EnseignantService {
   }
 
   /**
-   * Créer plusieurs notes en lot
+   * ✅ CORRIGÉ - Créer plusieurs notes en lot (utilise API_ENDPOINTS)
    */
   createNotesEnLot(notes: CreateNoteRequest[]): Observable<any> {
-    return this.http.post<ApiResponse<any>>(`${this.baseUrl}/notes/batch`, { notes })
+    return this.apiService.post<any>(API_ENDPOINTS.ENSEIGNANT.NOTES.SAISIE_RAPIDE, { notes })
       .pipe(
         map(response => {
-          if (!response.success) {
-            throw new Error(response.message || 'Erreur lors de la création des notes en lot');
-          }
-          return response.data;
+          console.log('⚡ Notes en lot créées:', response);
+          // Adapter selon votre format de réponse Laravel
+          return response.data || response;
         }),
         tap(() => this.invalidateCache()),
         catchError(error => {
@@ -412,16 +437,15 @@ export class EnseignantService {
   }
 
   /**
-   * Mettre à jour une note
+   * ✅ CORRIGÉ - Mettre à jour une note (utilise API_ENDPOINTS)
    */
   updateNote(id: number, note: Partial<Note>): Observable<Note> {
-    return this.http.put<ApiResponse<Note>>(`${this.baseUrl}/notes/${id}`, note)
+    return this.apiService.put<any>(API_ENDPOINTS.ENSEIGNANT.NOTES.MODIFIER(id), note)
       .pipe(
         map(response => {
-          if (!response.success) {
-            throw new Error(response.message || 'Erreur lors de la mise à jour de la note');
-          }
-          return response.data!;
+          console.log('✏️ Note modifiée:', response);
+          // Adapter selon votre format de réponse Laravel
+          return response.note || response.data || response;
         }),
         tap(() => this.invalidateCache()),
         catchError(error => {
@@ -432,16 +456,14 @@ export class EnseignantService {
   }
 
   /**
-   * Supprimer une note
+   * ✅ CORRIGÉ - Supprimer une note (utilise API_ENDPOINTS)
    */
   deleteNote(id: number): Observable<boolean> {
-    return this.http.delete<ApiResponse<boolean>>(`${this.baseUrl}/notes/${id}`)
+    return this.apiService.delete<any>(API_ENDPOINTS.ENSEIGNANT.NOTES.SUPPRIMER(id))
       .pipe(
         map(response => {
-          if (!response.success) {
-            throw new Error(response.message || 'Erreur lors de la suppression de la note');
-          }
-          return response.data || true;
+          console.log('🗑️ Note supprimée:', response);
+          return true;
         }),
         tap(() => this.invalidateCache()),
         catchError(error => {
@@ -452,7 +474,7 @@ export class EnseignantService {
   }
 
   /**
-   * Obtenir les moyennes par classe et matière
+   * ✅ CORRIGÉ - Obtenir les moyennes par classe et matière (utilise API_ENDPOINTS)
    */
   getMoyennesParClasse(enseignantId: number): Observable<MoyenneClasse[]> {
     const cacheKey = `moyennes_${enseignantId}`;
@@ -462,13 +484,13 @@ export class EnseignantService {
       return of(this.getFromCache<MoyenneClasse[]>(cacheKey));
     }
 
-    return this.http.get<ApiResponse<MoyenneClasse[]>>(`${this.apiUrl}/${enseignantId}/moyennes`)
+    // ✅ CORRIGÉ : Utilise le dashboard endpoint
+    return this.apiService.get<any>(API_ENDPOINTS.ENSEIGNANT.DASHBOARD)
       .pipe(
         map(response => {
-          if (!response.success) {
-            throw new Error(response.message || 'Erreur lors du chargement des moyennes');
-          }
-          return response.data || [];
+          console.log('📈 Moyennes par classe:', response);
+          // Adapter selon votre format de réponse Laravel
+          return response.moyennes_par_classe || response.moyennesParClasse || [];
         }),
         tap(moyennes => this.setToCache(cacheKey, moyennes)),
         catchError(error => {
@@ -480,354 +502,361 @@ export class EnseignantService {
   }
 
   // ============================================
-  // 🆕 NOUVELLES MÉTHODES D'ADMINISTRATION (AJOUTÉES)
+  // ✅ CORRIGÉ - NOUVELLES MÉTHODES D'ADMINISTRATION (utilisent API_ENDPOINTS)
   // ============================================
 
   /**
-   * Récupérer tous les enseignants avec filtres (pour l'admin)
+   * ✅ CORRIGÉ - Récupérer tous les enseignants avec filtres (pour l'admin)
    */
-getEnseignants(filters?: EnseignantFilters): Observable<EnseignantDetails[]> {
-  let params = new HttpParams();
-  params = params.set('role', 'enseignant');
-  
-  if (filters) {
-    Object.keys(filters).forEach(key => {
-      const value = (filters as any)[key];
-      if (value !== null && value !== undefined && value !== '') {
-        params = params.set(key, value.toString());
-      }
-    });
-  }
-
-  return this.http.get<any>(`${this.baseUrl}/admin/utilisateurs`, { params })
-    .pipe(
-      map(response => {
-        // ✅ CORRECTION: Votre API renvoie "statut" au lieu de "success"
-        if (response.statut !== 'succes') {
-          throw new Error(response.message || 'Erreur lors du chargement des enseignants');
-        }
-        // ✅ CORRECTION: Votre API renvoie "utilisateurs.data" au lieu de "data"
-        const allUsers = response.utilisateurs?.data || [];
-        return allUsers.filter((user: any) => user.role === 'enseignant') as EnseignantDetails[];
-      }),
-      catchError(error => {
-        console.error('Erreur récupération enseignants:', error);
-        return throwError(() => error);
-      })
-    );
-}
-
-  /**
-   * Récupérer les détails complets d'un enseignant (pour l'admin)
-   */
- getEnseignantDetails(id: number): Observable<EnseignantDetails> {
-  return this.http.get<any>(`${this.baseUrl}/admin/utilisateurs/${id}`)
-    .pipe(
-      map(response => {
-        // ✅ CORRECTION: Adapter à votre structure d'API
-        if (response.statut !== 'succes') {
-          throw new Error(response.message || 'Erreur lors du chargement des détails');
-        }
-        // ✅ Supposer que pour un utilisateur unique, c'est dans "utilisateur" ou "data"
-        const userData = response.utilisateur || response.data || response;
-        return this.enrichEnseignantData(userData);
-      }),
-      catchError(error => {
-        console.error('Erreur détails enseignant:', error);
-        return throwError(() => error);
-      })
-    );
-}
-
-creerEnseignant(enseignantData: CreateEnseignantRequest): Observable<EnseignantDetails> {
-  const userData = {
-    ...enseignantData,
-    role: 'enseignant'
-  };
-
-  return this.http.post<any>(`${this.baseUrl}/admin/utilisateurs`, userData)
-    .pipe(
-      map(response => {
-        // ✅ CORRECTION: Adapter à votre structure d'API
-        if (response.statut !== 'succes') {
-          throw new Error(response.message || 'Erreur lors de la création de l\'enseignant');
-        }
-        return response.utilisateur || response.data || response;
-      }),
-      tap(() => this.invalidateCache()),
-      catchError(error => {
-        console.error('Erreur création enseignant:', error);
-        return throwError(() => error);
-      })
-    );
-}
-
-modifierEnseignant(id: number, enseignantData: Partial<CreateEnseignantRequest>): Observable<EnseignantDetails> {
-  return this.http.put<any>(`${this.baseUrl}/admin/utilisateurs/${id}`, enseignantData)
-    .pipe(
-      map(response => {
-        // ✅ CORRECTION: Adapter à votre structure d'API
-        if (response.statut !== 'succes') {
-          throw new Error(response.message || 'Erreur lors de la modification de l\'enseignant');
-        }
-        return response.utilisateur || response.data || response;
-      }),
-      tap(() => this.invalidateCache()),
-      catchError(error => {
-        console.error('Erreur modification enseignant:', error);
-        return throwError(() => error);
-      })
-    );
-}
-
-  /**
-   * Récupérer les matières disponibles pour assignation
-   */
-getMatieresDisponibles(): Observable<Matiere[]> {
-  return this.http.get<any>(`${this.baseUrl}/admin/matieres`)
-    .pipe(
-      map(response => {
-        // ✅ CORRECTION: Votre API renvoie "matieres.data"
-        if (response.statut !== 'succes') {
-          throw new Error(response.message || 'Erreur lors du chargement des matières disponibles');
-        }
-        return response.matieres?.data || response.matieres || response.data || [];
-      }),
-      catchError(error => {
-        console.error('Erreur matières disponibles:', error);
-        return of([]);
-      })
-    );
-}
-
-  /**
-   * Récupérer les classes disponibles pour assignation
-   */
-getClassesDisponibles(): Observable<ClasseWithEffectif[]> {
-  return this.http.get<any>(`${this.baseUrl}/admin/classes`)
-    .pipe(
-      map(response => {
-        // ✅ CORRECTION: Votre API renvoie "classes.data"
-        if (response.statut !== 'succes') {
-          throw new Error(response.message || 'Erreur lors du chargement des classes disponibles');
-        }
-        // ✅ Adapter les classes pour inclure effectif_actuel comme effectif
-        const classes = response.classes?.data || response.classes || response.data || [];
-        return classes.map((classe: any) => ({
-          ...classe,
-          effectif: classe.eleves_count || classe.effectif_actuel || 0,
-          actif: classe.active // ✅ Mapper 'active' vers 'actif' si nécessaire
-        }));
-      }),
-      catchError(error => {
-        console.error('Erreur classes disponibles:', error);
-        return of([]);
-      })
-    );
-}
-
-searchEnseignants(query: string): Observable<EnseignantDetails[]> {
-  const params = new HttpParams()
-    .set('search', query)
-    .set('role', 'enseignant')
-    .set('per_page', '10');
-
-  return this.http.get<any>(`${this.baseUrl}/admin/utilisateurs/search`, { params })
-    .pipe(
-      map(response => {
-        // ✅ CORRECTION: Adapter à votre structure d'API
-        if (response.statut !== 'succes') {
-          throw new Error(response.message || 'Erreur lors de la recherche');
-        }
-        return response.utilisateurs?.data || response.utilisateurs || response.data || [];
-      }),
-      catchError(error => {
-        console.error('Erreur recherche enseignants:', error);
-        return of([]);
-      })
-    );
-}
-
-  /**
-   * Activer/Désactiver un enseignant
-   */
- toggleEnseignantStatus(id: number): Observable<EnseignantDetails> {
-  return this.http.patch<any>(`${this.baseUrl}/admin/utilisateurs/${id}/toggle-statut`, {})
-    .pipe(
-      map(response => {
-        // ✅ CORRECTION: Adapter à votre structure d'API
-        if (response.statut !== 'succes') {
-          throw new Error(response.message || 'Erreur lors du changement de statut');
-        }
-        return response.utilisateur || response.data || response;
-      }),
-      tap(() => this.invalidateCache()),
-      catchError(error => {
-        console.error('Erreur toggle statut enseignant:', error);
-        return throwError(() => error);
-      })
-    );
-}
-
-getEnseignantMatieres(enseignantId: number): Observable<Matiere[]> {
-  return this.http.get<any>(`${this.baseUrl}/admin/enseignants/${enseignantId}/matieres`)
-    .pipe(
-      map(response => {
-        // ✅ CORRECTION: Adapter à votre structure d'API
-        if (response.statut !== 'succes') {
-          throw new Error(response.message || 'Erreur lors du chargement des matières');
-        }
-        return response.matieres?.data || response.matieres || response.data || [];
-      }),
-      catchError(error => {
-        console.error('Erreur matières enseignant:', error);
-        return of([]);
-      })
-    );
-}
-
-getEnseignantClasses(enseignantId: number): Observable<ClasseWithEffectif[]> {
-  return this.http.get<any>(`${this.baseUrl}/admin/enseignants/${enseignantId}/classes`)
-    .pipe(
-      map(response => {
-        // ✅ CORRECTION: Adapter à votre structure d'API
-        if (response.statut !== 'succes') {
-          throw new Error(response.message || 'Erreur lors du chargement des classes');
-        }
-        return response.classes?.data || response.classes || response.data || [];
-      }),
-      catchError(error => {
-        console.error('Erreur classes enseignant:', error);
-        return of([]);
-      })
-    );
-}
-
-assignerMatiere(enseignantId: number, matiereId: number): Observable<void> {
-  return this.http.post<any>(`${this.baseUrl}/admin/enseignants/${enseignantId}/matieres`, {
-    matiere_id: matiereId
-  }).pipe(
-    map(response => {
-      // ✅ CORRECTION: Adapter à votre structure d'API
-      if (response.statut !== 'succes') {
-        throw new Error(response.message || 'Erreur lors de l\'assignation de la matière');
-      }
-      return;
-    }),
-    tap(() => this.invalidateCache()),
-    catchError(error => {
-      console.error('Erreur assignation matière:', error);
-      return throwError(() => error);
-    })
-  );
-}
-
-retirerClasse(enseignantId: number, classeId: number): Observable<void> {
-  return this.http.delete<any>(`${this.baseUrl}/admin/enseignants/${enseignantId}/classes/${classeId}`)
-    .pipe(
-      map(response => {
-        // ✅ CORRECTION: Adapter à votre structure d'API
-        if (response.statut !== 'succes') {
-          throw new Error(response.message || 'Erreur lors du retrait de la classe');
-        }
-        return;
-      }),
-      tap(() => this.invalidateCache()),
-      catchError(error => {
-        console.error('Erreur retrait classe:', error);
-        return throwError(() => error);
-      })
-    );
-}
-
-assignerClasse(enseignantId: number, classeId: number): Observable<void> {
-  return this.http.post<any>(`${this.baseUrl}/admin/enseignants/${enseignantId}/classes`, {
-    classe_id: classeId
-  }).pipe(
-    map(response => {
-      // ✅ CORRECTION: Adapter à votre structure d'API
-      if (response.statut !== 'succes') {
-        throw new Error(response.message || 'Erreur lors de l\'assignation de la classe');
-      }
-      return;
-    }),
-    tap(() => this.invalidateCache()),
-    catchError(error => {
-      console.error('Erreur assignation classe:', error);
-      return throwError(() => error);
-    })
-  );
-}
-  /**
-   * Réinitialiser le mot de passe d'un enseignant
-   */
-resetEnseignantPassword(enseignantId: number): Observable<{ nouveau_mot_de_passe: string }> {
-  return this.http.patch<any>(`${this.baseUrl}/admin/utilisateurs/${enseignantId}/reset-password`, {})
-    .pipe(
-      map(response => {
-        // ✅ CORRECTION: Adapter à votre structure d'API
-        if (response.statut !== 'succes') {
-          throw new Error(response.message || 'Erreur lors de la réinitialisation du mot de passe');
-        }
-        return response.data || response;
-      }),
-      catchError(error => {
-        console.error('Erreur reset password:', error);
-        return throwError(() => error);
-      })
-    );
-}
-
-getStatistiquesGlobalesEnseignants(): Observable<{
-  total_enseignants: number;
-  enseignants_actifs: number;
-  moyenne_notes_par_enseignant: number;
-  total_matieres_couvertes: number;
-  total_classes_gerees: number;
-  taux_occupation: number;
-}> {
-  return this.http.get<any>(`${this.baseUrl}/admin/enseignants/statistiques`)
-    .pipe(
-      map(response => {
-        // ✅ CORRECTION: Adapter à votre structure d'API
-        if (response.statut !== 'succes') {
-          throw new Error(response.message || 'Erreur lors du chargement des statistiques');
-        }
-        return response.statistiques || response.data || {
-          total_enseignants: 0,
-          enseignants_actifs: 0,
-          moyenne_notes_par_enseignant: 0,
-          total_matieres_couvertes: 0,
-          total_classes_gerees: 0,
-          taux_occupation: 0
-        };
-      }),
-      catchError(error => {
-        console.error('Erreur statistiques globales:', error);
-        return throwError(() => error);
-      })
-    );
-}
-
-  /**
-   * Exporter la liste des enseignants
-   */
-  exporterEnseignants(filters?: EnseignantFilters, format: 'csv' | 'excel' = 'csv'): Observable<Blob> {
-    let params = new HttpParams()
-      .set('role', 'enseignant')
-      .set('format', format);
+  getEnseignants(filters?: EnseignantFilters): Observable<EnseignantDetails[]> {
+    let params = new URLSearchParams();
+    params.set('role', 'enseignant');
     
     if (filters) {
       Object.keys(filters).forEach(key => {
         const value = (filters as any)[key];
         if (value !== null && value !== undefined && value !== '') {
-          params = params.set(key, value.toString());
+          params.set(key, value.toString());
         }
       });
     }
 
-    return this.http.get(`${this.baseUrl}/admin/utilisateurs/export`, {
-      params,
+    const endpoint = params.toString() 
+      ? `${API_ENDPOINTS.ADMIN.USERS}?${params.toString()}`
+      : `${API_ENDPOINTS.ADMIN.USERS}?role=enseignant`;
+
+    return this.apiService.get<any>(endpoint)
+      .pipe(
+        map(response => {
+          console.log('👨‍🏫 Enseignants admin:', response);
+          // ✅ CORRECTION: Votre API renvoie "utilisateurs.data"
+          const allUsers = response.utilisateurs?.data || [];
+          return allUsers.filter((user: any) => user.role === 'enseignant') as EnseignantDetails[];
+        }),
+        catchError(error => {
+          console.error('Erreur récupération enseignants:', error);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Récupérer les détails complets d'un enseignant (pour l'admin)
+   */
+  getEnseignantDetails(id: number): Observable<EnseignantDetails> {
+    return this.apiService.get<any>(API_ENDPOINTS.ADMIN.USER_BY_ID(id))
+      .pipe(
+        map(response => {
+          console.log('👤 Détails enseignant:', response);
+          // ✅ CORRECTION: Adapter à votre structure d'API
+          const userData = response.utilisateur || response.data || response;
+          return this.enrichEnseignantData(userData);
+        }),
+        catchError(error => {
+          console.error('Erreur détails enseignant:', error);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Créer un enseignant (utilise API_ENDPOINTS)
+   */
+  creerEnseignant(enseignantData: CreateEnseignantRequest): Observable<EnseignantDetails> {
+    const userData = {
+      ...enseignantData,
+      role: 'enseignant'
+    };
+
+    return this.apiService.post<any>(API_ENDPOINTS.ADMIN.CREATE_ENSEIGNANT, userData)
+      .pipe(
+        map(response => {
+          console.log('✅ Enseignant créé:', response);
+          // ✅ CORRECTION: Adapter à votre structure d'API
+          return response.enseignant || response.utilisateur || response.data || response;
+        }),
+        tap(() => this.invalidateCache()),
+        catchError(error => {
+          console.error('Erreur création enseignant:', error);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Modifier un enseignant (utilise API_ENDPOINTS)
+   */
+  modifierEnseignant(id: number, enseignantData: Partial<CreateEnseignantRequest>): Observable<EnseignantDetails> {
+    return this.apiService.put<any>(API_ENDPOINTS.ADMIN.UPDATE_USER(id), enseignantData)
+      .pipe(
+        map(response => {
+          console.log('✏️ Enseignant modifié:', response);
+          // ✅ CORRECTION: Adapter à votre structure d'API
+          return response.utilisateur || response.data || response;
+        }),
+        tap(() => this.invalidateCache()),
+        catchError(error => {
+          console.error('Erreur modification enseignant:', error);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Récupérer les matières disponibles pour assignation (utilise API_ENDPOINTS)
+   */
+  getMatieresDisponibles(): Observable<Matiere[]> {
+    return this.apiService.get<any>(API_ENDPOINTS.MATIERES.LIST)
+      .pipe(
+        map(response => {
+          console.log('📚 Matières disponibles:', response);
+          // ✅ CORRECTION: Votre API renvoie "matieres.data"
+          return response.matieres?.data || response.matieres || response.data || [];
+        }),
+        catchError(error => {
+          console.error('Erreur matières disponibles:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Récupérer les classes disponibles pour assignation (utilise API_ENDPOINTS)
+   */
+  getClassesDisponibles(): Observable<ClasseWithEffectif[]> {
+    return this.apiService.get<any>(API_ENDPOINTS.CLASSES.LIST)
+      .pipe(
+        map(response => {
+          console.log('🏫 Classes disponibles:', response);
+          // ✅ CORRECTION: Votre API renvoie "classes.data"
+          const classes = response.classes?.data || response.classes || response.data || [];
+          // ✅ Adapter les classes pour inclure effectif_actuel comme effectif
+          return classes.map((classe: any) => ({
+            ...classe,
+            effectif: classe.eleves_count || classe.effectif_actuel || 0
+          }));
+        }),
+        catchError(error => {
+          console.error('Erreur classes disponibles:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Rechercher des enseignants (utilise API_ENDPOINTS)
+   */
+  searchEnseignants(query: string): Observable<EnseignantDetails[]> {
+    const params = new URLSearchParams();
+    params.set('recherche', query);
+    params.set('role', 'enseignant');
+    params.set('per_page', '10');
+
+    const endpoint = `${API_ENDPOINTS.ADMIN.USERS}?${params.toString()}`;
+
+    return this.apiService.get<any>(endpoint)
+      .pipe(
+        map(response => {
+          console.log('🔍 Recherche enseignants:', response);
+          // ✅ CORRECTION: Adapter à votre structure d'API
+          return response.utilisateurs?.data || response.utilisateurs || response.data || [];
+        }),
+        catchError(error => {
+          console.error('Erreur recherche enseignants:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Activer/Désactiver un enseignant (utilise API_ENDPOINTS)
+   */
+  toggleEnseignantStatus(id: number): Observable<EnseignantDetails> {
+    return this.apiService.patch<any>(API_ENDPOINTS.ADMIN.TOGGLE_USER_STATUS(id), {})
+      .pipe(
+        map(response => {
+          console.log('🔄 Status enseignant toggleé:', response);
+          // ✅ CORRECTION: Adapter à votre structure d'API
+          return response.utilisateur || response.data || response;
+        }),
+        tap(() => this.invalidateCache()),
+        catchError(error => {
+          console.error('Erreur toggle statut enseignant:', error);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Récupérer les matières d'un enseignant (utilise API_ENDPOINTS)
+   */
+  getEnseignantMatieres(enseignantId: number): Observable<Matiere[]> {
+    return this.apiService.get<any>(API_ENDPOINTS.ADMIN.USER_BY_ID(enseignantId))
+      .pipe(
+        map(response => {
+          console.log('📚 Matières de l\'enseignant:', response);
+          // ✅ CORRECTION: Adapter à votre structure d'API
+          const userData = response.utilisateur || response.data || response;
+          return userData.matieres || [];
+        }),
+        catchError(error => {
+          console.error('Erreur matières enseignant:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Récupérer les classes d'un enseignant (utilise API_ENDPOINTS)
+   */
+  getEnseignantClasses(enseignantId: number): Observable<ClasseWithEffectif[]> {
+    return this.apiService.get<any>(API_ENDPOINTS.ADMIN.USER_BY_ID(enseignantId))
+      .pipe(
+        map(response => {
+          console.log('🏫 Classes de l\'enseignant:', response);
+          // ✅ CORRECTION: Adapter à votre structure d'API
+          const userData = response.utilisateur || response.data || response;
+          return userData.classes || [];
+        }),
+        catchError(error => {
+          console.error('Erreur classes enseignant:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Assigner une matière à un enseignant (utilise API_ENDPOINTS)
+   */
+  assignerMatiere(enseignantId: number, matiereId: number): Observable<void> {
+    return this.apiService.post<any>(API_ENDPOINTS.MATIERES.AFFECTER_ENSEIGNANT(matiereId), {
+      enseignant_id: enseignantId
+    }).pipe(
+      map(response => {
+        console.log('✅ Matière assignée:', response);
+        // ✅ CORRECTION: Adapter à votre structure d'API
+        return;
+      }),
+      tap(() => this.invalidateCache()),
+      catchError(error => {
+        console.error('Erreur assignation matière:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Retirer une classe d'un enseignant (utilise API_ENDPOINTS)
+   */
+  retirerClasse(enseignantId: number, classeId: number): Observable<void> {
+    return this.apiService.delete<any>(API_ENDPOINTS.CLASSES.RETIRER_ENSEIGNANT(classeId, enseignantId))
+      .pipe(
+        map(response => {
+          console.log('🗑️ Classe retirée:', response);
+          // ✅ CORRECTION: Adapter à votre structure d'API
+          return;
+        }),
+        tap(() => this.invalidateCache()),
+        catchError(error => {
+          console.error('Erreur retrait classe:', error);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Assigner une classe à un enseignant (utilise API_ENDPOINTS)
+   */
+  assignerClasse(enseignantId: number, classeId: number): Observable<void> {
+    return this.apiService.post<any>(API_ENDPOINTS.CLASSES.AFFECTER_ENSEIGNANT(classeId), {
+      enseignant_id: enseignantId
+    }).pipe(
+      map(response => {
+        console.log('✅ Classe assignée:', response);
+        // ✅ CORRECTION: Adapter à votre structure d'API
+        return;
+      }),
+      tap(() => this.invalidateCache()),
+      catchError(error => {
+        console.error('Erreur assignation classe:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Réinitialiser le mot de passe d'un enseignant (utilise API_ENDPOINTS)
+   */
+  resetEnseignantPassword(enseignantId: number): Observable<{ nouveau_mot_de_passe: string }> {
+    return this.apiService.patch<any>(API_ENDPOINTS.ADMIN.RESET_PASSWORD(enseignantId), {})
+      .pipe(
+        map(response => {
+          console.log('🔑 Password reset:', response);
+          // ✅ CORRECTION: Adapter à votre structure d'API
+          return {
+            nouveau_mot_de_passe: response.nouveau_mot_de_passe || response.data?.nouveau_mot_de_passe || 'Mot de passe réinitialisé'
+          };
+        }),
+        catchError(error => {
+          console.error('Erreur reset password:', error);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
+   * ✅ CORRIGÉ - Obtenir les statistiques globales des enseignants (à implémenter côté backend)
+   */
+  getStatistiquesGlobalesEnseignants(): Observable<{
+    total_enseignants: number;
+    enseignants_actifs: number;
+    moyenne_notes_par_enseignant: number;
+    total_matieres_couvertes: number;
+    total_classes_gerees: number;
+    taux_occupation: number;
+  }> {
+    // ✅ NOTE: Cet endpoint n'existe pas encore dans votre backend, utilise le dashboard admin
+    return this.apiService.get<any>(API_ENDPOINTS.ADMIN.DASHBOARD)
+      .pipe(
+        map(response => {
+          console.log('📊 Statistiques globales enseignants:', response);
+          // ✅ CORRECTION: Adapter à votre structure d'API
+          const stats = response.tableau_bord || response;
+          return {
+            total_enseignants: stats.utilisateurs?.enseignants || 0,
+            enseignants_actifs: stats.utilisateurs?.actifs || 0,
+            moyenne_notes_par_enseignant: stats.academique?.nb_notes_total / stats.utilisateurs?.enseignants || 0,
+            total_matieres_couvertes: stats.matieres?.total || 0,
+            total_classes_gerees: stats.classes?.total || 0,
+            taux_occupation: stats.classes?.taux_occupation || 0
+          };
+        }),
+        catchError(error => {
+          console.error('Erreur statistiques globales:', error);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
+   * Exporter la liste des enseignants
+   */
+  exporterEnseignants(filters?: EnseignantFilters, format: 'csv' | 'excel' = 'csv'): Observable<Blob> {
+    let params = new URLSearchParams();
+    params.set('role', 'enseignant');
+    params.set('format', format);
+    
+    if (filters) {
+      Object.keys(filters).forEach(key => {
+        const value = (filters as any)[key];
+        if (value !== null && value !== undefined && value !== '') {
+          params.set(key, value.toString());
+        }
+      });
+    }
+
+    // ✅ NOTE: Endpoint d'export à créer côté backend
+    return this.http.get(`${this.baseUrl}/admin/utilisateurs/export?${params.toString()}`, {
       responseType: 'blob'
     }).pipe(
       catchError(error => {
@@ -846,17 +875,17 @@ getStatistiquesGlobalesEnseignants(): Observable<{
     inclure_notes?: boolean;
     inclure_statistiques?: boolean;
   }): Observable<Blob> {
-    let params = new HttpParams();
+    let params = new URLSearchParams();
     
     if (options) {
-      if (options.periode) params = params.set('periode', options.periode);
-      if (options.format) params = params.set('format', options.format);
-      if (options.inclure_notes) params = params.set('inclure_notes', '1');
-      if (options.inclure_statistiques) params = params.set('inclure_statistiques', '1');
+      if (options.periode) params.set('periode', options.periode);
+      if (options.format) params.set('format', options.format);
+      if (options.inclure_notes) params.set('inclure_notes', '1');
+      if (options.inclure_statistiques) params.set('inclure_statistiques', '1');
     }
 
-    return this.http.get(`${this.baseUrl}/admin/enseignants/${enseignantId}/rapport`, {
-      params,
+    // ✅ NOTE: Endpoint de rapport à créer côté backend
+    return this.http.get(`${this.baseUrl}/admin/enseignants/${enseignantId}/rapport?${params.toString()}`, {
       responseType: 'blob'
     }).pipe(
       catchError(error => {
