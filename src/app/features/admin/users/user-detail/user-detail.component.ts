@@ -387,12 +387,11 @@ export class UserDetailComponent implements OnInit {
    * Load student-specific data
    */
   private loadEleveData(): void {
-    // TODO: Implement actual service calls
-    // For now, using mock data if user has additional properties
-    if ('classe_id' in this.user!) {
-      this.eleveData = this.user as any;
-    }
+  if (this.user?.eleve) {
+    this.eleveData = this.user.eleve;
   }
+}
+
 
   /**
    * Get user full name

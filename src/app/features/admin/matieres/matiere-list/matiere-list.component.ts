@@ -109,13 +109,31 @@ export class MatiereListComponent implements OnInit {
   /**
    * Load statistics
    */
-  loadStats(): void {
-    // Mock stats for demo
-    this.totalMatieres = 15;
-    this.totalEnseignants = 42;
-    this.matieresActives = 13;
-    this.coefficientMoyen = 2.8;
-  }
+loadStats(): void {
+  this.matiereService.getMatieres({ per_page: 1000 }).subscribe({
+    next: (response) => {
+      const matieres = response.data || [];
+
+      this.totalMatieres = response.meta?.total || matieres.length;
+      this.matieresActives = matieres.filter((m: any) => m.active).length;
+      this.totalEnseignants = matieres.reduce(
+        (total: number, m: any) => total + (m.enseignants_count || 0),
+        0
+      );
+      const moyenne = matieres.length > 0 
+        ? matieres.reduce((sum: number, m: any) => sum + parseFloat(m.coefficient), 0) / matieres.length
+        : 0;
+
+      this.coefficientMoyen = parseFloat(moyenne.toFixed(2)); // ✅ formaté à 2 décimales
+    },
+    error: (err) => {
+      console.error('Erreur lors du chargement des statistiques:', err);
+      this.error = 'Impossible de charger les statistiques';
+    }
+  });
+}
+
+
 
   /**
    * Load mock data for demonstration
@@ -251,7 +269,7 @@ export class MatiereListComponent implements OnInit {
   }
 
   editMatiere(matiere: Matiere): void {
-    this.router.navigate(['/admin/matieres/edit', matiere.id]);
+    this.router.navigate(['/admin/matieres', matiere.id, 'edit']);
     this.closeDropdown();
   }
 

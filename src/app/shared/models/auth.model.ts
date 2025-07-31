@@ -1,3 +1,5 @@
+import { Eleve } from "./user.model";
+
 // ===== src/app/shared/models/auth.model.ts (MISE À JOUR) =====
 export interface LoginRequest {
   login: string;
@@ -40,4 +42,5 @@ export interface User {
   identifiant_genere?: string;
   created_at?: string;
   updated_at?: string;
+  eleve?: Eleve; // Optionnel, pour les utilisateurs de type élève
 }

@@ -224,6 +224,11 @@ export class ApiService {
       console.log('✅ Format matière unique détecté');
       return response.matiere as T;
     }
+
+    if (response.dashboard) {
+  console.log('✅ Format dashboard détecté');
+  return response as T;
+}
     
     // Si c'est déjà dans le bon format (ex: liste simple)
     if (Array.isArray(response)) {

@@ -184,22 +184,19 @@ export class MatiereService {
   /**
    * Récupérer les enseignants disponibles pour une matière
    */
-  getEnseignantsDisponibles(matiereId: number): Observable<Enseignant[]> {
-    return this.apiService.get<any>(API_ENDPOINTS.MATIERES.ENSEIGNANTS_DISPONIBLES(matiereId)).pipe(
-      map((response: any) => {
-        console.log('👨‍🏫 Enseignants disponibles:', response);
-        
-        if (Array.isArray(response)) return response as Enseignant[];
-        if (response.data && Array.isArray(response.data)) return response.data as Enseignant[];
-        if (response.enseignants && Array.isArray(response.enseignants)) return response.enseignants as Enseignant[];
-        return [] as Enseignant[];
-      }),
-      catchError(error => {
-        console.error('❌ Erreur récupération enseignants disponibles:', error);
-        return of([] as Enseignant[]);
-      })
-    );
-  }
+ getEnseignantsDisponibles(matiereId: number): Observable<Enseignant[]> {
+  return this.apiService.get<any>(API_ENDPOINTS.MATIERES.ENSEIGNANTS_DISPONIBLES(matiereId)).pipe(
+    map((response: any) => {
+      console.log('👨‍🏫 Enseignants disponibles:', response);
+      return response.enseignants_disponibles || [];
+    }),
+    catchError(error => {
+      console.error('❌ Erreur récupération enseignants disponibles:', error);
+      return of([] as Enseignant[]);
+    })
+  );
+}
+
 
   /**
    * Affecter un enseignant à une matière

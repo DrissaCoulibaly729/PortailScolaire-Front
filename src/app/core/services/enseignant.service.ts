@@ -30,6 +30,11 @@ export interface EnseignantDashboardData {
   chartData: ChartData;
 }
 
+export interface RecentActivity {
+  dernieres_notes: ActivityItem[];
+  derniere_connexion: string;
+}
+
 export interface ActivityItem {
   id: string;
   type: 'note_added' | 'note_updated' | 'note_deleted' | 'bulletin_generated' | 'classe_updated';

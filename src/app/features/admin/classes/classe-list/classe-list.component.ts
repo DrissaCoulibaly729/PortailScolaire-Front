@@ -252,7 +252,7 @@ export class ClasseListComponent implements OnInit {
   }
 
   editClasse(classe: Classe): void {
-    this.router.navigate(['/admin/classes/edit', classe.id]);
+    this.router.navigate(['/admin/classes', classe.id, 'edit']);
     this.closeDropdown();
   }
 

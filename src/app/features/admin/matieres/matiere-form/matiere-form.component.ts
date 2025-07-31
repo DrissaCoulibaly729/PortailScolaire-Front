@@ -146,26 +146,23 @@ getEnseignants(): User[] {
   /**
    * Load available teachers for this subject
    */
-  loadEnseignantsDisponibles(): void {
-    if (!this.matiereId) return;
-    
-    this.matiereService.getEnseignantsDisponibles(this.matiereId).subscribe({
-      next: (response: User[] | { data: User[] }) => {
-        // Gérer les deux formats de réponse possibles
-        if (Array.isArray(response)) {
-          this.enseignantsDisponibles = response;
-        } else if (response && 'data' in response) {
-          this.enseignantsDisponibles = response.data;
-        } else {
-          this.enseignantsDisponibles = [];
-        }
-      },
-      error: (error) => {
-        console.error('Erreur lors du chargement des enseignants:', error);
-        this.enseignantsDisponibles = []; // Valeur par défaut en cas d'erreur
-      }
-    });
+loadEnseignantsDisponibles(): void {
+  if (!this.matiereId) return;
+
+  this.matiereService.getEnseignantsDisponibles(this.matiereId).subscribe({
+  next: (enseignants) => {
+    this.enseignantsDisponibles = enseignants;
+  },
+  error: (error) => {
+    console.error('Erreur lors du chargement des enseignants:', error);
+    this.enseignantsDisponibles = [];
   }
+});
+
+}
+
+
+
 
   /**
    * Populate form with matiere data
