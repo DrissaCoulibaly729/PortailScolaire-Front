@@ -1,305 +1,270 @@
-<div class="max-w-4xl mx-auto space-y-6">
-  
-  <!-- Header -->
-  <div class="flex items-center justify-between">
-    <div>
-      <h1 class="page-title">
-        {{ isEditing ? '✏️ Modifier' : '➕ Créer' }} une matière
-      </h1>
-      <p class="text-gray-600">
-        {{ isEditing ? 'Modifiez les informations de la matière' : 'Ajoutez une nouvelle matière au programme' }}
-      </p>
-    </div>
-    
-    <button (click)="cancel()" class="btn-secondary">
-      ← Retour à la liste
-    </button>
-  </div>
-
-  <!-- Messages d'état -->
-  <div *ngIf="success" class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center">
-    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-    </svg>
-    {{ success }}
-  </div>
-
-  <div *ngIf="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
-    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-    </svg>
-    {{ error }}
-  </div>
-
-  <!-- Loader -->
-  <div *ngIf="isLoading" class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg flex items-center">
-    <svg class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
-      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
-    {{ isEditing ? 'Mise à jour en cours...' : 'Création en cours...' }}
-  </div>
-
-  <!-- Formulaire -->
-  <form [formGroup]="matiereForm" (ngSubmit)="onSubmit()" class="space-y-8">
-    
-    <!-- Section 1: Informations de base -->
-    <div class="card">
-      <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-        </svg>
-        Informations de la matière
-      </h3>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        <!-- Nom de la matière -->
-        <div class="md:col-span-2">
-          <label for="nom" class="block text-sm font-medium text-gray-700 mb-1">
-            Nom de la matière <span class="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="nom"
-            formControlName="nom"
-            placeholder="Ex: Mathématiques, Français, Histoire-Géographie..."
-            class="input-field"
-            [class.border-red-500]="hasError('nom')"
-            [class.border-green-500]="matiereForm.get('nom')?.valid && matiereForm.get('nom')?.touched">
-          <div *ngIf="hasError('nom')" class="text-red-600 text-sm mt-1">
-            {{ getErrorMessage('nom') }}
+ <div class="min-h-screen bg-gray-50 p-6">
+      <!-- Header -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">
+              {{ isEditing ? 'Modifier la matière' : 'Créer une nouvelle matière' }}
+            </h1>
+            <p class="text-gray-600 mt-2">
+              {{ isEditing ? 'Modifiez les informations de la matière' : 'Remplissez les informations pour créer une nouvelle matière' }}
+            </p>
           </div>
-          <div *ngIf="getServerErrors('nom').length > 0" class="text-red-600 text-sm mt-1">
-            <div *ngFor="let error of getServerErrors('nom')">{{ error }}</div>
-          </div>
-        </div>
-
-        <!-- Génération automatique du code -->
-        <div class="md:col-span-2">
-          <div class="flex items-center mb-4">
-            <input
-              type="checkbox"
-              id="auto_generate_code"
-              formControlName="auto_generate_code"
-              class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-            <label for="auto_generate_code" class="ml-2 text-sm text-gray-700">
-              Générer automatiquement le code de la matière
-            </label>
-          </div>
-        </div>
-
-        <!-- Code de la matière -->
-        <div>
-          <label for="code" class="block text-sm font-medium text-gray-700 mb-1">
-            Code de la matière <span class="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="code"
-            formControlName="code"
-            placeholder="Ex: MATH, FR, HG..."
-            maxlength="10"
-            class="input-field font-mono uppercase"
-            [class.border-red-500]="hasError('code')"
-            [class.border-green-500]="matiereForm.get('code')?.valid && matiereForm.get('code')?.touched"
-            [readonly]="matiereForm.get('auto_generate_code')?.value">
-          <div *ngIf="hasError('code')" class="text-red-600 text-sm mt-1">
-            {{ getErrorMessage('code') }}
-          </div>
-          <div *ngIf="getServerErrors('code').length > 0" class="text-red-600 text-sm mt-1">
-            <div *ngFor="let error of getServerErrors('code')">{{ error }}</div>
-          </div>
-          <p class="text-xs text-gray-500 mt-1">
-            Code unique pour identifier la matière (2-10 caractères)
-          </p>
-        </div>
-
-        <!-- Coefficient -->
-        <div>
-          <label for="coefficient" class="block text-sm font-medium text-gray-700 mb-1">
-            Coefficient <span class="text-red-500">*</span>
-          </label>
-          <div class="flex space-x-2">
-            <input
-              type="number"
-              id="coefficient"
-              formControlName="coefficient"
-              min="0.5"
-              max="5.0"
-              step="0.5"
-              class="input-field flex-1"
-              [class.border-red-500]="hasError('coefficient')"
-              [class.border-green-500]="matiereForm.get('coefficient')?.valid && matiereForm.get('coefficient')?.touched">
-            
-            <!-- Indicateur visuel du coefficient -->
-            <div class="flex items-center space-x-2">
-              <span class="inline-flex px-2 py-1 text-sm font-semibold rounded-full"
-                    [ngClass]="'bg-' + getCoefficientColor() + '-100 text-' + getCoefficientColor() + '-800'">
-                {{ matiereForm.get('coefficient')?.value || 1.0 }}
-              </span>
-            </div>
-          </div>
-          <div *ngIf="hasError('coefficient')" class="text-red-600 text-sm mt-1">
-            {{ getErrorMessage('coefficient') }}
-          </div>
-          <p class="text-xs text-gray-500 mt-1">
-            Importance: {{ getImportanceLevel() }} (0.5 à 5.0)
-          </p>
-        </div>
-
-        <!-- Indicateurs visuels -->
-        <div class="md:col-span-2">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-            <div class="text-center">
-              <div class="text-lg font-bold" [ngClass]="'text-' + getCoefficientColor() + '-600'">
-                {{ matiereForm.get('coefficient')?.value || 1.0 }}x
-              </div>
-              <div class="text-sm text-gray-600">Coefficient</div>
-            </div>
-            <div class="text-center">
-              <div class="text-lg font-bold text-purple-600">
-                {{ matiereForm.get('code')?.value || '---' }}
-              </div>
-              <div class="text-sm text-gray-600">Code matière</div>
-            </div>
-            <div class="text-center">
-              <div class="text-lg font-bold text-blue-600">
-                {{ getImportanceLevel() }}
-              </div>
-              <div class="text-sm text-gray-600">Importance</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Description -->
-      <div class="mt-6">
-        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
-          Description (optionnelle)
-        </label>
-        <textarea
-          id="description"
-          formControlName="description"
-          rows="3"
-          placeholder="Description de la matière, objectifs pédagogiques, remarques..."
-          class="input-field"></textarea>
-      </div>
-    </div>
-
-    <!-- Section 2: Matières communes (mode création uniquement) -->
-    <div *ngIf="!isEditing && matieresCommunes.length > 0" class="card">
-      <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-        </svg>
-        Matières communes
-        <span class="text-sm font-normal text-gray-500 ml-2">(Cliquez pour pré-remplir)</span>
-      </h3>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <button 
-          type="button"
-          *ngFor="let matiere of matieresCommunes" 
-          (click)="applyMatiereCommune(matiere)"
-          class="text-left p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group">
-          
-          <div class="flex items-center justify-between mb-2">
-            <h4 class="font-medium text-gray-900 group-hover:text-blue-900">
-              {{ matiere.nom }}
-            </h4>
-            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-              {{ matiere.code }}
-            </span>
-          </div>
-          
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-600">
-              Coefficient: {{ matiere.coefficient }}
-            </span>
-            <svg class="w-4 h-4 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          <button (click)="goBack()" 
+                  class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
             </svg>
+            Retour
+          </button>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="max-w-3xl mx-auto">
+        <form [formGroup]="matiereForm" (ngSubmit)="onSubmit()" class="space-y-8">
+          <!-- Basic Information -->
+          <div class="bg-white shadow-sm rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+              </svg>
+              Informations générales
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Nom de la matière -->
+              <div>
+                <label for="nom" class="block text-sm font-medium text-gray-700 mb-2">
+                  Nom de la matière <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       id="nom"
+                       formControlName="nom"
+                       placeholder="Ex: Mathématiques, Français, Histoire..."
+                       [class.border-red-300]="matiereForm.get('nom')?.invalid && matiereForm.get('nom')?.touched"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                <div *ngIf="matiereForm.get('nom')?.invalid && matiereForm.get('nom')?.touched" 
+                     class="mt-1 text-sm text-red-600">
+                  <span *ngIf="matiereForm.get('nom')?.errors?.['required']">
+                    Le nom de la matière est requis
+                  </span>
+                  <span *ngIf="matiereForm.get('nom')?.errors?.['maxlength']">
+                    Le nom ne peut pas dépasser 100 caractères
+                  </span>
+                </div>
+              </div>
+
+              <!-- Code matière -->
+              <div>
+                <label for="code" class="block text-sm font-medium text-gray-700 mb-2">
+                  Code matière <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       id="code"
+                       formControlName="code"
+                       placeholder="Ex: MATH, FR, HIST..."
+                       [class.border-red-300]="matiereForm.get('code')?.invalid && matiereForm.get('code')?.touched"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono uppercase">
+                <div *ngIf="matiereForm.get('code')?.invalid && matiereForm.get('code')?.touched" 
+                     class="mt-1 text-sm text-red-600">
+                  <span *ngIf="matiereForm.get('code')?.errors?.['required']">
+                    Le code matière est requis
+                  </span>
+                  <span *ngIf="matiereForm.get('code')?.errors?.['maxlength']">
+                    Le code ne peut pas dépasser 10 caractères
+                  </span>
+                  <span *ngIf="matiereForm.get('code')?.errors?.['pattern']">
+                    Le code doit contenir uniquement des lettres et chiffres
+                  </span>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">
+                  Utilisez un code court et unique (lettres et chiffres uniquement)
+                </p>
+              </div>
+
+              <!-- Coefficient -->
+              <div class="md:col-span-2">
+                <label for="coefficient" class="block text-sm font-medium text-gray-700 mb-2">
+                  Coefficient <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                  <input type="number" 
+                         id="coefficient"
+                         formControlName="coefficient"
+                         min="0.5"
+                         max="5"
+                         step="0.5"
+                         placeholder="2.0"
+                         [class.border-red-300]="matiereForm.get('coefficient')?.invalid && matiereForm.get('coefficient')?.touched"
+                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                  
+                  <!-- Coefficient Visual Indicator -->
+                  <div class="mt-3">
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>Faible (0.5)</span>
+                      <span>Élevé (5.0)</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                      <div class="bg-purple-600 h-2 rounded-full transition-all duration-300" 
+                           [style.width.%]="getCoefficientPercentage()"></div>
+                    </div>
+                    <div class="flex justify-center mt-2">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                            [ngClass]="{
+                              'bg-gray-100 text-gray-800': getCoefficientLevel() === 'Très faible',
+                              'bg-yellow-100 text-yellow-800': getCoefficientLevel() === 'Faible',
+                              'bg-blue-100 text-blue-800': getCoefficientLevel() === 'Moyen',
+                              'bg-orange-100 text-orange-800': getCoefficientLevel() === 'Élevé',
+                              'bg-red-100 text-red-800': getCoefficientLevel() === 'Très élevé'
+                            }">
+                        {{ getCoefficientLevel() }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div *ngIf="matiereForm.get('coefficient')?.invalid && matiereForm.get('coefficient')?.touched" 
+                     class="mt-1 text-sm text-red-600">
+                  <span *ngIf="matiereForm.get('coefficient')?.errors?.['required']">
+                    Le coefficient est requis
+                  </span>
+                  <span *ngIf="matiereForm.get('coefficient')?.errors?.['min']">
+                    Le coefficient minimum est 0.5
+                  </span>
+                  <span *ngIf="matiereForm.get('coefficient')?.errors?.['max']">
+                    Le coefficient maximum est 5.0
+                  </span>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">
+                  Le coefficient détermine l'importance de la matière dans le calcul de la moyenne générale
+                </p>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="mt-6">
+              <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <textarea id="description"
+                        formControlName="description"
+                        rows="4"
+                        placeholder="Description détaillée de la matière, objectifs pédagogiques..."
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"></textarea>
+              <div class="mt-1 text-xs text-gray-500">
+                {{ (matiereForm.get('description')?.value || '').length }}/500 caractères
+              </div>
+            </div>
           </div>
-        </button>
-      </div>
-      
-      <div class="mt-4 p-3 bg-blue-50 rounded-lg">
-        <p class="text-sm text-blue-700">
-          💡 <strong>Astuce :</strong> Cliquez sur une matière commune pour pré-remplir automatiquement les champs du formulaire avec les valeurs standards.
-        </p>
-      </div>
-    </div>
 
-    <!-- Actions du formulaire -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-      
-      <!-- Actions secondaires -->
-      <div class="flex space-x-3">
+          <!-- Enseignants Assignment (if editing) -->
+<div *ngIf="isEditing" class="bg-white shadow-sm rounded-lg p-6">
+  <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+    </svg>
+    Enseignants affectés
+  </h3>
+
+  <!-- Current Teachers -->
+  <div *ngIf="hasEnseignants()" class="mb-6">
+    <h4 class="text-sm font-medium text-gray-700 mb-3">Enseignants actuels</h4>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div *ngFor="let enseignant of getEnseignants()" 
+           class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <div class="flex items-center">
+          <div class="h-10 w-10 bg-blue-200 rounded-full flex items-center justify-center">
+            <span class="text-sm font-medium text-blue-800">
+              {{ enseignant.nom?.charAt(0) || 'E' }}{{ enseignant.prenom?.charAt(0) || 'N' }}
+            </span>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-gray-900">{{ enseignant.nom }} {{ enseignant.prenom }}</p>
+            <p class="text-xs text-gray-500">{{ enseignant.email }}</p>
+          </div>
+        </div>
         <button type="button" 
-                (click)="previewData()" 
-                class="btn-secondary">
-          👁️ Prévisualiser
-        </button>
-      </div>
-      
-      <!-- Actions principales -->
-      <div class="flex space-x-3">
-        <button type="button" 
-                (click)="cancel()" 
-                class="btn-secondary">
-          Annuler
-        </button>
-        
-        <button type="submit" 
-                [disabled]="matiereForm.invalid || isLoading"
-                class="btn-primary flex items-center space-x-2"
-                [class.opacity-50]="matiereForm.invalid || isLoading">
-          <svg *ngIf="isLoading" class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                (click)="removeTeacher(enseignant.id)"
+                class="text-red-600 hover:text-red-800">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
-          <span>{{ isEditing ? '💾 Mettre à jour' : '➕ Créer la matière' }}</span>
         </button>
       </div>
     </div>
-
-  </form>
-
-  <!-- Informations d'aide -->
-  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-    <h4 class="text-sm font-medium text-blue-900 mb-2">💡 Informations utiles</h4>
-    <ul class="text-sm text-blue-700 space-y-1">
-      <li>• Les champs marqués d'un <span class="text-red-500">*</span> sont obligatoires</li>
-      <li>• Le code peut être généré automatiquement à partir du nom de la matière</li>
-      <li>• Le coefficient influence le calcul de la moyenne générale (0.5 = faible importance, 5.0 = très importante)</li>
-      <li>• Les matières communes pré-remplissent automatiquement les champs standards</li>
-      <li>• Un code unique est requis pour éviter les doublons dans le système</li>
-    </ul>
   </div>
 
-  <!-- Indicateurs de coefficient (référence) -->
-  <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-    <h4 class="text-sm font-medium text-gray-900 mb-3">📊 Guide des coefficients</h4>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-      <div class="text-center p-2 bg-green-100 rounded">
-        <div class="font-semibold text-green-800">0.5 - 1.0</div>
-        <div class="text-green-600">Secondaire</div>
-      </div>
-      <div class="text-center p-2 bg-blue-100 rounded">
-        <div class="font-semibold text-blue-800">1.5 - 2.0</div>
-        <div class="text-blue-600">Normale</div>
-      </div>
-      <div class="text-center p-2 bg-orange-100 rounded">
-        <div class="font-semibold text-orange-800">2.5 - 3.0</div>
-        <div class="text-orange-600">Importante</div>
-      </div>
-      <div class="text-center p-2 bg-red-100 rounded">
-        <div class="font-semibold text-red-800">3.5 - 5.0</div>
-        <div class="text-red-600">Très importante</div>
-      </div>
+  <!-- Add Teacher -->
+  <div>
+    <h4 class="text-sm font-medium text-gray-700 mb-3">Ajouter un enseignant</h4>
+    <div class="flex space-x-3">
+      <select formControlName="selectedTeacher" 
+              class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+        <option value="">Sélectionnez un enseignant</option>
+        <option *ngFor="let teacher of enseignantsDisponibles" [value]="teacher.id">
+          {{ teacher.nom }} {{ teacher.prenom }} - {{ teacher.email }}
+        </option>
+      </select>
+      <button type="button" 
+              (click)="addTeacher()"
+              [disabled]="!matiereForm.get('selectedTeacher')?.value"
+              class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+      </button>
     </div>
   </div>
-
 </div>
+
+          <!-- Status -->
+          <div class="bg-white shadow-sm rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              Statut
+            </h3>
+
+            <div class="flex items-center">
+              <input type="checkbox" 
+                     id="active"
+                     formControlName="actif"
+                     class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+              <label for="active" class="ml-2 text-sm text-gray-700">
+                Matière active
+              </label>
+            </div>
+            <p class="mt-2 text-sm text-gray-500">
+              Les matières inactives ne sont pas visibles pour la saisie de notes et les affectations d'enseignants.
+            </p>
+          </div>
+
+          <!-- Error Display -->
+          <div *ngIf="error" class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="flex">
+              <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+              </svg>
+              <p class="text-red-800">{{ error }}</p>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+            <button type="button" 
+                    (click)="goBack()"
+                    class="px-6 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+              Annuler
+            </button>
+            <button type="submit" 
+                    [disabled]="matiereForm.invalid || isLoading"
+                    class="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center">
+              <div *ngIf="isLoading" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              {{ isLoading ? 'Enregistrement...' : (isEditing ? 'Mettre à jour' : 'Créer la matière') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>

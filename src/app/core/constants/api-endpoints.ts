@@ -18,6 +18,10 @@ export const API_ENDPOINTS = {
     // Dashboard
     DASHBOARD: '/admin/dashboard',
     STATS_AVANCEES: '/admin/dashboard/statistiques-avancees',
+    ACTIVITE_MENSUELLE: '/admin/dashboard/activite-mensuelle',
+    REPARTITION_CLASSES: '/admin/dashboard/repartition-classes',
+    EVOLUTION_INSCRIPTIONS: '/admin/dashboard/evolution-inscriptions',
+    PERFORMANCE_GENERALE: '/admin/dashboard/performance-generale',
     
     // Utilisateurs
     USERS: '/admin/utilisateurs',
@@ -28,6 +32,11 @@ export const API_ENDPOINTS = {
     TOGGLE_USER_STATUS: (id: number) => `/admin/utilisateurs/${id}/toggle-statut`,
     RESET_PASSWORD: (id: number) => `/admin/utilisateurs/${id}/reinitialiser-mot-de-passe`,
     DELETE_USER: (id: number) => `/admin/utilisateurs/${id}`,
+    USER_STATS: '/admin/utilisateurs/statistiques',
+    SEARCH_USERS: '/admin/utilisateurs/recherche',
+    EXPORT_USERS: '/admin/utilisateurs/export',
+    IMPORT_USERS: '/admin/utilisateurs/import',
+    USER_DOCUMENTS: (id: number) => `/admin/utilisateurs/${id}/documents`,
 
     // ✅ NOUVEAUX - Bulletins Admin
     BULLETINS: {
@@ -50,6 +59,18 @@ export const API_ENDPOINTS = {
       REFUSER: (id: number) => `/admin/documents/${id}/refuser`,
       TELECHARGER: (id: number) => `/admin/documents/${id}/telecharger`,
       DELETE: (id: number) => `/admin/documents/${id}`
+    },
+
+    // ✅ NOUVEAUX - Statistiques Admin
+    STATISTIQUES: {
+      GENERALES: '/admin/statistiques/generales',
+      PERFORMANCES_CLASSES: '/admin/statistiques/performances-classes',
+      EVOLUTION_NOTES: '/admin/statistiques/evolution-notes',
+      MATIERES: '/admin/statistiques/matieres',
+      COMPARAISON_PERIODES: '/admin/statistiques/comparaison-periodes',
+      ELEVES: '/admin/statistiques/eleves',
+      RAPPORTS: '/admin/statistiques/rapports',
+      EXPORT_RAPPORT: (id: string) => `/admin/statistiques/rapports/${id}/export`
     }
   },
   
@@ -66,7 +87,9 @@ export const API_ENDPOINTS = {
     AFFECTER_ENSEIGNANT: (id: number) => `/admin/classes/${id}/affecter-enseignant`,
     RETIRER_ENSEIGNANT: (classeId: number, enseignantId: number) => 
       `/admin/classes/${classeId}/enseignants/${enseignantId}`,
-    STATS: '/admin/classes/statistiques'
+    STATS: '/admin/classes/statistiques',
+    SEARCH: '/admin/classes/recherche',
+    EXPORT: '/admin/classes/export'
   },
   
   // ========================================
@@ -82,7 +105,10 @@ export const API_ENDPOINTS = {
     ENSEIGNANTS_DISPONIBLES: (id: number) => `/admin/matieres/${id}/enseignants-disponibles`,
     AFFECTER_ENSEIGNANT: (id: number) => `/admin/matieres/${id}/affecter-enseignant`,
     RETIRER_ENSEIGNANT: (matiereId: number, enseignantId: number) => 
-      `/admin/matieres/${matiereId}/enseignants/${enseignantId}`
+      `/admin/matieres/${matiereId}/enseignants/${enseignantId}`,
+    STATS: '/admin/matieres/statistiques',
+    SEARCH: '/admin/matieres/recherche',
+    EXPORT: '/admin/matieres/export'
   },
 
   // ========================================
@@ -92,6 +118,7 @@ export const API_ENDPOINTS = {
     // Dashboard
     DASHBOARD: '/enseignant/dashboard',
     DASHBOARD_RESUME: '/enseignant/dashboard/resume-rapide',
+    ACTIVITE_RECENTE: '/enseignant/dashboard/activite-recente',
     
     // Gestion des notes
     NOTES: {
@@ -102,7 +129,18 @@ export const API_ENDPOINTS = {
       SAISIR: '/enseignant/notes',
       SAISIE_RAPIDE: '/enseignant/notes/saisie-rapide',
       MODIFIER: (id: number) => `/enseignant/notes/${id}`,
-      SUPPRIMER: (id: number) => `/enseignant/notes/${id}`
+      SUPPRIMER: (id: number) => `/enseignant/notes/${id}`,
+      STATISTIQUES: '/enseignant/notes/statistiques',
+      EXPORT: '/enseignant/notes/export'
+    },
+
+    // Profil et données personnelles
+    PROFIL: {
+      GET: '/enseignant/profil',
+      UPDATE: '/enseignant/profil',
+      MES_CLASSES: '/enseignant/profil/mes-classes',
+      MES_MATIERES: '/enseignant/profil/mes-matieres',
+      PLANNING: '/enseignant/profil/planning'
     }
   },
 
@@ -128,7 +166,8 @@ export const API_ENDPOINTS = {
       LIST: '/eleve/notes',
       MATIERE: (matiereId: number) => `/eleve/notes/matiere/${matiereId}`,
       PERIODE: (periode: string) => `/eleve/notes/periode/${periode}`,
-      EVOLUTION: '/eleve/notes/evolution'
+      EVOLUTION: '/eleve/notes/evolution',
+      STATISTIQUES: '/eleve/notes/statistiques'
     },
     
     // Profil
@@ -150,11 +189,48 @@ export const API_ENDPOINTS = {
       DELETE: (id: number) => `/eleve/documents/${id}`
     }
   },
+
+  // ========================================
+  // ✅ NOUVEAUX - PARENT
+  // ========================================
+  PARENT: {
+    // Dashboard
+    DASHBOARD: '/parent/dashboard',
+    MES_ENFANTS: '/parent/mes-enfants',
+    
+    // Bulletins des enfants
+    BULLETINS: {
+      ENFANT: (enfantId: number) => `/parent/enfants/${enfantId}/bulletins`,
+      TELECHARGER: (enfantId: number, bulletinId: number) => 
+        `/parent/enfants/${enfantId}/bulletins/${bulletinId}/telecharger`,
+      HISTORIQUE: (enfantId: number, annee?: number) => 
+        annee ? `/parent/enfants/${enfantId}/bulletins/historique/${annee}` 
+             : `/parent/enfants/${enfantId}/bulletins/historique`
+    },
+    
+    // Notes des enfants
+    NOTES: {
+      ENFANT: (enfantId: number) => `/parent/enfants/${enfantId}/notes`,
+      MATIERE: (enfantId: number, matiereId: number) => 
+        `/parent/enfants/${enfantId}/notes/matiere/${matiereId}`,
+      EVOLUTION: (enfantId: number) => `/parent/enfants/${enfantId}/notes/evolution`
+    },
+    
+    // Communication
+    COMMUNICATION: {
+      MESSAGES: '/parent/messages',
+      ENVOYER: '/parent/messages/envoyer',
+      RENDEZ_VOUS: '/parent/rendez-vous',
+      DEMANDER_RENDEZ_VOUS: '/parent/rendez-vous/demander'
+    }
+  },
   
   // ========================================
   // SYSTÈME
   // ========================================
-  HEALTH: '/health'
+  HEALTH: '/health',
+  VERSION: '/version',
+  CONFIG: '/config'
 } as const;
 
 // ========================================
@@ -180,6 +256,7 @@ export const buildEndpoint = {
   toggleUserStatus: (id: number) => API_ENDPOINTS.ADMIN.TOGGLE_USER_STATUS(id),
   resetPassword: (id: number) => API_ENDPOINTS.ADMIN.RESET_PASSWORD(id),
   deleteUser: (id: number) => API_ENDPOINTS.ADMIN.DELETE_USER(id),
+  userDocuments: (id: number) => API_ENDPOINTS.ADMIN.USER_DOCUMENTS(id),
   
   // Classes
   classeById: (id: number) => API_ENDPOINTS.CLASSES.BY_ID(id),
@@ -212,6 +289,9 @@ export const buildEndpoint = {
   telechargerDocument: (id: number) => API_ENDPOINTS.ADMIN.DOCUMENTS.TELECHARGER(id),
   deleteDocument: (id: number) => API_ENDPOINTS.ADMIN.DOCUMENTS.DELETE(id),
   
+  // Statistiques Admin
+  exportRapport: (id: string) => API_ENDPOINTS.ADMIN.STATISTIQUES.EXPORT_RAPPORT(id),
+  
   // Notes Enseignant
   notesClasseMatiere: (classeId: number, matiereId: number) => 
     API_ENDPOINTS.ENSEIGNANT.NOTES.NOTES_CLASSE_MATIERE(classeId, matiereId),
@@ -229,5 +309,101 @@ export const buildEndpoint = {
   notesPeriode: (periode: string) => API_ENDPOINTS.ELEVE.NOTES.PERIODE(periode),
   
   // Documents Élève
-  deleteDocumentEleve: (id: number) => API_ENDPOINTS.ELEVE.DOCUMENTS.DELETE(id)
+  deleteDocumentEleve: (id: number) => API_ENDPOINTS.ELEVE.DOCUMENTS.DELETE(id),
+  
+  // Parent - Bulletins
+  bulletinsEnfant: (enfantId: number) => API_ENDPOINTS.PARENT.BULLETINS.ENFANT(enfantId),
+  telechargerBulletinEnfant: (enfantId: number, bulletinId: number) => 
+    API_ENDPOINTS.PARENT.BULLETINS.TELECHARGER(enfantId, bulletinId),
+  bulletinHistoriqueEnfant: (enfantId: number, annee?: number) => 
+    API_ENDPOINTS.PARENT.BULLETINS.HISTORIQUE(enfantId, annee),
+  
+  // Parent - Notes
+  notesEnfant: (enfantId: number) => API_ENDPOINTS.PARENT.NOTES.ENFANT(enfantId),
+  notesMatiereEnfant: (enfantId: number, matiereId: number) => 
+    API_ENDPOINTS.PARENT.NOTES.MATIERE(enfantId, matiereId),
+  evolutionNotesEnfant: (enfantId: number) => API_ENDPOINTS.PARENT.NOTES.EVOLUTION(enfantId)
 } as const;
+
+// ========================================
+// CONSTANTES POUR LES FILTRES ET PARAMÈTRES
+// ========================================
+
+export const API_PARAMS = {
+  // Pagination
+  PAGINATION: {
+    PAGE: 'page',
+    PER_PAGE: 'per_page',
+    SORT_BY: 'sort_by',
+    SORT_DIRECTION: 'sort_direction'
+  },
+  
+  // Filtres communs
+  FILTERS: {
+    SEARCH: 'recherche',
+    ACTIVE: 'actif',
+    ROLE: 'role',
+    CLASSE_ID: 'classe_id',
+    MATIERE_ID: 'matiere_id',
+    DATE_DEBUT: 'date_debut',
+    DATE_FIN: 'date_fin'
+  },
+  
+  // Formats d'export
+  EXPORT_FORMATS: {
+    CSV: 'csv',
+    EXCEL: 'excel',
+    PDF: 'pdf'
+  }
+} as const;
+
+// ========================================
+// UTILITAIRES POUR LA CONSTRUCTION D'URLS
+// ========================================
+
+export class EndpointBuilder {
+  /**
+   * Construire une URL avec paramètres de requête
+   */
+  static buildUrlWithParams(endpoint: string, params: Record<string, any>): string {
+    const url = new URL(endpoint, 'http://dummy.com');
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        url.searchParams.append(key, String(value));
+      }
+    });
+    
+    return url.pathname + url.search;
+  }
+
+  /**
+   * Construire une URL de pagination
+   */
+  static buildPaginationUrl(endpoint: string, page: number, perPage: number = 15): string {
+    return this.buildUrlWithParams(endpoint, {
+      [API_PARAMS.PAGINATION.PAGE]: page,
+      [API_PARAMS.PAGINATION.PER_PAGE]: perPage
+    });
+  }
+
+  /**
+   * Construire une URL de recherche
+   */
+  static buildSearchUrl(endpoint: string, query: string, filters: Record<string, any> = {}): string {
+    return this.buildUrlWithParams(endpoint, {
+      [API_PARAMS.FILTERS.SEARCH]: query,
+      ...filters
+    });
+  }
+
+  /**
+   * Construire une URL d'export
+   */
+  static buildExportUrl(endpoint: string, format: string, filters: Record<string, any> = {}): string {
+    return this.buildUrlWithParams(endpoint, {
+      format,
+      ...filters
+    });
+  }
+}

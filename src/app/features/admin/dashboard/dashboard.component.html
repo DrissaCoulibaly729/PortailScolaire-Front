@@ -1,271 +1,263 @@
-<div class="space-y-8">
-  
-  <!-- Header du dashboard -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="page-title">
-          👋 Bonjour {{ getUserName() }} !
-        </h1>
-        <p class="text-gray-600">
-          Voici un aperçu de votre portail scolaire aujourd'hui.
-        </p>
+    <div class="min-h-screen bg-gray-50 p-6">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">🏫 Tableau de bord</h1>
+        <p class="text-gray-600 mt-2">Vue d'ensemble de l'établissement scolaire</p>
       </div>
-      <div class="flex items-center space-x-3">
-        <button (click)="refreshData()" 
-                [disabled]="isLoading"
-                class="btn-secondary flex items-center space-x-2"
-                [class.opacity-50]="isLoading">
-          <svg class="w-4 h-4" [class.animate-spin]="isLoading" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="flex justify-center items-center h-64">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <span class="ml-3 text-gray-600">Chargement du tableau de bord...</span>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
           </svg>
-          <span>Actualiser</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Message d'erreur -->
-  <div *ngIf="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
-    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-    </svg>
-    {{ error }}
-    <button (click)="refreshData()" class="ml-4 text-red-800 hover:text-red-900 underline">
-      Réessayer
-    </button>
-  </div>
-
-  <!-- Loader principal -->
-  <div *ngIf="isLoading" class="flex items-center justify-center py-12">
-    <div class="flex items-center space-x-3">
-      <svg class="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      <span class="text-gray-600">Chargement des données...</span>
-    </div>
-  </div>
-
-  <!-- Contenu principal -->
-  <div *ngIf="!isLoading" class="space-y-8">
-    
-    <!-- Statistiques rapides -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div *ngFor="let stat of quickStats" 
-           class="card hover:shadow-lg transition-shadow duration-200"
-           [routerLink]="stat.route"
-           [class.cursor-pointer]="stat.route">
-        
-        <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-gray-600">{{ stat.title }}</p>
-            <p class="text-3xl font-bold" [ngClass]="getColorClasses(stat.color).text">
-              {{ stat.value }}
-            </p>
-            
-            <!-- Indicateur de changement -->
-            <div *ngIf="stat.change" class="flex items-center mt-2">
-              <svg *ngIf="stat.change.type === 'increase'" 
-                   class="w-4 h-4 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-              </svg>
-              <svg *ngIf="stat.change.type === 'decrease'" 
-                   class="w-4 h-4 text-red-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
-              </svg>
-              <span class="text-sm" 
-                    [class.text-green-600]="stat.change.type === 'increase'"
-                    [class.text-red-600]="stat.change.type === 'decrease'">
-                +{{ stat.change.value }} ce mois
-              </span>
-            </div>
-          </div>
-          
-          <!-- Icône -->
-          <div class="p-3 rounded-full" [ngClass]="getColorClasses(stat.color).bg">
-            <svg class="w-6 h-6" [ngClass]="getColorClasses(stat.color).icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="stat.icon"></path>
-            </svg>
+            <p class="text-red-800 font-medium">{{ error }}</p>
+            <button (click)="loadDashboardData()" 
+                    class="text-red-600 hover:text-red-800 text-sm underline mt-1">
+              Réessayer
+            </button>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Contenu principal en deux colonnes -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      
-      <!-- Colonne principale (2/3) -->
-      <div class="lg:col-span-2 space-y-8">
-        
-        <!-- Placeholder pour futur graphique -->
-        <div class="card">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-semibold text-gray-900">Évolution des inscriptions</h3>
-            <select class="text-sm border border-gray-300 rounded-md px-3 py-1">
-              <option>Cette année</option>
-              <option>Année précédente</option>
-              <option>Comparaison</option>
-            </select>
-          </div>
-          
-          <!-- Placeholder sans Chart.js -->
-          <div class="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-            <div class="text-center text-gray-500">
-              <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-              </svg>
-              <p class="text-lg font-medium">Graphique d'évolution</p>
-              <p class="text-sm">Les graphiques seront disponibles une fois l'API connectée</p>
+      <!-- Dashboard Content -->
+      <div *ngIf="!isLoading && !error">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div *ngFor="let card of statCards" 
+               class="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow cursor-pointer"
+               (click)="navigateToSection(card.route)">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <p class="text-sm font-medium text-gray-600">{{ card.title }}</p>
+                <p class="text-3xl font-bold mt-1" [ngClass]="'text-' + card.color + '-600'">
+                  {{ card.value | number }}
+                </p>
+                <p *ngIf="card.details" class="text-xs text-gray-500 mt-1">{{ card.details }}</p>
+                
+                <div *ngIf="card.trend" class="flex items-center mt-2">
+                  <svg *ngIf="card.trend.isPositive" class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                  </svg>
+                  <svg *ngIf="!card.trend.isPositive" class="w-4 h-4 text-red-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                  </svg>
+                  <span class="text-sm" [ngClass]="card.trend.isPositive ? 'text-green-600' : 'text-red-600'">
+                    {{ card.trend.value }}{{ card.trend.value > 1 ? '' : '%' }}
+                  </span>
+                </div>
+              </div>
+              <div class="p-3 rounded-full" [ngClass]="'bg-' + card.color + '-100'">
+                <svg class="w-6 h-6" [ngClass]="'text-' + card.color + '-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="card.icon"></path>
+                </svg>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Actions rapides -->
-        <div class="card">
-          <h3 class="text-lg font-semibold text-gray-900 mb-6">Actions rapides</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
-            <a routerLink="/admin/users/create" 
-               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-colors">
-              <div class="p-2 bg-blue-50 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Charts and Activity Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <!-- Performance by Class Chart -->
+          <div class="lg:col-span-2 bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">📊 Répartition par niveau</h3>
+            <div *ngIf="niveauxData.length > 0; else noClassData" class="space-y-4">
+              <div *ngFor="let niveau of niveauxData" 
+                   class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p class="font-medium text-gray-900">{{ niveau.niveau }}</p>
+                  <p class="text-sm text-gray-600">{{ niveau.nb_classes }} classe(s)</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-lg font-bold text-gray-900">{{ niveau.eleves_count }}</p>
+                  <p class="text-sm text-gray-500">élèves</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-sm text-gray-600">Capacité: {{ niveau.capacite }}</p>
+                  <div class="w-24 bg-gray-200 rounded-full h-2 mt-1">
+                    <div class="bg-blue-600 h-2 rounded-full" 
+                         [style.width.%]="getOccupationRate(niveau.eleves_count, niveau.capacite)"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <ng-template #noClassData>
+              <div class="h-48 flex items-center justify-center bg-gray-50 rounded-lg">
+                <div class="text-center">
+                  <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                  </svg>
+                  <p class="text-gray-500">Aucune donnée de classe</p>
+                </div>
+              </div>
+            </ng-template>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">⚡ Activité récente</h3>
+            <div *ngIf="recentActivities.length > 0; else noActivity" class="space-y-4">
+              <div *ngFor="let activity of recentActivities" class="flex items-start space-x-3">
+                <div class="flex-shrink-0">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                       [ngClass]="{
+                         'bg-blue-100': activity.type === 'user_created',
+                         'bg-green-100': activity.type === 'user_login',
+                         'bg-yellow-100': activity.type === 'note_added',
+                         'bg-purple-100': activity.type === 'class_updated'
+                       }">
+                    <svg class="w-4 h-4" 
+                         [ngClass]="{
+                           'text-blue-600': activity.type === 'user_created',
+                           'text-green-600': activity.type === 'user_login',
+                           'text-yellow-600': activity.type === 'note_added',
+                           'text-purple-600': activity.type === 'class_updated'
+                         }" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="activity.icon"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-900">{{ activity.title }}</p>
+                  <p class="text-sm text-gray-600">{{ activity.description }}</p>
+                  <div class="flex items-center mt-1">
+                    <span class="text-xs text-gray-500">{{ activity.timestamp | date:'short' }}</span>
+                    <span class="mx-2 text-gray-300">•</span>
+                    <span class="text-xs text-gray-500">{{ activity.user.name }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <ng-template #noActivity>
+              <div class="text-center py-8">
+                <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p class="text-gray-500 text-sm">Aucune activité récente</p>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+
+        <!-- Quick Actions and Alerts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Quick Actions -->
+          <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">🚀 Actions rapides</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <button (click)="router.navigate(['/admin/utilisateurs/create'])" 
+                      class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
                 </svg>
-              </div>
-              <div>
-                <h4 class="font-medium text-gray-900">Nouvel utilisateur</h4>
-                <p class="text-sm text-gray-500">Créer un compte</p>
-              </div>
-            </a>
-
-            <a routerLink="/admin/classes/create" 
-               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-green-300 transition-colors">
-              <div class="p-2 bg-green-50 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                <span class="text-sm font-medium text-gray-900">Nouvel utilisateur</span>
+              </button>
+              
+              <button (click)="router.navigate(['/admin/classes/create'])" 
+                      class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2zM9 7h6m-6 4h6m-6 4h4"></path>
                 </svg>
-              </div>
-              <div>
-                <h4 class="font-medium text-gray-900">Nouvelle classe</h4>
-                <p class="text-sm text-gray-500">Créer une classe</p>
-              </div>
-            </a>
-
-            <a routerLink="/admin/matieres/create" 
-               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-purple-300 transition-colors">
-              <div class="p-2 bg-purple-50 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span class="text-sm font-medium text-gray-900">Nouvelle classe</span>
+              </button>
+              
+              <button (click)="router.navigate(['/admin/matieres/create'])" 
+                      class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                 </svg>
-              </div>
-              <div>
-                <h4 class="font-medium text-gray-900">Nouvelle matière</h4>
-                <p class="text-sm text-gray-500">Ajouter une matière</p>
-              </div>
-            </a>
-
-            <a href="#" 
-               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-orange-300 transition-colors">
-              <div class="p-2 bg-orange-50 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span class="text-sm font-medium text-gray-900">Nouvelle matière</span>
+              </button>
+              
+              <button (click)="generateReport()" 
+                      class="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-orange-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-              </div>
-              <div>
-                <h4 class="font-medium text-gray-900">Générer bulletins</h4>
-                <p class="text-sm text-gray-500">Export PDF</p>
-              </div>
-            </a>
-
-          </div>
-        </div>
-      </div>
-
-      <!-- Sidebar droite (1/3) -->
-      <div class="space-y-8">
-        
-        <!-- Placeholder pour graphique distribution -->
-        <div class="card">
-          <h3 class="text-lg font-semibold text-gray-900 mb-6">Distribution des notes</h3>
-          <div class="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-            <div class="text-center text-gray-500">
-              <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-              </svg>
-              <p class="text-sm">Graphique de distribution</p>
-              <p class="text-xs">Disponible avec l'API</p>
+                <span class="text-sm font-medium text-gray-900">Générer rapport</span>
+              </button>
             </div>
           </div>
-        </div>
-        
-        <!-- Activité récente -->
-        <div class="card">
-          <h3 class="text-lg font-semibold text-gray-900 mb-6">Activité récente</h3>
-          <div class="space-y-4">
-            <div *ngFor="let activity of recentActivities" class="flex items-start space-x-3">
-              <div class="p-2 rounded-full flex-shrink-0"
-                   [ngClass]="getColorClasses(activity.color).bg">
-                <svg class="w-4 h-4" [ngClass]="getColorClasses(activity.color).icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getActivityIcon(activity.icon)"></path>
+
+          <!-- Alerts and Notifications -->
+          <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">🔔 Alertes système</h3>
+            <div *ngIf="systemAlerts.length > 0; else noAlerts" class="space-y-3">
+              <div *ngFor="let alert of systemAlerts" 
+                   class="p-3 rounded-lg border-l-4" 
+                   [ngClass]="{
+                     'bg-red-50 border-red-400': alert.type === 'error',
+                     'bg-yellow-50 border-yellow-400': alert.type === 'warning',
+                     'bg-blue-50 border-blue-400': alert.type === 'info',
+                     'bg-green-50 border-green-400': alert.type === 'success'
+                   }">
+                <div class="flex justify-between">
+                  <div class="flex">
+                    <svg class="w-5 h-5 mr-2 mt-0.5" 
+                         [ngClass]="{
+                           'text-red-400': alert.type === 'error',
+                           'text-yellow-400': alert.type === 'warning',
+                           'text-blue-400': alert.type === 'info',
+                           'text-green-400': alert.type === 'success'
+                         }" 
+                         fill="currentColor" viewBox="0 0 20 20">
+                      <path *ngIf="alert.type === 'error'" fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                      <path *ngIf="alert.type === 'warning'" fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                      <path *ngIf="alert.type === 'info'" fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                      <path *ngIf="alert.type === 'success'" fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                      <p class="text-sm font-medium" 
+                         [ngClass]="{
+                           'text-red-800': alert.type === 'error',
+                           'text-yellow-800': alert.type === 'warning',
+                           'text-blue-800': alert.type === 'info',
+                           'text-green-800': alert.type === 'success'
+                         }">
+                        {{ alert.title }}
+                      </p>
+                      <p class="text-sm" 
+                         [ngClass]="{
+                           'text-red-700': alert.type === 'error',
+                           'text-yellow-700': alert.type === 'warning',
+                           'text-blue-700': alert.type === 'info',
+                           'text-green-700': alert.type === 'success'
+                         }">
+                        {{ alert.message }}
+                      </p>
+                    </div>
+                  </div>
+                  <button *ngIf="alert.action" 
+                          (click)="router.navigate([alert.action.route])"
+                          class="text-xs px-2 py-1 rounded"
+                          [ngClass]="{
+                            'bg-red-100 text-red-800 hover:bg-red-200': alert.type === 'error',
+                            'bg-yellow-100 text-yellow-800 hover:bg-yellow-200': alert.type === 'warning',
+                            'bg-blue-100 text-blue-800 hover:bg-blue-200': alert.type === 'info',
+                            'bg-green-100 text-green-800 hover:bg-green-200': alert.type === 'success'
+                          }">
+                    {{ alert.action.label }}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <ng-template #noAlerts>
+              <div class="text-center py-8">
+                <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
+                <p class="text-gray-500 text-sm">Tout va bien ! Aucune alerte.</p>
               </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm text-gray-900">{{ activity.description }}</p>
-                <p class="text-xs text-gray-500">Il y a {{ formatRelativeDate(activity.date) }}</p>
-              </div>
-            </div>
-            
-            <!-- Message si pas d'activité -->
-            <div *ngIf="recentActivities.length === 0" class="text-center text-gray-500 py-4">
-              <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <p class="text-sm">Aucune activité récente</p>
-            </div>
+            </ng-template>
           </div>
         </div>
-
-        <!-- État du système -->
-        <div class="card">
-          <h3 class="text-lg font-semibold text-gray-900 mb-6">État du système</h3>
-          <div class="space-y-4">
-            
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Base de données</span>
-              <span class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                ✓ Opérationnelle
-              </span>
-            </div>
-            
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">API Laravel</span>
-              <span class="inline-flex items-center px-2 py-1 text-xs font-medium"
-                    [class.bg-green-100]="!error"
-                    [class.text-green-800]="!error"
-                    [class.bg-red-100]="error"
-                    [class.text-red-800]="error"
-                    class="rounded-full">
-                {{ error ? '✗ Erreur' : '✓ En ligne' }}
-              </span>
-            </div>
-            
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Authentification</span>
-              <span class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                ✓ Sanctum
-              </span>
-            </div>
-            
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Dernière sync</span>
-              <span class="text-sm text-gray-900">{{ getCurrentTime() }}</span>
-            </div>
-            
-          </div>
-        </div>
-
       </div>
     </div>
-  </div>
-</div>

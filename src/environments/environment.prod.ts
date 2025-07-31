@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.portail-scolaire.com/api', // URL de production
+  apiUrl: 'https://portailscolaire.gestion-stock-boutique.com/api', // URL de production
   appName: 'Portail Administratif Scolaire',
   version: '1.0.0',
   

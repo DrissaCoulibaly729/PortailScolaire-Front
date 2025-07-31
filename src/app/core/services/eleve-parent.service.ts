@@ -1,4 +1,4 @@
-// src/app/core/services/eleve-parent.service.ts
+// ===== src/app/core/services/eleve-parent.service.ts (VERSION PRODUCTION) =====
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError, BehaviorSubject } from 'rxjs';
 import { map, catchError, switchMap, tap } from 'rxjs/operators';
@@ -6,6 +6,7 @@ import { map, catchError, switchMap, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { AuthService } from '../auth/auth.service';
 import { ParentSecurityService } from './parent-security.service';
+import { API_ENDPOINTS } from '../constants/api-endpoints';
 
 import { Bulletin, BulletinFilters } from '../../shared/models/bulletin.model';
 import { Note, TypeEvaluation } from '../../shared/models/note.model';
@@ -36,7 +37,7 @@ export class EleveParentService {
   // ==================== GESTION ÉLÈVE ====================
 
   /**
-   * Obtenir les informations de l'élève connecté ou d'un enfant
+   * 🚀 PRODUCTION: Obtenir les informations de l'élève connecté ou d'un enfant
    */
   getEleveDetails(eleveId?: number): Observable<SecureDataResponse<Eleve>> {
     const currentUser = this.authService.getCurrentUser();
@@ -71,36 +72,30 @@ export class EleveParentService {
           });
         }
 
-        // ✅ TEMPORAIRE: Retourner données de test au lieu d'appel API
-        return of({
-          data: this.getMockEleve(targetEleveId),
-          allowed: true
-        });
-
-        // ✅ PRODUCTION: Décommenter cette ligne et supprimer le mock ci-dessus
-        // return this.apiService.get<Eleve>(`/eleves/${targetEleveId}`).pipe(
-        //   map(eleve => {
-        //     this.currentEleveSubject.next(eleve);
-        //     return {
-        //       data: eleve,
-        //       allowed: true
-        //     };
-        //   }),
-        //   catchError(error => {
-        //     console.error('Erreur getEleveDetails:', error);
-        //     return of({
-        //       data: null,
-        //       allowed: false,
-        //       reason: 'Erreur lors du chargement des détails'
-        //     });
-        //   })
-        // );
+        // 🚀 PRODUCTION: Appel API réel
+        return this.apiService.get<Eleve>(API_ENDPOINTS.ELEVE.PROFIL.GET).pipe(
+          map(eleve => {
+            this.currentEleveSubject.next(eleve);
+            return {
+              data: eleve,
+              allowed: true
+            };
+          }),
+          catchError(error => {
+            console.error('Erreur getEleveDetails:', error);
+            return of({
+              data: null,
+              allowed: false,
+              reason: 'Erreur lors du chargement des détails'
+            });
+          })
+        );
       })
     );
   }
 
   /**
-   * ✅ CORRIGÉ: Mettre à jour les informations parent (téléphone, email, etc.)
+   * 🚀 PRODUCTION: Mettre à jour les informations parent (téléphone, email, etc.)
    */
   updateInformationsParent(eleveId: number, updates: Partial<Eleve>): Observable<Eleve> {
     return this.parentSecurity.verifierAccesEleve(eleveId).pipe(
@@ -109,33 +104,25 @@ export class EleveParentService {
           return throwError(() => new Error(access.reason || 'Accès non autorisé'));
         }
 
-        // ✅ TEMPORAIRE: Simuler la mise à jour avec un objet Eleve complet
-        const currentEleve = this.getMockEleve(eleveId);
-        
-        // Créer un nouvel objet Eleve avec les mises à jour appliquées
-        const updatedEleve: Eleve = {
-          ...currentEleve,
-          // Appliquer uniquement les champs autorisés et définis
+        // 🚀 PRODUCTION: Préparer les données autorisées pour la mise à jour
+        const allowedUpdates = {
           ...(updates.telephone_parent && { telephone_parent: updates.telephone_parent }),
           ...(updates.email_parent && { email_parent: updates.email_parent }),
           ...(updates.adresse && { adresse: updates.adresse }),
           ...(updates.telephone && { telephone: updates.telephone }),
-          ...(updates.email && { email: updates.email }),
-          // Mise à jour du timestamp
-          updated_at: new Date().toISOString()
+          ...(updates.email && { email: updates.email })
         };
 
-        return of(updatedEleve);
-
-        // ✅ PRODUCTION: Décommenter ces lignes
-        // const allowedUpdates = {
-        //   ...(updates.telephone_parent && { telephone_parent: updates.telephone_parent }),
-        //   ...(updates.email_parent && { email_parent: updates.email_parent }),
-        //   ...(updates.adresse && { adresse: updates.adresse }),
-        //   ...(updates.telephone && { telephone: updates.telephone }),
-        //   ...(updates.email && { email: updates.email })
-        // };
-        // return this.apiService.put<Eleve>(`/eleves/${eleveId}/parent-info`, allowedUpdates);
+        return this.apiService.put<Eleve>(API_ENDPOINTS.ELEVE.PROFIL.UPDATE, allowedUpdates).pipe(
+          tap(updatedEleve => {
+            // Mettre à jour le cache local
+            this.currentEleveSubject.next(updatedEleve);
+          }),
+          catchError(error => {
+            console.error('Erreur updateInformationsParent:', error);
+            return throwError(() => error);
+          })
+        );
       })
     );
   }
@@ -143,14 +130,14 @@ export class EleveParentService {
   // ==================== GESTION BULLETINS ====================
 
   /**
-   * ✅ AJOUTÉ: Méthode getBulletins() - Alias pour getBulletinsEleve()
+   * 🚀 PRODUCTION: Alias pour getBulletinsEleve()
    */
   getBulletins(eleveId?: number, filters?: BulletinFilters): Observable<SecureDataResponse<Bulletin[]>> {
     return this.getBulletinsEleve(eleveId, filters);
   }
 
   /**
-   * Obtenir les bulletins d'un élève
+   * 🚀 PRODUCTION: Obtenir les bulletins d'un élève
    */
   getBulletinsEleve(eleveId?: number, filters?: BulletinFilters): Observable<SecureDataResponse<Bulletin[]>> {
     const currentUser = this.authService.getCurrentUser();
@@ -174,91 +161,64 @@ export class EleveParentService {
           });
         }
 
-        // ✅ TEMPORAIRE: Retourner données de test
-        let bulletins = this.getMockBulletins();
+        // 🚀 PRODUCTION: Appel API réel avec construction d'URL
+        let endpoint = API_ENDPOINTS.ELEVE.BULLETINS.LIST;
         
-        // Appliquer les filtres si fournis
-        if (filters) {
-          bulletins = this.applyBulletinFilters(bulletins, filters);
+        // Ajouter les paramètres de filtre si fournis
+        const params = new URLSearchParams();
+        if (filters?.periode_id) params.append('periode_id', filters.periode_id.toString());
+        if (filters?.statut) params.append('statut', filters.statut);
+        if (filters?.annee_scolaire) params.append('annee_scolaire', filters.annee_scolaire);
+        
+        if (params.toString()) {
+          endpoint += `?${params.toString()}`;
         }
 
-        return of({
-          data: bulletins,
-          allowed: true
-        });
-
-        // ✅ PRODUCTION: Décommenter ces lignes
-        // return this.apiService.get<Bulletin[]>(`/eleves/${targetEleveId}/bulletins`).pipe(
-        //   map(bulletins => {
-        //     let filteredBulletins = bulletins;
-        //     if (filters) {
-        //       filteredBulletins = this.applyBulletinFilters(bulletins, filters);
-        //     }
-        //     return {
-        //       data: filteredBulletins,
-        //       allowed: true
-        //     };
-        //   }),
-        //   catchError(error => {
-        //     console.error('Erreur getBulletinsEleve:', error);
-        //     return of({
-        //       data: null,
-        //       allowed: false,
-        //       reason: 'Erreur lors du chargement des bulletins'
-        //     });
-        //   })
-        // );
+        return this.apiService.get<Bulletin[]>(endpoint).pipe(
+          map(bulletins => ({
+            data: bulletins,
+            allowed: true
+          })),
+          catchError(error => {
+            console.error('Erreur getBulletinsEleve:', error);
+            return of({
+              data: null,
+              allowed: false,
+              reason: 'Erreur lors du chargement des bulletins'
+            });
+          })
+        );
       })
     );
   }
 
   /**
-   * Obtenir un bulletin spécifique
+   * 🚀 PRODUCTION: Obtenir un bulletin spécifique
    */
   getBulletinDetail(bulletinId: number): Observable<SecureDataResponse<Bulletin>> {
-    // ✅ TEMPORAIRE: Simuler la récupération du bulletin
-    const mockBulletin = this.getMockBulletins().find(b => b.id === bulletinId);
-    
-    if (!mockBulletin) {
-      return of({
-        data: null,
-        allowed: false,
-        reason: 'Bulletin non trouvé'
-      });
-    }
-
-    return this.parentSecurity.verifierAccesEleve(mockBulletin.eleve_id).pipe(
-      map(access => ({
-        data: access.allowed ? mockBulletin : null,
-        allowed: access.allowed,
-        reason: access.reason
-      }))
+    return this.apiService.get<Bulletin>(API_ENDPOINTS.ELEVE.BULLETINS.BY_ID(bulletinId)).pipe(
+      switchMap(bulletin => {
+        return this.parentSecurity.verifierAccesEleve(bulletin.eleve_id).pipe(
+          map(access => ({
+            data: access.allowed ? bulletin : null,
+            allowed: access.allowed,
+            reason: access.reason
+          }))
+        );
+      }),
+      catchError(error => {
+        console.error('Erreur getBulletinDetail:', error);
+        return of({
+          data: null,
+          allowed: false,
+          reason: 'Bulletin non trouvé'
+        });
+      })
     );
-
-    // ✅ PRODUCTION: Décommenter ces lignes
-    // return this.apiService.get<Bulletin>(`/bulletins/${bulletinId}`).pipe(
-    //   switchMap(bulletin => {
-    //     return this.parentSecurity.verifierAccesEleve(bulletin.eleve_id).pipe(
-    //       map(access => ({
-    //         data: access.allowed ? bulletin : null,
-    //         allowed: access.allowed,
-    //         reason: access.reason
-    //       }))
-    //     );
-    //   }),
-    //   catchError(error => {
-    //     console.error('Erreur getBulletinDetail:', error);
-    //     return of({
-    //       data: null,
-    //       allowed: false,
-    //       reason: 'Bulletin non trouvé'
-    //     });
-    //   })
-    // );
   }
 
   /**
-   * Télécharger un bulletin PDF
+   * 🚀 PRODUCTION: Télécharger un bulletin PDF
    */
   downloadBulletinPdf(bulletinId: number): Observable<SecureDataResponse<Blob>> {
     return this.getBulletinDetail(bulletinId).pipe(
@@ -271,66 +231,73 @@ export class EleveParentService {
           });
         }
 
-        // ✅ TEMPORAIRE: Simuler un PDF vide
-        const mockPdfBlob = new Blob(['Mock PDF content'], { type: 'application/pdf' });
-        return of({
-          data: mockPdfBlob,
-          allowed: true
-        });
-
-        // ✅ PRODUCTION: Décommenter ces lignes
-        // return this.downloadFile(`/bulletins/${bulletinId}/pdf`).pipe(
-        //   map(blob => ({
-        //     data: blob,
-        //     allowed: true
-        //   })),
-        //   catchError(error => {
-        //     console.error('Erreur téléchargement PDF:', error);
-        //     return of({
-        //       data: null,
-        //       allowed: false,
-        //       reason: 'Erreur lors du téléchargement'
-        //     });
-        //   })
-        // );
+        // 🚀 PRODUCTION: Téléchargement réel du PDF
+        return this.downloadFile(API_ENDPOINTS.ELEVE.BULLETINS.TELECHARGER(bulletinId)).pipe(
+          map(blob => ({
+            data: blob,
+            allowed: true
+          })),
+          catchError(error => {
+            console.error('Erreur téléchargement PDF:', error);
+            return of({
+              data: null,
+              allowed: false,
+              reason: 'Erreur lors du téléchargement'
+            });
+          })
+        );
       })
     );
   }
 
   /**
-   * Méthode pour télécharger des fichiers (pour production)
+   * 🚀 PRODUCTION: Obtenir l'historique des bulletins
    */
-  private downloadFile(url: string): Observable<Blob> {
-    return new Observable<Blob>(observer => {
-      const token = this.authService.getToken();
-      
-      fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/pdf'
-        }
+  getBulletinHistorique(annee?: number): Observable<SecureDataResponse<Bulletin[]>> {
+    const endpoint = annee 
+      ? API_ENDPOINTS.ELEVE.BULLETINS.HISTORIQUE(annee)
+      : API_ENDPOINTS.ELEVE.BULLETINS.HISTORIQUE();
+
+    return this.apiService.get<Bulletin[]>(endpoint).pipe(
+      map(bulletins => ({
+        data: bulletins,
+        allowed: true
+      })),
+      catchError(error => {
+        console.error('Erreur getBulletinHistorique:', error);
+        return of({
+          data: null,
+          allowed: false,
+          reason: 'Erreur lors du chargement de l\'historique'
+        });
       })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Erreur lors du téléchargement');
-        }
-        return response.blob();
+    );
+  }
+
+  /**
+   * 🚀 PRODUCTION: Comparer avec la classe
+   */
+  getComparaisonClasse(bulletinId: number): Observable<SecureDataResponse<any>> {
+    return this.apiService.get<any>(API_ENDPOINTS.ELEVE.BULLETINS.COMPARAISON_CLASSE(bulletinId)).pipe(
+      map(comparaison => ({
+        data: comparaison,
+        allowed: true
+      })),
+      catchError(error => {
+        console.error('Erreur getComparaisonClasse:', error);
+        return of({
+          data: null,
+          allowed: false,
+          reason: 'Erreur lors de la comparaison'
+        });
       })
-      .then(blob => {
-        observer.next(blob);
-        observer.complete();
-      })
-      .catch(error => {
-        observer.error(error);
-      });
-    });
+    );
   }
 
   // ==================== GESTION NOTES ====================
 
   /**
-   * Obtenir les notes d'un élève
+   * 🚀 PRODUCTION: Obtenir les notes d'un élève
    */
   getNotesEleve(eleveId?: number, matiereId?: number): Observable<SecureDataResponse<Note[]>> {
     const currentUser = this.authService.getCurrentUser();
@@ -354,45 +321,74 @@ export class EleveParentService {
           });
         }
 
-        // ✅ TEMPORAIRE: Retourner données de test
-        let notes = this.getMockNotes();
-        
-        // Filtrer par matière si demandé
+        // 🚀 PRODUCTION: Choisir l'endpoint selon le filtre
+        let endpoint: string;
         if (matiereId) {
-          notes = notes.filter(note => note.matiere_id === matiereId);
+          endpoint = API_ENDPOINTS.ELEVE.NOTES.MATIERE(matiereId);
+        } else {
+          endpoint = API_ENDPOINTS.ELEVE.NOTES.LIST;
         }
 
-        return of({
-          data: notes,
-          allowed: true
-        });
-
-        // ✅ PRODUCTION: Décommenter ces lignes
-        // let endpoint = `/eleves/${targetEleveId}/notes`;
-        // if (matiereId) {
-        //   endpoint += `?matiere_id=${matiereId}`;
-        // }
-        // 
-        // return this.apiService.get<Note[]>(endpoint).pipe(
-        //   map(notes => ({
-        //     data: notes,
-        //     allowed: true
-        //   })),
-        //   catchError(error => {
-        //     console.error('Erreur getNotesEleve:', error);
-        //     return of({
-        //       data: null,
-        //       allowed: false,
-        //       reason: 'Erreur lors du chargement des notes'
-        //     });
-        //   })
-        // );
+        return this.apiService.get<Note[]>(endpoint).pipe(
+          map(notes => ({
+            data: notes,
+            allowed: true
+          })),
+          catchError(error => {
+            console.error('Erreur getNotesEleve:', error);
+            return of({
+              data: null,
+              allowed: false,
+              reason: 'Erreur lors du chargement des notes'
+            });
+          })
+        );
       })
     );
   }
 
   /**
-   * Obtenir les moyennes par matière
+   * 🚀 PRODUCTION: Obtenir les notes par période
+   */
+  getNotesPeriode(periode: string): Observable<SecureDataResponse<Note[]>> {
+    return this.apiService.get<Note[]>(API_ENDPOINTS.ELEVE.NOTES.PERIODE(periode)).pipe(
+      map(notes => ({
+        data: notes,
+        allowed: true
+      })),
+      catchError(error => {
+        console.error('Erreur getNotesPeriode:', error);
+        return of({
+          data: null,
+          allowed: false,
+          reason: 'Erreur lors du chargement des notes'
+        });
+      })
+    );
+  }
+
+  /**
+   * 🚀 PRODUCTION: Obtenir l'évolution des notes
+   */
+  getEvolutionNotes(): Observable<SecureDataResponse<any[]>> {
+    return this.apiService.get<any[]>(API_ENDPOINTS.ELEVE.NOTES.EVOLUTION).pipe(
+      map(evolution => ({
+        data: evolution,
+        allowed: true
+      })),
+      catchError(error => {
+        console.error('Erreur getEvolutionNotes:', error);
+        return of({
+          data: null,
+          allowed: false,
+          reason: 'Erreur lors du chargement de l\'évolution'
+        });
+      })
+    );
+  }
+
+  /**
+   * 🚀 PRODUCTION: Obtenir les moyennes par matière (calculées côté serveur)
    */
   getMoyennesParMatiere(eleveId?: number): Observable<SecureDataResponse<any[]>> {
     const currentUser = this.authService.getCurrentUser();
@@ -416,30 +412,165 @@ export class EleveParentService {
           });
         }
 
-        // ✅ TEMPORAIRE: Calculer moyennes à partir des notes de test
-        const notes = this.getMockNotes();
-        const moyennesParMatiere = this.calculerMoyennesParMatiere(notes);
+        // 🚀 PRODUCTION: Endpoint pour les moyennes calculées côté serveur
+        return this.apiService.get<any[]>(`/eleve/moyennes-matieres`).pipe(
+          map(moyennes => ({
+            data: moyennes,
+            allowed: true
+          })),
+          catchError(error => {
+            console.error('Erreur getMoyennesParMatiere:', error);
+            return of({
+              data: null,
+              allowed: false,
+              reason: 'Erreur lors du chargement des moyennes'
+            });
+          })
+        );
+      })
+    );
+  }
 
+  // ==================== GESTION PROFIL ====================
+
+  /**
+   * 🚀 PRODUCTION: Obtenir les informations de la classe
+   */
+  getMaClasse(): Observable<SecureDataResponse<any>> {
+    return this.apiService.get<any>(API_ENDPOINTS.ELEVE.PROFIL.MA_CLASSE).pipe(
+      map(classe => ({
+        data: classe,
+        allowed: true
+      })),
+      catchError(error => {
+        console.error('Erreur getMaClasse:', error);
         return of({
-          data: moyennesParMatiere,
-          allowed: true
+          data: null,
+          allowed: false,
+          reason: 'Erreur lors du chargement de la classe'
         });
+      })
+    );
+  }
 
-        // ✅ PRODUCTION: Décommenter ces lignes
-        // return this.apiService.get<any[]>(`/eleves/${targetEleveId}/moyennes-matieres`).pipe(
-        //   map(moyennes => ({
-        //     data: moyennes,
-        //     allowed: true
-        //   })),
-        //   catchError(error => {
-        //     console.error('Erreur getMoyennesParMatiere:', error);
-        //     return of({
-        //       data: null,
-        //       allowed: false,
-        //       reason: 'Erreur lors du chargement des moyennes'
-        //     });
-        //   })
-        // );
+  /**
+   * 🚀 PRODUCTION: Obtenir le parcours scolaire
+   */
+  getMonParcours(): Observable<SecureDataResponse<any[]>> {
+    return this.apiService.get<any[]>(API_ENDPOINTS.ELEVE.PROFIL.MON_PARCOURS).pipe(
+      map(parcours => ({
+        data: parcours,
+        allowed: true
+      })),
+      catchError(error => {
+        console.error('Erreur getMonParcours:', error);
+        return of({
+          data: null,
+          allowed: false,
+          reason: 'Erreur lors du chargement du parcours'
+        });
+      })
+    );
+  }
+
+  /**
+   * 🚀 PRODUCTION: Obtenir les préférences de notification
+   */
+  getPreferencesNotification(): Observable<SecureDataResponse<any>> {
+    return this.apiService.get<any>(API_ENDPOINTS.ELEVE.PROFIL.PREFERENCES_NOTIFICATIONS).pipe(
+      map(preferences => ({
+        data: preferences,
+        allowed: true
+      })),
+      catchError(error => {
+        console.error('Erreur getPreferencesNotification:', error);
+        return of({
+          data: null,
+          allowed: false,
+          reason: 'Erreur lors du chargement des préférences'
+        });
+      })
+    );
+  }
+
+  /**
+   * 🚀 PRODUCTION: Mettre à jour les préférences de notification
+   */
+  updatePreferencesNotification(preferences: any): Observable<any> {
+    return this.apiService.put<any>(API_ENDPOINTS.ELEVE.PROFIL.UPDATE_PREFERENCES, preferences).pipe(
+      catchError(error => {
+        console.error('Erreur updatePreferencesNotification:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // ==================== GESTION DOCUMENTS ====================
+
+  /**
+   * 🚀 PRODUCTION: Obtenir la liste des documents
+   */
+  getDocuments(): Observable<SecureDataResponse<any[]>> {
+    return this.apiService.get<any[]>(API_ENDPOINTS.ELEVE.DOCUMENTS.LIST).pipe(
+      map(documents => ({
+        data: documents,
+        allowed: true
+      })),
+      catchError(error => {
+        console.error('Erreur getDocuments:', error);
+        return of({
+          data: null,
+          allowed: false,
+          reason: 'Erreur lors du chargement des documents'
+        });
+      })
+    );
+  }
+
+  /**
+   * 🚀 PRODUCTION: Obtenir le statut de validation des documents
+   */
+  getStatutValidationDocuments(): Observable<SecureDataResponse<any>> {
+    return this.apiService.get<any>(API_ENDPOINTS.ELEVE.DOCUMENTS.STATUT_VALIDATION).pipe(
+      map(statut => ({
+        data: statut,
+        allowed: true
+      })),
+      catchError(error => {
+        console.error('Erreur getStatutValidationDocuments:', error);
+        return of({
+          data: null,
+          allowed: false,
+          reason: 'Erreur lors du chargement du statut'
+        });
+      })
+    );
+  }
+
+  /**
+   * 🚀 PRODUCTION: Uploader un document
+   */
+  uploadDocument(file: File, metadata: any): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('metadata', JSON.stringify(metadata));
+
+    return this.apiService.post<any>(API_ENDPOINTS.ELEVE.DOCUMENTS.UPLOAD, formData).pipe(
+      catchError(error => {
+        console.error('Erreur uploadDocument:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * 🚀 PRODUCTION: Supprimer un document
+   */
+  deleteDocument(documentId: number): Observable<void> {
+    return this.apiService.delete<void>(API_ENDPOINTS.ELEVE.DOCUMENTS.DELETE(documentId)).pipe(
+      catchError(error => {
+        console.error('Erreur deleteDocument:', error);
+        return throwError(() => error);
       })
     );
   }
@@ -447,62 +578,33 @@ export class EleveParentService {
   // ==================== UTILITAIRES ====================
 
   /**
-   * Appliquer des filtres aux bulletins
+   * 🚀 PRODUCTION: Méthode pour télécharger des fichiers
    */
-  private applyBulletinFilters(bulletins: Bulletin[], filters: BulletinFilters): Bulletin[] {
-    return bulletins.filter(bulletin => {
-      if (filters.periode_id && bulletin.periode_id !== filters.periode_id) {
-        return false;
-      }
-      if (filters.statut && bulletin.statut !== filters.statut) {
-        return false;
-      }
-      if (filters.annee_scolaire && bulletin.annee_scolaire !== filters.annee_scolaire) {
-        return false;
-      }
-      return true;
+  private downloadFile(url: string): Observable<Blob> {
+    return new Observable<Blob>(observer => {
+      const token = this.authService.getToken();
+      
+      fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/pdf'
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        observer.next(blob);
+        observer.complete();
+      })
+      .catch(error => {
+        observer.error(error);
+      });
     });
-  }
-
-  /**
-   * Calculer moyennes par matière à partir des notes
-   */
-  private calculerMoyennesParMatiere(notes: Note[]): any[] {
-    const matiereMap = new Map<number, {
-      matiere: any;
-      notes: Note[];
-      total: number;
-      coefficient_total: number;
-    }>();
-
-    notes.forEach(note => {
-      if (!note.matiere) return;
-
-      const matiereId = note.matiere.id;
-      if (!matiereMap.has(matiereId)) {
-        matiereMap.set(matiereId, {
-          matiere: note.matiere,
-          notes: [],
-          total: 0,
-          coefficient_total: 0
-        });
-      }
-
-      const matiereData = matiereMap.get(matiereId)!;
-      matiereData.notes.push(note);
-      matiereData.total += note.valeur * note.coefficient;
-      matiereData.coefficient_total += note.coefficient;
-    });
-
-    return Array.from(matiereMap.values()).map(matiereData => ({
-      matiere_id: matiereData.matiere.id,
-      matiere: matiereData.matiere,
-      moyenne: matiereData.coefficient_total > 0 
-        ? Math.round((matiereData.total / matiereData.coefficient_total) * 100) / 100 
-        : 0,
-      nombre_notes: matiereData.notes.length,
-      coefficient: matiereData.matiere.coefficient
-    }));
   }
 
   /**
@@ -528,200 +630,72 @@ export class EleveParentService {
     this.currentEleveSubject.next(null);
   }
 
-  // ==================== DONNÉES DE TEST (TEMPORAIRES) ====================
+  /**
+   * 🚀 PRODUCTION: Télécharger un fichier avec gestion des erreurs
+   */
+  downloadFileSecure(url: string, filename?: string): void {
+    this.downloadFile(url).subscribe({
+      next: (blob) => {
+        // Créer un URL temporaire pour le téléchargement
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename || 'document.pdf';
+        
+        // Déclencher le téléchargement
+        document.body.appendChild(link);
+        link.click();
+        
+        // Nettoyer
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+      },
+      error: (error) => {
+        console.error('Erreur téléchargement:', error);
+        // Vous pouvez ajouter une notification d'erreur ici
+      }
+    });
+  }
 
   /**
-   * ✅ CORRIGÉ: Données de test pour un élève - Toutes les propriétés requises
+   * 🚀 PRODUCTION: Méthode utilitaire pour construire des URLs avec paramètres
    */
-  private getMockEleve(eleveId: number): Eleve {
-    const currentUser = this.authService.getCurrentUser();
-    
-    return {
-      id: eleveId,
-      nom: currentUser?.nom || 'Dupont',
-      prenom: currentUser?.prenom || 'Pierre',
-      email: currentUser?.email || 'pierre.dupont@eleve.fr',
-      telephone: '0123456789',
-      date_naissance: '2008-05-15',
-      adresse: '123 Rue de la Paix, 75001 Paris',
-      numero_etudiant: 'E2024001',
-      role: 'eleve',
-      actif: true,
+  private buildUrlWithParams(baseUrl: string, params: Record<string, any>): string {
+    const url = new URL(baseUrl, window.location.origin);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        url.searchParams.append(key, String(value));
+      }
+    });
+    return url.pathname + url.search;
+  }
+
+  /**
+   * 🚀 PRODUCTION: Gestion centralisée des erreurs
+   */
+  private handleError(operation: string) {
+    return (error: any): Observable<SecureDataResponse<any>> => {
+      console.error(`Erreur ${operation}:`, error);
       
-      // Informations scolaires
-      classe_id: 1,
-      moyenne_generale: 14.5,
-      rang_classe: 8,
+      let errorMessage = 'Une erreur inattendue s\'est produite';
       
-      // Informations parent - Toutes définies (pas undefined)
-      nom_parent: 'Dupont',
-      prenom_parent: 'Marie',
-      email_parent: 'marie.dupont@parent.fr',
-      telephone_parent: '0678901234',
-      
-      // Relations
-      classe: {
-        id: 1,
-        nom: '3ème A',
-        niveau: '3ème',
-        section: 'A',
-        effectif_max: 30,
-        effectif_actuel: 25,
-        actif: true,
-        moyenne: 13.2,
-        created_at: '2024-09-01T00:00:00Z',
-        updated_at: '2024-09-01T00:00:00Z'
-      },
-      
-      // Métadonnées
-      created_at: '2024-09-01T00:00:00Z',
-      updated_at: '2024-12-01T00:00:00Z'
+      if (error.status === 401) {
+        errorMessage = 'Session expirée, veuillez vous reconnecter';
+      } else if (error.status === 403) {
+        errorMessage = 'Accès non autorisé';
+      } else if (error.status === 404) {
+        errorMessage = 'Ressource non trouvée';
+      } else if (error.status === 500) {
+        errorMessage = 'Erreur du serveur, veuillez réessayer plus tard';
+      } else if (error.error?.message) {
+        errorMessage = error.error.message;
+      }
+
+      return of({
+        data: null,
+        allowed: false,
+        reason: errorMessage
+      });
     };
-  }
-
-  /**
-   * ✅ Données de test pour les bulletins - Compatible avec votre modèle
-   */
-  private getMockBulletins(): Bulletin[] {
-    return [
-      {
-        id: 1,
-        eleve_id: 1,
-        classe_id: 1,
-        periode_id: 1,
-        annee_scolaire: '2024-2025',
-        moyenne_generale: 14.5,
-        rang_classe: 8,
-        total_eleves: 25,
-        mention: 'Bien',
-        statut: 'publie',
-        observations_generales: 'Bon trimestre, continuez vos efforts',
-        created_at: '2024-01-15T10:00:00Z',
-        updated_at: '2024-01-15T10:00:00Z',
-        periode: {
-          id: 1,
-          nom: 'Trimestre 1',
-          type: 'trimestre1',
-          date_debut: '2024-09-01',
-          date_fin: '2024-12-20',
-          actif: true,
-          annee_scolaire: '2024-2025',
-          created_at: '2024-09-01T00:00:00Z',
-          updated_at: '2024-09-01T00:00:00Z'
-        }
-      },
-      {
-        id: 2,
-        eleve_id: 1,
-        classe_id: 1,
-        periode_id: 2,
-        annee_scolaire: '2024-2025',
-        moyenne_generale: 15.2,
-        rang_classe: 6,
-        total_eleves: 25,
-        mention: 'Bien',
-        statut: 'brouillon',
-        observations_generales: 'Progression remarquable',
-        created_at: '2024-04-15T10:00:00Z',
-        updated_at: '2024-04-15T10:00:00Z',
-        periode: {
-          id: 2,
-          nom: 'Trimestre 2',
-          type: 'trimestre2',
-          date_debut: '2025-01-06',
-          date_fin: '2025-04-12',
-          actif: true,
-          annee_scolaire: '2024-2025',
-          created_at: '2024-09-01T00:00:00Z',
-          updated_at: '2024-09-01T00:00:00Z'
-        }
-      }
-    ];
-  }
-
-  /**
-   * ✅ CORRIGÉ: Données de test pour les notes - Propriété 'active' ajoutée
-   */
-  private getMockNotes(): Note[] {
-    return [
-      {
-        id: 1,
-        eleve_id: 1,
-        matiere_id: 1,
-        enseignant_id: 1,
-        classe_id: 1,
-        valeur: 16,
-        type: 'devoir' as TypeEvaluation,
-        type_evaluation: 'devoir' as TypeEvaluation,
-        periode: 'trimestre1',
-        coefficient: 1,
-        date_evaluation: '2024-11-15',
-        commentaire: 'Très bon travail',
-        created_at: '2024-11-15T10:00:00Z',
-        updated_at: '2024-11-15T10:00:00Z',
-        matiere: {
-          id: 1,
-          nom: 'Mathématiques',
-          code: 'MATH',
-          coefficient: 4,
-          actif: true,
-          active: true, // ✅ AJOUTÉ: Propriété manquante
-          created_at: '2024-09-01T00:00:00Z',
-          updated_at: '2024-09-01T00:00:00Z'
-        }
-      },
-      {
-        id: 2,
-        eleve_id: 1,
-        matiere_id: 2,
-        enseignant_id: 2,
-        classe_id: 1,
-        valeur: 14,
-        type: 'controle' as TypeEvaluation,
-        type_evaluation: 'controle' as TypeEvaluation,
-        periode: 'trimestre1',
-        coefficient: 1,
-        date_evaluation: '2024-11-20',
-        commentaire: 'Bon niveau, quelques erreurs d\'inattention',
-        created_at: '2024-11-20T10:00:00Z',
-        updated_at: '2024-11-20T10:00:00Z',
-        matiere: {
-          id: 2,
-          nom: 'Français',
-          code: 'FR',
-          coefficient: 4,
-          actif: true,
-          active: true, // ✅ AJOUTÉ: Propriété manquante
-          created_at: '2024-09-01T00:00:00Z',
-          updated_at: '2024-09-01T00:00:00Z'
-        }
-      },
-      {
-        id: 3,
-        eleve_id: 1,
-        matiere_id: 3,
-        enseignant_id: 3,
-        classe_id: 1,
-        valeur: 13,
-        type: 'examen' as TypeEvaluation,
-        type_evaluation: 'examen' as TypeEvaluation,
-        periode: 'trimestre1',
-        coefficient: 2,
-        date_evaluation: '2024-12-10',
-        commentaire: 'Résultat correct, peut mieux faire',
-        created_at: '2024-12-10T10:00:00Z',
-        updated_at: '2024-12-10T10:00:00Z',
-        matiere: {
-          id: 3,
-          nom: 'Histoire-Géographie',
-          code: 'HG',
-          coefficient: 3,
-          actif: true,
-          active: true, // ✅ AJOUTÉ: Propriété manquante
-          created_at: '2024-09-01T00:00:00Z',
-          updated_at: '2024-09-01T00:00:00Z'
-        }
-      }
-    ];
   }
 }
