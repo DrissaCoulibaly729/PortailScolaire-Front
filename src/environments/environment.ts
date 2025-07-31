@@ -2,8 +2,8 @@
 export const environment = {
   production: false,
 
-  //apiUrl: 'https://portailscolaire.gestion-stock-boutique.com/api', // 🔧 MODIFIEZ CETTE URL
-apiUrl: 'http://localhost:8000/api', // URL de développement
+  apiUrl: 'https://portailscolaire.gestion-stock-boutique.com/api', // 🔧 MODIFIEZ CETTE URL
+// apiUrl: 'http://localhost:8000/api', // URL de développement
   appName: 'Portail Administratif Scolaire',
   version: '1.0.0',
   
