@@ -2,15 +2,14 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil, switchMap } from 'rxjs/operators';
+import { Subject, forkJoin } from 'rxjs';
+import { takeUntil, switchMap, map } from 'rxjs/operators';
 
 import { AuthService } from '../../../../core/auth/auth.service';
 import { EnseignantService, ClasseWithEffectif } from '../../../../core/services/enseignant.service';
 import { Classe } from '../../../../shared/models/classe.model';
 import { Eleve } from '../../../../shared/models/user.model';
-// CORRECTION 1: Utiliser le bon import pour User
-import { User } from '../../../../shared/models/auth.model';
+import { User } from '../../../../shared/models/user.model'; // ✅ CORRECTION : Bon import
 import { Note } from '../../../../shared/models/note.model';
 
 @Component({
@@ -30,7 +29,6 @@ import { Note } from '../../../../shared/models/note.model';
         <div class="mb-6">
           <div class="flex justify-between items-start">
             <div class="flex items-center">
-              <!-- CORRECTION 2: Utiliser navigateBack() au lieu de router.navigate() -->
               <button (click)="navigateBack()" 
                       class="text-gray-600 hover:text-gray-800 mr-4">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,15 +42,14 @@ import { Note } from '../../../../shared/models/note.model';
                     {{ classe.niveau }}
                   </span>
                   <span class="px-3 py-1 rounded-full text-sm font-medium"
-                        [class]="classe.actif ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                    {{ classe.actif ? 'Active' : 'Inactive' }}
+                        [class]="getStatusClass()">
+                    {{ getStatusText() }}
                   </span>
                   <span class="text-gray-600">{{ getEffectif() }}/{{ classe.effectif_max || 0 }} élèves</span>
                 </div>
               </div>
             </div>
             <div class="flex space-x-3">
-              <!-- CORRECTION 3: Utiliser des méthodes publiques -->
               <button (click)="addNewNote()" 
                       class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,7 +187,7 @@ import { Note } from '../../../../shared/models/note.model';
                         </div>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ eleve.numero_etudiant }}
+                        {{ eleve.numero_etudiant || 'N/A' }}
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center">
@@ -203,7 +200,7 @@ import { Note } from '../../../../shared/models/note.model';
                         </div>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ eleve.rang_classe || (i + 1) }}
+                        {{ getRangClasse(eleve, i) }}
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div class="flex space-x-2">
@@ -255,24 +252,24 @@ import { Note } from '../../../../shared/models/note.model';
                     <tr *ngFor="let note of recentNotes" class="hover:bg-gray-50">
                       <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm font-medium text-gray-900">
-                          {{ note.eleve?.nom }} {{ note.eleve?.prenom }}
+                          {{ getNoteEleve(note) }}
                         </div>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ note.matiere?.nom }}
+                        {{ getNoteMatiere(note) }}
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="text-lg font-bold" [class]="getMoyenneColorClass(note.valeur)">
-                          {{ note.valeur }}/20
+                        <span class="text-lg font-bold" [class]="getMoyenneColorClass(getNoteValeur(note))">
+                          {{ getNoteValeur(note) }}/20
                         </span>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                          {{ note.type }}
+                          {{ getNoteType(note) }}
                         </span>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ note.date_evaluation | date:'dd/MM/yyyy' }}
+                        {{ getNoteDate(note) | date:'dd/MM/yyyy' }}
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button (click)="editNote(note.id)" 
@@ -352,8 +349,8 @@ import { Note } from '../../../../shared/models/note.model';
                     </div>
                     <div class="flex justify-between">
                       <span class="text-sm text-gray-600">Statut :</span>
-                      <span class="text-sm font-medium" [class]="classe.actif ? 'text-green-600' : 'text-red-600'">
-                        {{ classe.actif ? 'Active' : 'Inactive' }}
+                      <span class="text-sm font-medium" [class]="getStatusText() === 'Active' ? 'text-green-600' : 'text-red-600'">
+                        {{ getStatusText() }}
                       </span>
                     </div>
                   </div>
@@ -373,6 +370,10 @@ import { Note } from '../../../../shared/models/note.model';
           <div>
             <h3 class="text-sm font-medium text-red-800">Erreur de chargement</h3>
             <p class="text-sm text-red-700 mt-1">{{ errorMessage }}</p>
+            <button (click)="reloadData()" 
+                    class="mt-2 text-sm text-red-800 underline hover:text-red-900">
+              Réessayer
+            </button>
           </div>
         </div>
       </div>
@@ -395,11 +396,11 @@ export class ClasseDetailComponent implements OnInit, OnDestroy {
   tauxReussite = 0;
   
   private destroy$ = new Subject<void>();
+  private classeId: number = 0;
 
   constructor(
     private authService: AuthService,
     private enseignantService: EnseignantService,
-    // CORRECTION 4: Rendre router public
     public router: Router,
     private route: ActivatedRoute
   ) {}
@@ -425,15 +426,11 @@ export class ClasseDetailComponent implements OnInit, OnDestroy {
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
-        // CORRECTION 5: Gestion des types User
-        this.currentUser = user ? {
-          ...user,
-          created_at: user.created_at || new Date().toISOString(),
-          updated_at: user.updated_at || new Date().toISOString()
-        } : null;
+        this.currentUser = user as User;
       });
   }
 
+  // ✅ CORRECTION PRINCIPALE : Utiliser directement l'API classe
   private loadClasseDetails(): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -441,32 +438,79 @@ export class ClasseDetailComponent implements OnInit, OnDestroy {
     this.route.params.pipe(
       takeUntil(this.destroy$),
       switchMap(params => {
-        const classeId = +params['id'];
+        this.classeId = +params['id'];
         
-        // CORRECTION 6: Accès direct au BehaviorSubject et typage
-        const classes = (this.enseignantService.classes$ as any).getValue() as ClasseWithEffectif[];
-        this.classe = classes.find((c: ClasseWithEffectif) => c.id === classeId) || null;
-        
-        if (!this.classe) {
-          throw new Error('Classe non trouvée');
+        if (!this.currentUser?.id) {
+          throw new Error('Utilisateur non connecté');
         }
-
-        // Charger les élèves de la classe
-        return this.enseignantService.getElevesClasse(classeId);
+        
+        // ✅ CORRECTION : Appeler directement l'API classe qui contient déjà les élèves
+        return this.loadClasseFromAPI();
       })
     ).subscribe({
-      next: (eleves) => {
-        this.eleves = eleves;
-        this.calculateStats();
-        this.loadRecentNotes();
+      next: () => {
+        // Les données sont déjà traitées dans loadClasseFromAPI
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Erreur lors du chargement:', error);
-        this.errorMessage = 'Impossible de charger les détails de la classe.';
+        this.errorMessage = error.message || 'Impossible de charger les détails de la classe.';
         this.isLoading = false;
       }
     });
+  }
+
+  // ✅ NOUVELLE MÉTHODE : Charger la classe directement depuis l'API
+  private loadClasseFromAPI(): any {
+    if (!this.currentUser?.id) {
+      throw new Error('Utilisateur non connecté');
+    }
+
+    // ✅ UTILISER une méthode du service pour récupérer les détails de classe
+    return this.enseignantService.getClasseDetails(this.classeId)
+      .pipe(
+        map((response: any) => {
+          console.log('📊 Réponse API classe:', response);
+          
+          if (!response.classe) {
+            throw new Error('Classe non trouvée');
+          }
+
+          const classeData = response.classe;
+          const stats = response.statistiques;
+
+          // ✅ MAPPER les données vers la structure attendue
+          this.classe = {
+            id: classeData.id,
+            nom: classeData.nom,
+            niveau: classeData.niveau,
+            section: classeData.section,
+            effectif_max: classeData.effectif_max,
+            description: classeData.description,
+            statut: classeData.active ? 'actif' : 'inactif',
+            created_at: classeData.created_at,
+            updated_at: classeData.updated_at,
+            // ✅ CORRECTION : Ajouter les propriétés manquantes requises par ClasseWithEffectif
+            actif: classeData.active || true,
+            moyenne: stats.moyenne_classe || 0,
+            // Propriétés pour la compatibilité
+            effectif: stats.effectif_actuel || 0,
+            effectif_actuel: stats.effectif_actuel || 0
+          } as ClasseWithEffectif;
+
+          // ✅ RÉCUPÉRER les élèves directement depuis la réponse
+          this.eleves = classeData.eleves || [];
+          
+          // Calculer les stats avec les données récupérées
+          this.calculateStats();
+          
+          // Charger les notes récentes
+          this.loadRecentNotes();
+          
+          return response;
+        }),
+        takeUntil(this.destroy$)
+      );
   }
 
   private loadRecentNotes(): void {
@@ -485,17 +529,21 @@ export class ClasseDetailComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           this.recentNotes = response.data;
-          // CORRECTION 7: Gestion de la propriété total
-          this.totalNotes = (response as any).total || response.data.length;
+          this.totalNotes = response.meta?.total || response.data.length;
         },
         error: (error) => {
           console.error('Erreur lors du chargement des notes:', error);
+          // Ne pas afficher d'erreur pour les notes, c'est optionnel
         }
       });
   }
 
   private calculateStats(): void {
-    if (this.eleves.length === 0) return;
+    if (this.eleves.length === 0) {
+      this.moyenneClasse = 0;
+      this.tauxReussite = 0;
+      return;
+    }
 
     // Calculer la moyenne de la classe
     const moyennes = this.eleves
@@ -505,10 +553,14 @@ export class ClasseDetailComponent implements OnInit, OnDestroy {
     if (moyennes.length > 0) {
       this.moyenneClasse = moyennes.reduce((sum, m) => sum + m, 0) / moyennes.length;
       this.tauxReussite = (moyennes.filter(m => m >= 10).length / moyennes.length) * 100;
+    } else {
+      this.moyenneClasse = 0;
+      this.tauxReussite = 0;
     }
   }
 
-  // CORRECTION 8: Méthodes publiques pour navigation
+  // ✅ MÉTHODES PUBLIQUES DE NAVIGATION ET ACTIONS
+
   navigateBack(): void {
     this.router.navigate(['/enseignant/classes']);
   }
@@ -525,9 +577,42 @@ export class ClasseDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ✅ MÉTHODES HELPER POUR LE TEMPLATE (accès sécurisé aux propriétés)
+
+  getRangClasse(eleve: Eleve, index: number): number {
+    return (eleve as any).rang_classe || (index + 1);
+  }
+
+  getNoteEleve(note: Note): string {
+    const noteAny = note as any;
+    return `${noteAny.eleve?.nom || ''} ${noteAny.eleve?.prenom || ''}`.trim() || 'N/A';
+  }
+
+  getNoteMatiere(note: Note): string {
+    return (note as any).matiere?.nom || 'N/A';
+  }
+
+  getNoteValeur(note: Note): number {
+    return (note as any).valeur || (note as any).note || 0;
+  }
+
+  getNoteType(note: Note): string {
+    return (note as any).type || 'Contrôle';
+  }
+
+  getNoteDate(note: Note): string {
+    return (note as any).date_evaluation || note.created_at || new Date().toISOString();
+  }
+
+  reloadData(): void {
+    this.loadClasseDetails();
+  }
+
+  // ✅ MÉTHODES UTILITAIRES
+
   getEffectif(): number {
     if (!this.classe) return 0;
-    return (this.classe as any).effectif || this.classe.effectif || this.eleves.length;
+    return (this.classe as any).effectif_actuel || this.classe.effectif || this.eleves.length;
   }
 
   getOccupationRate(): number {
@@ -535,6 +620,16 @@ export class ClasseDetailComponent implements OnInit, OnDestroy {
     const effectif = this.getEffectif();
     const rate = (effectif / this.classe.effectif_max) * 100;
     return Math.min(100, Math.round(rate));
+  }
+
+  getStatusClass(): string {
+    const status = (this.classe as any)?.statut || 'actif';
+    return status === 'actif' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+  }
+
+  getStatusText(): string {
+    const status = (this.classe as any)?.statut || 'actif';
+    return status === 'actif' ? 'Active' : 'Inactive';
   }
 
   getDistributionCount(min: number, max?: number): number {
@@ -573,7 +668,8 @@ export class ClasseDetailComponent implements OnInit, OnDestroy {
     return 'bg-red-200 text-red-900';
   }
 
-  // Actions
+  // ✅ ACTIONS SUR LES ÉLÈVES ET NOTES
+
   addNoteForEleve(eleveId: number): void {
     this.router.navigate(['/enseignant/notes/new'], {
       queryParams: {

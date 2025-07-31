@@ -197,6 +197,52 @@ export class EnseignantService {
     );
   }
 
+  // Ajout à votre EnseignantService existant - Nouvelle méthode getDashboardData
+
+
+getDashboardData(): Observable<any> {
+  return this.apiService.get<any>(API_ENDPOINTS.ENSEIGNANT.DASHBOARD).pipe(
+    tap(response => {
+      console.log('📊 Réponse Dashboard API:', response);
+    }),
+    catchError(error => {
+      console.error('❌ Erreur récupération dashboard:', error);
+      return of(this.getDefaultDashboardResponse());
+    }),
+    shareReplay(1)
+  );
+}
+
+/**
+ * ✅ AJOUT : Données par défaut en cas d'erreur
+ */
+private getDefaultDashboardResponse(): any {
+  return {
+    message: 'Dashboard par défaut',
+    statut: 'succes',
+    dashboard: {
+      mes_classes: [],
+      mes_matieres: [],
+      mes_statistiques: {
+        total_notes_saisies: 0,
+        notes_aujourd_hui: 0,
+        notes_cette_semaine: 0,
+        total_eleves: 0,
+        nombre_classes: 0,
+        nombre_matieres: 0,
+        moyennes_par_type_evaluation: []
+      },
+      activite_recente: {
+        dernieres_notes: [],
+        derniere_connexion: new Date().toLocaleString('fr-FR')
+      },
+      planning: {
+        mes_enseignements: [],
+        total_heures_estimees: 0
+      }
+    }
+  };
+}
   /**
    * ✅ CORRIGÉ - Obtenir les classes d'un enseignant (utilise API_ENDPOINTS)
    */
@@ -273,36 +319,38 @@ export class EnseignantService {
    * ✅ CORRIGÉ - Obtenir les statistiques d'un enseignant (utilise API_ENDPOINTS)
    */
   getStats(enseignantId: number): Observable<EnseignantStats> {
-    const cacheKey = `stats_${enseignantId}`;
-    
-    if (this.isDataCached(cacheKey)) {
-      // CORRECTION 5 : Typage explicite
-      return of(this.getFromCache<EnseignantStats>(cacheKey));
-    }
-
-    // ✅ CORRIGÉ : Utilise le dashboard endpoint
-    return this.apiService.get<any>(API_ENDPOINTS.ENSEIGNANT.DASHBOARD)
-      .pipe(
-        map(response => {
-          console.log('📊 Stats enseignant:', response);
-          // Adapter selon votre format de réponse Laravel
-          const stats = response.stats || response.statistiques || this.getDefaultStats();
-          return {
-            notes_saisies: stats.notes_saisies || stats.notesSaisies || 0,
-            moyenne_generale: stats.moyenne_generale || stats.moyenneGenerale || 0,
-            total_eleves: stats.total_eleves || stats.totalEleves || 0,
-            classes_actives: stats.classes_actives || stats.totalClasses || 0,
-            matieres_enseignees: stats.matieres_enseignees || stats.totalMatieres || 0
-          } as EnseignantStats;
-        }),
-        tap(stats => this.setToCache(cacheKey, stats)),
-        catchError(error => {
-          console.error('Erreur stats:', error);
-          return of(this.getDefaultStats());
-        }),
-        shareReplay(1)
-      );
+  const cacheKey = `stats_${enseignantId}`;
+  
+  if (this.isDataCached(cacheKey)) {
+    return of(this.getFromCache<EnseignantStats>(cacheKey));
   }
+
+  return this.getDashboardData().pipe(
+    map(response => {
+      console.log('📊 Stats depuis dashboard:', response);
+      
+      // Adapter les données de l'API vers le format EnseignantStats
+      const dashboard = response.dashboard;
+      const stats = dashboard.mes_statistiques;
+      
+      const enseignantStats: EnseignantStats = {
+        notes_saisies: stats.total_notes_saisies || 0,
+        moyenne_generale: 0, // À calculer depuis les matières si nécessaire
+        total_eleves: stats.total_eleves || 0,
+        classes_actives: stats.nombre_classes || 0,
+        matieres_enseignees: stats.nombre_matieres || 0
+      };
+      
+      return enseignantStats;
+    }),
+    tap(stats => this.setToCache(cacheKey, stats)),
+    catchError(error => {
+      console.error('Erreur stats:', error);
+      return of(this.getDefaultStats());
+    }),
+    shareReplay(1)
+  );
+}
 
   /**
    * ✅ CORRIGÉ - Obtenir l'activité récente d'un enseignant (utilise API_ENDPOINTS)
@@ -544,7 +592,219 @@ export class EnseignantService {
         })
       );
   }
+/**
+ * ✅ NOUVELLE MÉTHODE : Récupérer les détails d'une classe avec ses élèves
+ */
+// Ajoutez cette méthode dans votre EnseignantService
 
+
+getClasseDetails(classeId: number): Observable<any> {
+  const cacheKey = `classe_details_${classeId}`;
+  
+  if (this.isDataCached && this.isDataCached(cacheKey)) {
+    return of(this.getFromCache<any>(cacheKey));
+  }
+
+  // Combiner les appels pour récupérer classe + élèves + stats
+  return combineLatest([
+    this.getDashboardData(), // Pour récupérer les classes de l'enseignant
+    this.apiService.get<any>(API_ENDPOINTS.CLASSES.BY_ID(classeId)) // Pour les détails de la classe spécifique
+  ]).pipe(
+    map(([dashboardResponse, classeResponse]) => {
+      console.log('📊 Dashboard pour classe:', dashboardResponse);
+      console.log('🏫 Détails classe:', classeResponse);
+      
+      // Récupérer les données du dashboard
+      const dashboard = dashboardResponse.dashboard;
+      const mesClasses = dashboard.mes_classes || [];
+      const mesStatistiques = dashboard.mes_statistiques || {};
+      
+      // Trouver la classe dans les données du dashboard
+      const classeFromDashboard = mesClasses.find((c: any) => c.id === classeId);
+      
+      // Récupérer les détails de la classe depuis l'API spécifique
+      const classeDetails = classeResponse.classe || classeResponse.data || classeResponse;
+      const eleves = classeDetails.eleves || [];
+      
+      // Calculer les statistiques de la classe
+      const effectifActuel = eleves.length;
+      const moyennes = eleves
+        .map((e: any) => e.moyenne_generale || 0)
+        .filter((m: number) => m > 0);
+      
+      const moyenneClasse = moyennes.length > 0 
+        ? moyennes.reduce((sum: number, m: number) => sum + m, 0) / moyennes.length 
+        : 0;
+      
+      const tauxReussite = moyennes.length > 0 
+        ? (moyennes.filter((m: number) => m >= 10).length / moyennes.length) * 100 
+        : 0;
+
+      // Construire la réponse
+      const response = {
+        classe: {
+          id: classeDetails.id || classeId,
+          nom: classeDetails.nom || classeFromDashboard?.nom || 'Classe inconnue',
+          niveau: classeDetails.niveau || classeFromDashboard?.niveau || '',
+          section: classeDetails.section || classeFromDashboard?.section || '',
+          description: classeDetails.description || '',
+          effectif_max: classeDetails.effectif_max || classeFromDashboard?.effectif_max || 30,
+          effectif_actuel: effectifActuel,
+          active: classeDetails.active !== undefined ? classeDetails.active : true,
+          created_at: classeDetails.created_at || new Date().toISOString(),
+          updated_at: classeDetails.updated_at || new Date().toISOString(),
+          // Élèves de la classe
+          eleves: eleves.map((eleve: any) => ({
+            id: eleve.id,
+            nom: eleve.nom || '',
+            prenom: eleve.prenom || '',
+            email: eleve.email || '',
+            numero_etudiant: eleve.numero_etudiant || eleve.numero_inscription || '',
+            moyenne_generale: eleve.moyenne_generale || 0,
+            rang_classe: eleve.rang_classe || 0,
+            created_at: eleve.created_at || new Date().toISOString(),
+            updated_at: eleve.updated_at || new Date().toISOString()
+          }))
+        },
+        statistiques: {
+          effectif_actuel: effectifActuel,
+          effectif_max: classeDetails.effectif_max || classeFromDashboard?.effectif_max || 30,
+          moyenne_classe: moyenneClasse,
+          taux_reussite: tauxReussite,
+          taux_occupation: classeDetails.effectif_max 
+            ? Math.round((effectifActuel / classeDetails.effectif_max) * 100) 
+            : 0,
+          total_notes: mesStatistiques.total_notes_saisies || 0,
+          notes_aujourd_hui: mesStatistiques.notes_aujourd_hui || 0,
+          notes_cette_semaine: mesStatistiques.notes_cette_semaine || 0
+        },
+        enseignements: dashboard.planning?.mes_enseignements?.filter((ens: any) => 
+          ens.classe === (classeDetails.nom || classeFromDashboard?.nom)
+        ) || []
+      };
+
+      return response;
+    }),
+    tap(response => {
+      console.log('✅ Classe details assembled:', response);
+      if (this.setToCache) {
+        this.setToCache(cacheKey, response);
+      }
+    }),
+    catchError(error => {
+      console.error('❌ Erreur récupération détails classe:', error);
+      return throwError(() => error);
+    }),
+    shareReplay(1)
+  );
+}
+
+// Ajoutez cette méthode dans votre EnseignantService
+
+/**
+ * ✅ NOUVELLE MÉTHODE : Récupérer les détails d'une matière avec ses classes et statistiques
+ */
+getMatiereDetails(matiereId: number): Observable<any> {
+  const cacheKey = `matiere_details_${matiereId}`;
+  
+  if (this.isDataCached && this.isDataCached(cacheKey)) {
+    return of(this.getFromCache<any>(cacheKey));
+  }
+
+  // Combiner les appels pour récupérer matière + classes + stats
+  return combineLatest([
+    this.getDashboardData(), // Pour récupérer les matières de l'enseignant
+    this.apiService.get<any>(API_ENDPOINTS.MATIERES.BY_ID(matiereId)) // Pour les détails de la matière spécifique
+  ]).pipe(
+    map(([dashboardResponse, matiereResponse]) => {
+      console.log('📊 Dashboard pour matière:', dashboardResponse);
+      console.log('📚 Détails matière:', matiereResponse);
+      
+      // Récupérer les données du dashboard
+      const dashboard = dashboardResponse.dashboard;
+      const mesMatieres = dashboard.mes_matieres || [];
+      const mesClasses = dashboard.mes_classes || [];
+      const mesStatistiques = dashboard.mes_statistiques || {};
+      const mesEnseignements = dashboard.planning?.mes_enseignements || [];
+      
+      // Trouver la matière dans les données du dashboard
+      const matiereFromDashboard = mesMatieres.find((m: any) => m.id === matiereId);
+      
+      if (!matiereFromDashboard) {
+        throw new Error('Matière non trouvée dans votre liste d\'enseignement');
+      }
+      
+      // Récupérer les détails de la matière depuis l'API spécifique
+      const matiereDetails = matiereResponse.matiere || matiereResponse.data || matiereResponse;
+      
+      // Trouver les classes qui enseignent cette matière
+      const classesEnseignees = mesEnseignements
+        .filter((ens: any) => ens.code_matiere === matiereFromDashboard.code || ens.matiere === matiereFromDashboard.nom)
+        .map((ens: any) => {
+          // Trouver la classe correspondante dans mes_classes
+          const classeData = mesClasses.find((c: any) => c.nom === ens.classe);
+          return {
+            id: classeData?.id || Math.random() * 1000, // Fallback pour l'ID
+            nom: ens.classe,
+            niveau: classeData?.niveau || '',
+            section: classeData?.section || '',
+            effectif_actuel: ens.effectif_classe || classeData?.effectif_actuel || 0,
+            effectif_max: classeData?.effectif_max || 30,
+            actif: classeData?.active !== false,
+            moyenne: 0, // À calculer depuis les notes si nécessaire
+            created_at: classeData?.created_at || new Date().toISOString(),
+            updated_at: classeData?.updated_at || new Date().toISOString()
+          };
+        });
+
+      // Calculer les statistiques de la matière
+      const totalEleves = classesEnseignees.reduce((total: number, classe: any) => total + (classe.effectif_actuel || 0), 0);
+      
+      // Construire la réponse
+      const response = {
+        matiere: {
+          id: matiereDetails.id || matiereId,
+          nom: matiereDetails.nom || matiereFromDashboard.nom || 'Matière inconnue',
+          code: matiereDetails.code || matiereFromDashboard.code || '',
+          coefficient: matiereDetails.coefficient || matiereFromDashboard.coefficient || '1.0',
+          description: matiereDetails.description || '',
+          active: matiereDetails.active !== undefined ? matiereDetails.active : true,
+          created_at: matiereDetails.created_at || new Date().toISOString(),
+          updated_at: matiereDetails.updated_at || new Date().toISOString(),
+          // Données spécifiques à l'enseignant
+          nombre_notes_saisies: matiereFromDashboard.nombre_notes_saisies || 0,
+          moyenne_generale: matiereFromDashboard.moyenne_generale || 0
+        },
+        classes: classesEnseignees,
+        statistiques: {
+          total_eleves: totalEleves,
+          nombre_classes: classesEnseignees.length,
+          notes_saisies: matiereFromDashboard.nombre_notes_saisies || 0,
+          moyenne_generale: matiereFromDashboard.moyenne_generale || 0,
+          total_notes_etablissement: mesStatistiques.total_notes_saisies || 0,
+          notes_aujourd_hui: mesStatistiques.notes_aujourd_hui || 0,
+          notes_cette_semaine: mesStatistiques.notes_cette_semaine || 0
+        },
+        enseignements: mesEnseignements.filter((ens: any) => 
+          ens.code_matiere === matiereFromDashboard.code || ens.matiere === matiereFromDashboard.nom
+        )
+      };
+
+      return response;
+    }),
+    tap(response => {
+      console.log('✅ Matiere details assembled:', response);
+      if (this.setToCache) {
+        this.setToCache(cacheKey, response);
+      }
+    }),
+    catchError(error => {
+      console.error('❌ Erreur récupération détails matière:', error);
+      return throwError(() => error);
+    }),
+    shareReplay(1)
+  );
+}
   /**
    * ✅ CORRIGÉ - Récupérer les détails complets d'un enseignant (pour l'admin)
    */

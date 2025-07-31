@@ -2,7 +2,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { takeUntil, switchMap, map } from 'rxjs/operators';
 
 import { AuthService } from '../../../../core/auth/auth.service';
@@ -414,7 +414,9 @@ export class MatiereDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  private loadMatiereDetails(): void {
+// Remplacez la méthode loadMatiereDetails() dans matiere-detail.component.ts
+
+private loadMatiereDetails(): void {
   this.isLoading = true;
   this.errorMessage = '';
 
@@ -423,35 +425,87 @@ export class MatiereDetailComponent implements OnInit, OnDestroy {
     switchMap(params => {
       const matiereId = +params['id'];
       
-      // Obtenir les matières depuis l'observable
-      return this.enseignantService.matieres$.pipe(
-        map(matieres => {
-          this.matiere = matieres.find((m: Matiere) => m.id === matiereId) || null;
-          
-          if (!this.matiere) {
-            throw new Error('Matière non trouvée');
-          }
-          
-          return matiereId;
-        }),
-        switchMap(() => this.enseignantService.getClasses(this.currentUser!.id))
-      );
+      if (!this.currentUser?.id) {
+        throw new Error('Utilisateur non connecté');
+      }
+      
+      // ✅ CORRECTION : Appeler directement l'API matière qui contient les données nécessaires
+      return this.loadMatiereFromAPI(matiereId);
     })
   ).subscribe({
-    next: (classes) => {
-      this.classes = classes;
-      this.calculateStats();
-      this.loadRecentNotes();
+    next: () => {
+      // Les données sont déjà traitées dans loadMatiereFromAPI
       this.isLoading = false;
     },
     error: (error) => {
       console.error('Erreur lors du chargement:', error);
-      this.errorMessage = 'Impossible de charger les détails de la matière.';
+      this.errorMessage = error.message || 'Impossible de charger les détails de la matière.';
       this.isLoading = false;
     }
   });
 }
 
+// ✅ NOUVELLE MÉTHODE : Charger la matière directement depuis l'API
+private loadMatiereFromAPI(matiereId: number): Observable<any> {
+  if (!this.currentUser?.id) {
+    throw new Error('Utilisateur non connecté');
+  }
+
+  return this.enseignantService.getMatiereDetails(matiereId)
+    .pipe(
+      map((response: any) => {
+        console.log('📚 Réponse API matière:', response);
+        
+        if (!response.matiere) {
+          throw new Error('Matière non trouvée dans la réponse API');
+        }
+
+        const matiereData = response.matiere;
+        const stats = response.statistiques;
+        const classes = response.classes || [];
+
+        // ✅ MAPPER les données vers la structure attendue par le component
+        this.matiere = {
+          id: matiereData.id,
+          nom: matiereData.nom,
+          code: matiereData.code,
+          coefficient: parseFloat(matiereData.coefficient) || 1,
+          description: matiereData.description,
+          active: matiereData.active !== false,
+          created_at: matiereData.created_at,
+          updated_at: matiereData.updated_at
+        } as Matiere;
+
+        // ✅ RÉCUPÉRER les classes directement depuis la réponse
+        this.classes = classes.map((classe: any) => ({
+          id: classe.id,
+          nom: classe.nom,
+          niveau: classe.niveau,
+          section: classe.section,
+          effectif_max: classe.effectif_max,
+          effectif_actuel: classe.effectif_actuel,
+          actif: classe.actif,
+          moyenne: classe.moyenne || 0,
+          created_at: classe.created_at,
+          updated_at: classe.updated_at
+        })) as Classe[];
+        
+        // ✅ Utiliser les stats calculées
+        this.totalEleves = stats.total_eleves || 0;
+        this.totalNotes = stats.notes_saisies || 0;
+        this.moyenneGenerale = stats.moyenne_generale || 0;
+        
+        // Calculer les stats supplémentaires avec les données récupérées
+        this.calculateStats();
+        
+        // Charger les notes récentes
+        this.loadRecentNotes();
+        
+        return response;
+      }),
+      takeUntil(this.destroy$)
+    );
+}
   private loadRecentNotes(): void {
     if (!this.matiere?.id || !this.currentUser?.id) return;
 
